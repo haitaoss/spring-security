@@ -9,6 +9,9 @@ buildscript {
 		classpath "com.netflix.nebula:nebula-project-plugin:8.2.0"
 	}
 	repositories {
+		maven { name "Alibaba"; url 'https://maven.aliyun.com/repository/public' }
+		maven { name "Bstek"; url 'https://nexus.bsdn.org/content/groups/public/' }
+		maven { name "M2"; url 'https://plugins.gradle.org/m2/' }
 		gradlePluginPortal()
 	}
 }
@@ -33,6 +36,9 @@ ext.releaseBuild = version.contains("SNAPSHOT")
 ext.milestoneBuild = !(snapshotBuild || releaseBuild)
 
 repositories {
+	mavenLocal()
+	maven { name "Alibaba"; url "https://maven.aliyun.com/repository/public" }
+	maven { name "Bstek"; url "https://nexus.bsdn.org/content/groups/public/" }
 	mavenCentral()
 }
 
@@ -164,7 +170,7 @@ allprojects {
 			}
 		})
 
-		if (project.name.contains('sample')) {
+		if (project.name.contains('sample') || project.name.contains('source-note')) {
 			tasks.whenTaskAdded { task ->
 				if (task.name.contains('format') || task.name.contains('checkFormat') || task.name.contains("checkstyle")) {
 					task.enabled = false

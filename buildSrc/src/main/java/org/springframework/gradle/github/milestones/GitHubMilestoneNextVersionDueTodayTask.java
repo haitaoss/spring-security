@@ -30,7 +30,9 @@ import org.yaml.snakeyaml.constructor.Constructor;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -66,7 +68,20 @@ public abstract class GitHubMilestoneNextVersionDueTodayTask extends DefaultTask
 		}
 		boolean milestoneDueToday = this.milestones.isMilestoneDueToday(this.repository, nextVersion);
 		Path isDueTodayPath = getIsDueTodayFile().getAsFile().get().toPath();
-		Files.writeString(isDueTodayPath, String.valueOf(milestoneDueToday));
+		/**
+		 * TODOHAITAO: 2023/5/4
+		 * 	直接使用 Gradle 编译、运行 是没问题的，但是想使用 IDEA 来编译运行，能指定的编译器只能是 ajc、javac、eclipse-groovy
+		 * 	IDEA 指定的 ajc 是种混合模式，它是 ajc+javac 的结合，会根据文件类型决定使用 ajc 还是 javac。
+		 * 	但是这个项目的编译需要 ajc + javac + groovy ，所以我取巧直接将 groovy 的语法改成 java 的语法，
+		 * 	这样就能使用 IDEA 实现项目的编译和运行了
+		 * */
+		// Files.writeString(isDueTodayPath, String.valueOf(milestoneDueToday));
+		try (FileOutputStream fileOutputStream = new FileOutputStream(isDueTodayPath.toFile());) {
+			fileOutputStream.write(String.valueOf(milestoneDueToday).getBytes(StandardCharsets.UTF_8));
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
 		if (milestoneDueToday) {
 			System.out.println("The milestone with the title " + nextVersion + " in the repository " + this.repository
 					+ " is due today");

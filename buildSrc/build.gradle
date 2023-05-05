@@ -8,6 +8,9 @@ plugins {
 sourceCompatibility = 1.8
 
 repositories {
+	mavenLocal()
+	maven { name "Alibaba"; url 'https://maven.aliyun.com/repository/public' }
+	maven { name "Bstek"; url 'https://nexus.bsdn.org/content/groups/public/' }
 	gradlePluginPortal()
 	mavenCentral()
 	maven { url 'https://repo.spring.io/plugins-release/' }

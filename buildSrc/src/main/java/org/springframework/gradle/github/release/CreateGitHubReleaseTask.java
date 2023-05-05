@@ -16,10 +16,13 @@
 
 package org.springframework.gradle.github.release;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.stream.Collectors;
 
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
@@ -77,11 +80,28 @@ public class CreateGitHubReleaseTask extends DefaultTask {
 	private String readReleaseNotes() {
 		Project project = getProject();
 		File inputFile = project.file(Paths.get(project.getBuildDir().getPath(), GitHubChangelogPlugin.RELEASE_NOTES_PATH));
-		try {
+		/**
+		 * TODOHAITAO: 2023/5/4
+		 * 	直接使用 Gradle 编译、运行 是没问题的，但是想使用 IDEA 来编译运行，能指定的编译器只能是 ajc、javac、eclipse-groovy
+		 * 	IDEA 指定的 ajc 是种混合模式，它是 ajc+javac 的结合，会根据文件类型决定使用 ajc 还是 javac。
+		 * 	但是这个项目的编译需要 ajc + javac + groovy ，所以我取巧直接将 groovy 的语法改成 java 的语法，
+		 * 	这样就能使用 IDEA 实现项目的编译和运行了
+		 * */
+		/*try {
 			return Files.readString(inputFile.toPath());
 		} catch (IOException ex) {
 			throw new RuntimeException("Unable to read release notes from " + inputFile, ex);
+		}*/
+		String note = null;
+		try (FileReader in = new FileReader(inputFile);
+			 BufferedReader bufferedReader = new BufferedReader(in)) {
+			note = bufferedReader.lines().collect(Collectors.joining(""));
 		}
+		catch (IOException ex) {
+			throw new RuntimeException("Unable to read release notes from " + inputFile, ex);
+		}
+
+		return note;
 	}
 
 	public RepositoryRef getRepository() {

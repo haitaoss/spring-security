@@ -1,7 +1,10 @@
 pluginManagement {
 	repositories {
+		maven { name "Alibaba" ; url 'https://maven.aliyun.com/repository/public' }
+		maven { name "Bstek" ; url 'https://nexus.bsdn.org/content/groups/public/' }
+		maven { name "M2" ; url 'https://plugins.gradle.org/m2/' }
 		gradlePluginPortal()
-		maven { url 'https://repo.spring.io/plugins-release' }
+		maven { url "https://repo.spring.io/plugins-release" }
 	}
 }
 
@@ -12,6 +15,9 @@ plugins {
 
 dependencyResolutionManagement {
 	repositories {
+		mavenLocal()
+		maven { name "Alibaba" ; url 'https://maven.aliyun.com/repository/public' }
+		maven { name "Bstek" ; url 'https://nexus.bsdn.org/content/groups/public/' }
 		mavenCentral()
 	}
 }
@@ -52,3 +58,5 @@ buildFiles.each { File buildFile ->
 		project.buildFileName = buildFile.name
 	}
 }
+include 'source-note-spring-security'
+

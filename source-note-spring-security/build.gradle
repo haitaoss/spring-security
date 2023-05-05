@@ -1,0 +1,33 @@
+plugins {
+    id 'java'
+    // 这个插件提供了 api、optional
+    id 'io.spring.convention.spring-module'
+}
+
+group 'cn.haitaoss'
+version '5.8.3'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // 声明依赖的版本
+    management platform(project(":spring-security-dependencies"))
+    // 验证 spring-security 的功能
+    api project(':spring-security-web')
+    api project(':spring-security-config')
+
+    // lombok
+    annotationProcessor 'org.projectlombok:lombok:1.18.2'
+    compileOnly 'org.projectlombok:lombok:1.18.2'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.2'
+    testCompileOnly 'org.projectlombok:lombok:1.18.2'
+
+    // 测试依赖
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+test {
+    useJUnitPlatform()
+}
