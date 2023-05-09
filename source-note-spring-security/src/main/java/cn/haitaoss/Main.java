@@ -1,8 +1,24 @@
 
 package cn.haitaoss;
 
+import java.io.File;
+
+import org.apache.catalina.WebResourceRoot;
+import org.apache.catalina.connector.Connector;
+import org.apache.catalina.core.StandardContext;
+import org.apache.catalina.startup.Tomcat;
+import org.apache.catalina.webresources.DirResourceSet;
+import org.apache.catalina.webresources.StandardRoot;
+import org.apache.coyote.http11.Http11NioProtocol;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.DefaultSecurityFilterChain;
+import org.springframework.security.web.authentication.www.DigestAuthenticationEntryPoint;
+import org.springframework.security.web.authentication.www.DigestAuthenticationFilter;
+import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 
 /**
  * @author haitao.chen
@@ -10,6 +26,7 @@ import org.springframework.security.web.DefaultSecurityFilterChain;
  * date 2023-05-05 10:44
  *
  */
+@ComponentScan
 public class Main {
 	/**
 	 * {@link EnableWebSecurity}
@@ -266,10 +283,198 @@ public class Main {
 	 * 		默认情况下， ProviderManager 将尝试从成功的身份验证请求返回的 Authentication 对象中清除任何敏感的凭据信息。这可以防止密码等信息在 HttpSession 中的保留时间超过必要时间。
 	 * 		当您使用用户对象的缓存时，这可能会导致问题，例如，为了提高无状态应用程序的性能。如果 Authentication 包含对缓存中对象的引用（例如 UserDetails 实例）并且其凭据已删除，则将不再可能根据缓存值进行身份验证。如果您使用缓存，则需要考虑这一点。一个明显的解决方案是首先在缓存实现中或在创建返回的 Authentication 对象的 AuthenticationProvider 中创建对象的副本。或者，您可以禁用 ProviderManager 上的 eraseCredentialsAfterAuthentication 属性。有关详细信息，请参阅 Javadoc。
 	 *
-	 * 看到这里：
-	 * 		https://docs.spring.io/spring-security/reference/5.8/servlet/authentication/architecture.html#servlet-authentication-authenticationprovider
+	 * AuthenticationProvider 身份验证提供者
+	 *		可以将多个 AuthenticationProvider 注入到 ProviderManager 中。每个 AuthenticationProvider 执行特定类型的身份验证。例如， DaoAuthenticationProvider 支持基于用户名/密码的身份验证，而 JwtAuthenticationProvider 支持对 JWT 令牌进行身份验证。
+	 *
+	 * Request Credentials with AuthenticationEntryPoint 使用 AuthenticationEntryPoint 请求凭据
+	 * 		AuthenticationEntryPoint 用于发送从客户端请求凭据的 HTTP 响应。
+	 * 		有时，客户端会主动包含凭据（例如用户名/密码）来请求资源。在这些情况下，Spring Security 不需要提供从客户端请求凭据的 HTTP 响应，因为它们已经包含在内。
+	 * 		在其他情况下，客户端将向他们无权访问的资源发出未经身份验证的请求。在这种情况下， AuthenticationEntryPoint 的实现用于从客户端请求凭据。 AuthenticationEntryPoint 实现可能会执行重定向到登录页面，使用 WWW-Authenticate 标头进行响应等。
+	 *
+	 * AbstractAuthenticationProcessingFilter
+	 *		AbstractAuthenticationProcessingFilter 用作验证用户凭据的基础 Filter 。在可以验证凭据之前，Spring Security 通常使用 AuthenticationEntryPoint 请求凭据。
+	 *		接下来， AbstractAuthenticationProcessingFilter 可以对提交给它的任何身份验证请求进行身份验证。
 	 * */
-	public static void main(String[] args) {
-		System.out.println("---");
+	/**
+	 * Username/Password Authentication 用户名/密码认证
+	 * 		验证用户身份的最常见方法之一是验证用户名和密码。因此，Spring Security 为使用用户名和密码进行身份验证提供了全面的支持。
+	 *		Reading the Username & Password 读取用户名和密码
+	 *			Spring Security 提供了以下内置机制，用于从 HttpServletRequest 读取用户名和密码：From、Basic、Digest
+	 *
+	 *			From 表单登录
+	 *			Spring Security 支持通过 html 表单提供的用户名和密码。本节提供有关基于表单的身份验证如何在 Spring Security 中工作的详细信息。
+	 *			默认启用 Spring Security 表单登录。但是，一旦提供了任何基于 servlet 的配置，就必须明确提供基于表单的登录。可以在下面找到最小的显式 Java 配置：
+	 *				public SecurityFilterChain filterChain(HttpSecurity http) {
+	 * 					http
+	 * 						.formLogin(withDefaults());
+	 * 					// ...
+	 * 				}
+	 * 				在此配置中，Spring Security 将呈现默认登录页面。大多数生产应用程序都需要自定义登录表单。
+	 * 				public SecurityFilterChain filterChain(HttpSecurity http) {
+	 * 					http
+	 * 						.formLogin(form -> form
+	 * 							.loginPage("/login")
+	 * 							.permitAll()
+	 * 						);
+	 * 					// ...
+	 * 				}
+	 *
+	 *			Basic Authentication 基本认证
+	 *				本节提供有关 Spring Security 如何为基于 servlet 的应用程序提供基本 HTTP 身份验证支持的详细信息。
+	 *				默认情况下启用 Spring Security 的 HTTP 基本身份验证支持。但是，一旦提供了任何基于 servlet 的配置，就必须显式提供 HTTP Basic。
+	 *                                @Bean
+	 * 							public SecurityFilterChain filterChain(HttpSecurity http) {
+	 * 								http
+	 * 									// ...
+	 * 									.httpBasic(withDefaults());
+	 * 								return http.build();
+	 * 							}
+	 *			Digest 过时了，也是一种认证方式
+	 *
+	 *		Password Storage 密码存储
+	 *			- Simple Storage with In-Memory Authentication
+	 *				Spring Security 的 InMemoryUserDetailsManager 实现了 UserDetailsS​​ervice 以提供对存储在内存中的基于用户名/密码的身份验证的支持。 InMemoryUserDetailsManager 通过实现 UserDetailsManager 接口来提供对 UserDetails 的管理。当配置为接受用户名/密码进行身份验证时，Spring Security 使用基于 UserDetails 的身份验证。
+	 *                                @Bean
+	 * 									public UserDetailsService users() {
+	 * 										// The builder will ensure the passwords are encoded before saving in memory
+	 * 										UserBuilder users = User.withDefaultPasswordEncoder();
+	 * 										UserDetails user = users
+	 * 											.username("user")
+	 * 											.password("password")
+	 * 											.roles("USER")
+	 * 											.build();
+	 * 										UserDetails admin = users
+	 * 											.username("admin")
+	 * 											.password("password")
+	 * 											.roles("USER", "ADMIN")
+	 * 											.build();
+	 * 										return new InMemoryUserDetailsManager(user, admin);
+	 * 									}
+	 * 			- Relational Databases with JDBC Authentication（需要配置数据源，固定要查询的表明和字段名了）
+	 *                                @Bean
+	 * 									UserDetailsManager users(DataSource dataSource) {
+	 * 										UserDetails user = User.builder()
+	 * 											.username("user")
+	 * 											.password("{bcrypt}$2a$10$GRLdNijSQMUvl/au9ofL.eDwmoohzzS7.rmNSJZ.0FxO/BTk76klW")
+	 * 											.roles("USER")
+	 * 											.build();
+	 * 										UserDetails admin = User.builder()
+	 * 											.username("admin")
+	 * 											.password("{bcrypt}$2a$10$GRLdNijSQMUvl/au9ofL.eDwmoohzzS7.rmNSJZ.0FxO/BTk76klW")
+	 * 											.roles("USER", "ADMIN")
+	 * 											.build();
+	 * 										JdbcUserDetailsManager users = new JdbcUserDetailsManager(dataSource);
+	 * 										users.createUser(user);
+	 * 										users.createUser(admin);
+	 * 										return users;
+	 * 									}
+	 * 			- Custom data stores with UserDetailsService
+	 * 				UserDetailsService 由 DaoAuthenticationProvider 用于检索用户名、密码和其他属性，以使用用户名和密码进行身份验证。 Spring Security 提供 UserDetailsService 的内存和 JDBC 实现。
+	 * 				您可以通过将自定义 UserDetailsService 公开为 bean 来定义自定义身份验证。例如，以下将自定义身份验证，假设 CustomUserDetailsService 实现了 UserDetailsService ：
+	 *                                        @Bean
+	 * 											CustomUserDetailsService customUserDetailsService() {
+	 * 												return new CustomUserDetailsService();
+	 * 											}
+	 * 			- LDAP storage with LDAP Authentication
+	 *				是一种认证方式，不了解，不细看了
+	 * */
+	/**
+	 * UserDetails
+	 * 		UserDetails 由 UserDetailsService 返回。 DaoAuthenticationProvider 验证 UserDetails ，然后返回一个 Authentication ，该 Authentication 的主体是配置的 UserDetailsService 返回的 UserDetails 。
+	 * PasswordEncoder
+	 * 		Spring Security 的 servlet 支持通过与 PasswordEncoder 集成来安全地存储密码。自定义 Spring Security 使用的 PasswordEncoder 实现可以通过公开一个 PasswordEncoder Bean 来完成。
+	 * DaoAuthenticationProvider
+	 * 		让我们来看看 DaoAuthenticationProvider 在 Spring Security 中是如何工作的。该图详细说明了阅读用户名和密码中图中 AuthenticationManager 的工作原理。
+	 * */
+	/**
+	 * Persisting Authentication	持久身份验证
+	 * 	SecurityContextRepository：在 Spring Security 中，用户与未来请求的关联是使用 SecurityContextRepository 进行的。
+	 * 	HttpSecurityContextRepository：SecurityContextRepository 的默认实现是 HttpSessionSecurityContextRepository ，它将 SecurityContext 关联到 HttpSession 。如果用户希望以其他方式或根本不将用户与后续请求相关联，则可以将 HttpSessionSecurityContextRepository 替换为 SecurityContextRepository 的另一种实现。
+	 * 	NullSecurityContextRepository：如果不希望将 SecurityContext 关联到 HttpSession （即使用 OAuth 进行身份验证时），则 NullSecurityContextRepository 是不执行任何操作的 SecurityContextRepository 的实现。
+	 * 	RequestAttributeSecurityContextRepository：RequestAttributeSecurityContextRepository 将 SecurityContext 保存为 request属性，以确保 SecurityContext 可用于跨越可能清除 SecurityContext 的 dispatch 类型发生的单个请求。
+	 * 		例如，假设客户端发出请求，经过身份验证，然后发生错误。根据 servlet 容器的实现，错误意味着任何已建立的 SecurityContext 都被清除，然后进行错误分派。进行错误调度时，没有建立 SecurityContext 。这意味着错误页面不能使用 SecurityContext 进行授权或显示当前用户，除非以某种方式保留 SecurityContext 。
+	 * 		public SecurityFilterChain filterChain(HttpSecurity http) {
+	 * 			http
+	 * 				// ...
+	 * 				.securityContext((securityContext) -> securityContext
+	 * 					.securityContextRepository(new RequestAttributeSecurityContextRepository())
+	 * 				);
+	 * 			return http.build();
+	 * 		}
+	 *	DelegatingSecurityContextRepository
+	 *		DelegatingSecurityContextRepository 将 SecurityContext 保存到多个 SecurityContextRepository 委托，并允许以指定顺序从任何委托中检索。
+	 *		最有用的安排是使用以下示例配置的，它允许同时使用 RequestAttributeSecurityContextRepository 和 HttpSessionSecurityContextRepository 。
+	 *                        @Bean
+	 * 				public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+	 * 					http
+	 * 						// ...
+	 * 						.securityContext((securityContext) -> securityContext
+	 * 							.securityContextRepository(new DelegatingSecurityContextRepository(
+	 * 								new RequestAttributeSecurityContextRepository(),
+	 * 								new HttpSessionSecurityContextRepository()
+	 * 							))
+	 * 						);
+	 * 					return http.build();
+	 * 				}
+	 *	SecurityContextPersistenceFilter
+	 *		SecurityContextPersistenceFilter 负责使用 SecurityContextRepository 在请求之间保留 SecurityContext 。
+	 *	SecurityContextHolderFilter
+	 *		SecurityContextHolderFilter 负责使用 SecurityContextRepository 在请求之间加载 SecurityContext 。
+	 *		与 SecurityContextPersistenceFilter 不同， SecurityContextHolderFilter 仅加载 SecurityContext 而不会保存 SecurityContext 。这意味着当使用 SecurityContextHolderFilter 时，需要显式保存 SecurityContext 。
+	 *		public SecurityFilterChain filterChain(HttpSecurity http) {
+	 * 			http
+	 * 				// ...
+	 * 				.securityContext((securityContext) -> securityContext
+	 * 					.requireExplicitSave(true) // 显式保存 SecurityContext
+	 * 				);
+	 * 			return http.build();
+	 * 		}
+	 * */
+	/**
+	 * Authentication Persistence and Session Management
+	 *
+	 * 看到这里：https://docs.spring.io/spring-security/reference/5.8/servlet/authentication/session-management.html
+	 * */
+	public static void main(String[] args) throws Exception {
+		startTomcat();
+	}
+	public static void startTomcat() throws Exception {
+		// 创建内嵌的Tomcat
+		Tomcat tomcatServer = new Tomcat();
+
+		// 设置Tomcat端口
+		tomcatServer.setPort(8080);
+
+		Connector connector = new Connector(Http11NioProtocol.class.getName());
+		connector.setPort(8080);
+		tomcatServer.getService()
+				.addConnector(connector);
+		tomcatServer.setConnector(connector);
+
+		// 读取项目路径，加载项目资源
+		StandardContext ctx = (StandardContext) tomcatServer.addWebapp(
+				"/security", new File("source-note-spring-security/src/main/webapp").getAbsolutePath());
+
+		// 不重新部署加载资源
+		ctx.setReloadable(false);
+
+		// 创建 WebRoot
+		WebResourceRoot resources = new StandardRoot(ctx);
+
+		// 指定编译后的 class 文件位置
+		File additionalWebInfClasses = new File("source-note-spring-security/out/production/");
+
+		// 添加web资源
+		resources.addPreResources(new DirResourceSet(resources, "/", additionalWebInfClasses.getAbsolutePath(), "/"));
+		// 启动内嵌的Tomcat
+		tomcatServer.start();
+
+		Thread thread = new Thread(() -> {
+			// 堵塞，不退出程序
+			tomcatServer.getServer()
+					.await();
+		});
+		thread.setDaemon(false);
+		thread.start();
 	}
 }

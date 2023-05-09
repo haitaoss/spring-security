@@ -18,6 +18,10 @@ dependencies {
     api project(':spring-security-web')
     api project(':spring-security-config')
 
+	// 引入 springmvc 方便验证
+	api "org.springframework:spring-webmvc"
+	api 'org.apache.tomcat.embed:tomcat-embed-core:9.0.52'
+	api 'org.apache.tomcat.embed:tomcat-embed-jasper:9.0.52'
     // lombok
     annotationProcessor 'org.projectlombok:lombok:1.18.2'
     compileOnly 'org.projectlombok:lombok:1.18.2'

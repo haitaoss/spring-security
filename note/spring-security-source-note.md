@@ -99,7 +99,11 @@ Central Authentication Server (CAS)：中央认证服务器
 
 这是基于Servlet应用的场景分析 Spring Security 的源码
 
+Principal：主角、当事人、委托人
 
+GrantedAuthority：授权机构
+
+credentials：资格证书
 
 
 
