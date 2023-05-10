@@ -105,5 +105,6 @@ GrantedAuthority：授权机构
 
 credentials：资格证书
 
+Explicit：明确的、清楚的
 
-
+restrict：限制、限定

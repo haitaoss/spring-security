@@ -12,13 +12,25 @@ import org.apache.catalina.webresources.StandardRoot;
 import org.apache.coyote.http11.Http11NioProtocol;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.security.config.annotation.ObjectPostProcessor;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.DefaultSecurityFilterChain;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.logout.HeaderWriterLogoutHandler;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.authentication.www.DigestAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.www.DigestAuthenticationFilter;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.header.writers.ClearSiteDataHeaderWriter;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
+
+import static org.springframework.security.web.header.writers.ClearSiteDataHeaderWriter.Directive.COOKIES;
 
 /**
  * @author haitao.chen
@@ -161,7 +173,7 @@ public class Main {
 	 * 		该实现用于检查 HttpSession 是否已保存请求。
 	 *
 	 *                @Bean
-	 * 					DefaultSecurityFilterChain springSecurity(HttpSecurity http) throws Exception {
+	 *                    DefaultSecurityFilterChain springSecurity(HttpSecurity http) throws Exception {
 	 * 						HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
 	 * 						requestCache.setMatchingRequestParameterName("continue");
 	 * 						http
@@ -170,7 +182,7 @@ public class Main {
 	 * 								.requestCache(requestCache)
 	 * 							);
 	 * 						return http.build();
-	 * 					}
+	 *                    }
 	 *
 	 * 		Prevent the Request From Being Saved（防止请求被保存）
 	 * 			您可能出于多种原因不想在会话中存储用户未经身份验证的请求。您可能希望将该存储卸载到用户的浏览器上或将其存储在数据库中。
@@ -178,7 +190,7 @@ public class Main {
 	 * 			为此，您可以使用 NullRequestCache 实现。
 	 *
 	 *                        @Bean
-	 * 						SecurityFilterChain springSecurity(HttpSecurity http) throws Exception {
+	 *                        SecurityFilterChain springSecurity(HttpSecurity http) throws Exception {
 	 * 						    RequestCache nullRequestCache = new NullRequestCache();
 	 * 						    http
 	 * 						        // ...
@@ -186,7 +198,7 @@ public class Main {
 	 * 						            .requestCache(nullRequestCache)
 	 * 						        );
 	 * 						    return http.build();
-	 * 						}
+	 *                        }
 	 *
 	 * RequestCacheAwareFilter
 	 * 		RequestCacheAwareFilter 使用 RequestCache 来保存 HttpServletRequest 。
@@ -308,7 +320,7 @@ public class Main {
 	 * 					http
 	 * 						.formLogin(withDefaults());
 	 * 					// ...
-	 * 				}
+	 *                }
 	 * 				在此配置中，Spring Security 将呈现默认登录页面。大多数生产应用程序都需要自定义登录表单。
 	 * 				public SecurityFilterChain filterChain(HttpSecurity http) {
 	 * 					http
@@ -317,25 +329,25 @@ public class Main {
 	 * 							.permitAll()
 	 * 						);
 	 * 					// ...
-	 * 				}
+	 *                }
 	 *
 	 *			Basic Authentication 基本认证
 	 *				本节提供有关 Spring Security 如何为基于 servlet 的应用程序提供基本 HTTP 身份验证支持的详细信息。
 	 *				默认情况下启用 Spring Security 的 HTTP 基本身份验证支持。但是，一旦提供了任何基于 servlet 的配置，就必须显式提供 HTTP Basic。
 	 *                                @Bean
-	 * 							public SecurityFilterChain filterChain(HttpSecurity http) {
+	 *                            public SecurityFilterChain filterChain(HttpSecurity http) {
 	 * 								http
 	 * 									// ...
 	 * 									.httpBasic(withDefaults());
 	 * 								return http.build();
-	 * 							}
+	 *                            }
 	 *			Digest 过时了，也是一种认证方式
 	 *
 	 *		Password Storage 密码存储
 	 *			- Simple Storage with In-Memory Authentication
 	 *				Spring Security 的 InMemoryUserDetailsManager 实现了 UserDetailsS​​ervice 以提供对存储在内存中的基于用户名/密码的身份验证的支持。 InMemoryUserDetailsManager 通过实现 UserDetailsManager 接口来提供对 UserDetails 的管理。当配置为接受用户名/密码进行身份验证时，Spring Security 使用基于 UserDetails 的身份验证。
 	 *                                @Bean
-	 * 									public UserDetailsService users() {
+	 *                                    public UserDetailsService users() {
 	 * 										// The builder will ensure the passwords are encoded before saving in memory
 	 * 										UserBuilder users = User.withDefaultPasswordEncoder();
 	 * 										UserDetails user = users
@@ -349,10 +361,10 @@ public class Main {
 	 * 											.roles("USER", "ADMIN")
 	 * 											.build();
 	 * 										return new InMemoryUserDetailsManager(user, admin);
-	 * 									}
+	 *                                    }
 	 * 			- Relational Databases with JDBC Authentication（需要配置数据源，固定要查询的表明和字段名了）
 	 *                                @Bean
-	 * 									UserDetailsManager users(DataSource dataSource) {
+	 *                                    UserDetailsManager users(DataSource dataSource) {
 	 * 										UserDetails user = User.builder()
 	 * 											.username("user")
 	 * 											.password("{bcrypt}$2a$10$GRLdNijSQMUvl/au9ofL.eDwmoohzzS7.rmNSJZ.0FxO/BTk76klW")
@@ -367,14 +379,14 @@ public class Main {
 	 * 										users.createUser(user);
 	 * 										users.createUser(admin);
 	 * 										return users;
-	 * 									}
+	 *                                    }
 	 * 			- Custom data stores with UserDetailsService
 	 * 				UserDetailsService 由 DaoAuthenticationProvider 用于检索用户名、密码和其他属性，以使用用户名和密码进行身份验证。 Spring Security 提供 UserDetailsService 的内存和 JDBC 实现。
 	 * 				您可以通过将自定义 UserDetailsService 公开为 bean 来定义自定义身份验证。例如，以下将自定义身份验证，假设 CustomUserDetailsService 实现了 UserDetailsService ：
 	 *                                        @Bean
-	 * 											CustomUserDetailsService customUserDetailsService() {
+	 *                                            CustomUserDetailsService customUserDetailsService() {
 	 * 												return new CustomUserDetailsService();
-	 * 											}
+	 *                                            }
 	 * 			- LDAP storage with LDAP Authentication
 	 *				是一种认证方式，不了解，不细看了
 	 * */
@@ -400,12 +412,12 @@ public class Main {
 	 * 					.securityContextRepository(new RequestAttributeSecurityContextRepository())
 	 * 				);
 	 * 			return http.build();
-	 * 		}
+	 *        }
 	 *	DelegatingSecurityContextRepository
 	 *		DelegatingSecurityContextRepository 将 SecurityContext 保存到多个 SecurityContextRepository 委托，并允许以指定顺序从任何委托中检索。
 	 *		最有用的安排是使用以下示例配置的，它允许同时使用 RequestAttributeSecurityContextRepository 和 HttpSessionSecurityContextRepository 。
 	 *                        @Bean
-	 * 				public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+	 *                public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 	 * 					http
 	 * 						// ...
 	 * 						.securityContext((securityContext) -> securityContext
@@ -415,7 +427,7 @@ public class Main {
 	 * 							))
 	 * 						);
 	 * 					return http.build();
-	 * 				}
+	 *                }
 	 *	SecurityContextPersistenceFilter
 	 *		SecurityContextPersistenceFilter 负责使用 SecurityContextRepository 在请求之间保留 SecurityContext 。
 	 *	SecurityContextHolderFilter
@@ -428,16 +440,94 @@ public class Main {
 	 * 					.requireExplicitSave(true) // 显式保存 SecurityContext
 	 * 				);
 	 * 			return http.build();
-	 * 		}
+	 *        }
 	 * */
 	/**
 	 * Authentication Persistence and Session Management
+	 *		一旦您获得了对请求进行身份验证的应用程序，重要的是要考虑如何在未来的请求中保留和恢复生成的身份验证。
+	 *		默认情况下这是自动完成的，因此不需要额外的代码，但您应该考虑一些步骤。第一个是在 HttpSecurity 中设置 requireExplicitSave 属性。你可以这样做：
+	 *		http
+	 *         // ...
+	 *         .securityContext((context) -> context
+	 *             .requireExplicitSave(true)
+	 *         );
 	 *
-	 * 看到这里：https://docs.spring.io/spring-security/reference/5.8/servlet/authentication/session-management.html
+	 * Remember-Me Authentication 记住我身份验证
+	 * 		记住我或持久登录身份验证是指网站能够记住会话之间主体的身份。这通常是通过向浏览器发送一个 cookie 来完成的，该 cookie 在未来的会话中被检测到并导致自动登录发生。 Spring Security 为这些操作的发生提供了必要的钩子，并且有两个具体的 remember-me 实现。一种使用哈希来保护基于 cookie 的令牌的安全性，另一种使用数据库或其他持久存储机制来存储生成的令牌。
+	 * 		请注意，这两种实现都需要 UserDetailsService 。如果您正在使用不使用 UserDetailsService 的身份验证提供程序（例如，LDAP 提供程序），那么它将无法工作，除非您的应用程序上下文中也有一个 UserDetailsService bean。
+	 *
+	 * Anonymous Authentication 匿名认证
+	 * 		换句话说，有时候说 ROLE_SOMETHING 默认是必需的并且只允许此规则的某些例外情况是很好的，例如应用程序的登录、注销和主页。您也可以从过滤器链中完全忽略这些页面，从而绕过访问控制检查，但由于其他原因，这可能是不可取的，特别是如果页面对经过身份验证的用户的行为不同时。
+	 * 		这就是我们所说的匿名身份验证的意思。请注意，“匿名身份验证”的用户和未经身份验证的用户之间在概念上没有真正的区别。 Spring Security 的匿名身份验证只是为您提供了一种更方便的方式来配置您的访问控制属性。例如，调用 servlet API（例如 getCallerPrincipal ）仍将返回 null，即使 SecurityContextHolder 中实际上有一个匿名身份验证对象。
+	 * 		在其他情况下匿名身份验证也很有用，例如当审计拦截器查询 SecurityContextHolder 以确定哪个主体负责给定操作时。如果类知道 SecurityContextHolder 总是包含一个 Authentication 对象，而从不包含 null ，那么类可以被编写得更健壮。
+	 *
+	 *		在其他情况下匿名身份验证也很有用，例如当审计拦截器查询 SecurityContextHolder 以确定哪个主体负责给定操作时。如果类知道 SecurityContextHolder 总是包含一个 Authentication 对象，而从不包含 null ，那么类可以被编写得更健壮。
+	 *
+	 * Run-As Authentication Replacement
+	 * 		AbstractSecurityInterceptor 能够在安全对象回调阶段临时替换 SecurityContext 和 SecurityContextHolder 中的 Authentication 对象。只有当 AuthenticationManager 和 AccessDecisionManager 成功处理了原始的 Authentication 对象时才会发生这种情况。 RunAsManager 将指示替换 Authentication 对象（如果有）应在 SecurityInterceptorCallback 期间使用。
+	 * 		通过在安全对象回调阶段临时替换 Authentication 对象，安全调用将能够调用需要不同身份验证和授权凭据的其他对象。它还将能够对特定的 GrantedAuthority 对象执行任何内部安全检查。因为 Spring Security 提供了许多帮助程序类，可以根据 SecurityContextHolder 的内容自动配置远程协议，所以这些运行方式替换在调用远程 Web 服务时特别有用。
+	 * 		RunAsManager
+	 *
+	 * Handling Logouts
+	 * 		注入 HttpSecurity bean 时，会自动应用注销功能。默认情况下，访问 URL /logout 将通过以下方式注销用户：
+	 * 			- Invalidating the HTTP Session
+	 * 			- Cleaning up any RememberMe authentication that was configured
+	 * 			- Clearing the SecurityContextHolder
+	 * 			- Clearing the SecurityContextRepository
+	 * 			- Redirect to /login?logout
+	 * 		http
+	 *         .logout(logout -> logout
+	 *             .logoutUrl("/my/logout")
+	 *             .logoutSuccessUrl("/my/index")
+	 *             .logoutSuccessHandler(logoutSuccessHandler)
+	 *             .invalidateHttpSession(true)
+	 *             .addLogoutHandler(logoutHandler)
+	 *             .deleteCookies(cookieNamesToClear)
+	 *         )
+	 *
+	 *      LogoutHandler、LogoutSuccessHandler 、
+	 *
+	 * Authentication Events
+	 *		对于成功或失败的每个身份验证，分别触发 AuthenticationSuccessEvent 或 AbstractAuthenticationFailureEvent 。
+	 *		要侦听这些事件，您必须首先发布一个 AuthenticationEventPublisher 。 Spring Security 的 DefaultAuthenticationEventPublisher 可能会很好：
+	 *                        @Bean
+	 * 						public AuthenticationEventPublisher authenticationEventPublisher
+	 * 						        (ApplicationEventPublisher applicationEventPublisher) {
+	 * 						    return new DefaultAuthenticationEventPublisher(applicationEventPublisher);
+	 * 						}
+	 *		然后，您可以使用 Spring 的 @EventListener 支持：
+	 *                        @Component
+	 * 			public class AuthenticationEvents {    * 	@EventListener
+	 * 			    public void onSuccess(AuthenticationSuccessEvent success) {
+	 * 					// ...
+	 * 			    }
+	 *
+	 * 			    @EventListener
+	 * 			    public void onFailure(AbstractAuthenticationFailureEvent failures) {
+	 * 					// ...
+	 * 			    }
+	 * 			}
+	 *		虽然类似于 AuthenticationSuccessHandler 和 AuthenticationFailureHandler ，但它们很好，因为它们可以独立于 servlet API 使用。
+	 *		为此，您可能希望通过 setAdditionalExceptionMappings 方法向发布者提供额外的映射：
+	 *                        @Bean
+	 * 							public AuthenticationEventPublisher authenticationEventPublisher
+	 * 							        (ApplicationEventPublisher applicationEventPublisher) {
+	 * 							    Map<Class<? extends AuthenticationException>,
+	 * 							        Class<? extends AbstractAuthenticationFailureEvent>> mapping =
+	 * 							            Collections.singletonMap(FooException.class, FooEvent.class);
+	 * 							    AuthenticationEventPublisher authenticationEventPublisher =
+	 * 							        new DefaultAuthenticationEventPublisher(applicationEventPublisher);
+	 * 							    authenticationEventPublisher.setAdditionalExceptionMappings(mapping);
+	 * 							    return authenticationEventPublisher;
+	 * 							}
+	 * */
+	/**
+	 * 看到这里 https://docs.spring.io/spring-security/reference/5.8/servlet/authorization/index.html
 	 * */
 	public static void main(String[] args) throws Exception {
 		startTomcat();
 	}
+
 	public static void startTomcat() throws Exception {
 		// 创建内嵌的Tomcat
 		Tomcat tomcatServer = new Tomcat();
@@ -476,5 +566,49 @@ public class Main {
 		});
 		thread.setDaemon(false);
 		thread.start();
+	}
+
+	@Bean
+	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+		http
+
+				.sessionManagement((session) -> session
+						// 如果您不想创建会话，可以使用 SessionCreationPolicy.STATELESS
+						.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+						//	自定义无效会话策略
+						//.invalidSessionStrategy(new MyCustomInvalidSessionStrategy())
+				)
+				// 将 HTTP Basic 身份验证存储在 HttpSession (以上内容也适用于其他身份验证机制，例如 Bearer Token Authentication )
+				.httpBasic((basic) -> basic
+						.addObjectPostProcessor(new ObjectPostProcessor<BasicAuthenticationFilter>() {
+							@Override
+							public <O extends BasicAuthenticationFilter> O postProcess(O filter) {
+								filter.setSecurityContextRepository(new HttpSessionSecurityContextRepository());
+								return filter;
+							}
+						})
+				)
+				// 配置并发会话控制
+				.sessionManagement(session -> session
+						.maximumSessions(1) // 这将防止用户多次登录 - 第二次登录将导致第一次登录无效。
+						.maxSessionsPreventsLogin(true)     // 您通常希望阻止第二次登录，
+				)
+				//				会话会自行过期，无需执行任何操作即可确保删除安全上下文。也就是说，Spring Security 可以检测会话何时过期并采取您指示的特定操作。例如，当用户使用已过期的会话发出请求时，您可能希望重定向到特定端点。这是通过 HttpSecurity 中的
+				.sessionManagement(session -> session
+						.invalidSessionUrl("/invalidSession")
+				)
+				// 您可以在注销时显式删除 JSESSIONID cookie，例如通过在注销处理程序中使用 Clear-Site-Data 标头：
+				.logout((logout) -> logout
+						.addLogoutHandler(new HeaderWriterLogoutHandler(new ClearSiteDataHeaderWriter(COOKIES)))
+				)
+		;
+
+		return http.build();
+	}
+
+	@Bean
+	public HttpSessionEventPublisher httpSessionEventPublisher() {
+//		如果您希望限制单个用户登录到您的应用程序的能力，Spring Security 通过以下简单的添加支持开箱即用。首先，您需要将以下侦听器添加到您的配置中，以保持 Spring Security 更新有关会话生命周期事件的信息：
+		return new HttpSessionEventPublisher();
 	}
 }
