@@ -2,6 +2,10 @@
 package cn.haitaoss;
 
 import java.io.File;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.security.acl.Permission;
+import java.util.List;
 
 import org.apache.catalina.WebResourceRoot;
 import org.apache.catalina.connector.Connector;
@@ -14,10 +18,14 @@ import org.apache.coyote.http11.Http11NioProtocol;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PostFilter;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.config.annotation.ObjectPostProcessor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.parameters.P;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.SecurityFilterChain;
@@ -491,26 +499,26 @@ public class Main {
 	 *		对于成功或失败的每个身份验证，分别触发 AuthenticationSuccessEvent 或 AbstractAuthenticationFailureEvent 。
 	 *		要侦听这些事件，您必须首先发布一个 AuthenticationEventPublisher 。 Spring Security 的 DefaultAuthenticationEventPublisher 可能会很好：
 	 *                        @Bean
-	 * 						public AuthenticationEventPublisher authenticationEventPublisher
+	 *                        public AuthenticationEventPublisher authenticationEventPublisher
 	 * 						        (ApplicationEventPublisher applicationEventPublisher) {
 	 * 						    return new DefaultAuthenticationEventPublisher(applicationEventPublisher);
-	 * 						}
+	 *                        }
 	 *		然后，您可以使用 Spring 的 @EventListener 支持：
 	 *                        @Component
-	 * 			public class AuthenticationEvents {    * 	@EventListener
+	 *            public class AuthenticationEvents {    * 	@EventListener
 	 * 			    public void onSuccess(AuthenticationSuccessEvent success) {
 	 * 					// ...
-	 * 			    }
+	 *                }
 	 *
-	 * 			    @EventListener
-	 * 			    public void onFailure(AbstractAuthenticationFailureEvent failures) {
+	 *                @EventListener
+	 *                public void onFailure(AbstractAuthenticationFailureEvent failures) {
 	 * 					// ...
-	 * 			    }
-	 * 			}
+	 *                }
+	 *            }
 	 *		虽然类似于 AuthenticationSuccessHandler 和 AuthenticationFailureHandler ，但它们很好，因为它们可以独立于 servlet API 使用。
 	 *		为此，您可能希望通过 setAdditionalExceptionMappings 方法向发布者提供额外的映射：
 	 *                        @Bean
-	 * 							public AuthenticationEventPublisher authenticationEventPublisher
+	 *                            public AuthenticationEventPublisher authenticationEventPublisher
 	 * 							        (ApplicationEventPublisher applicationEventPublisher) {
 	 * 							    Map<Class<? extends AuthenticationException>,
 	 * 							        Class<? extends AbstractAuthenticationFailureEvent>> mapping =
@@ -519,11 +527,337 @@ public class Main {
 	 * 							        new DefaultAuthenticationEventPublisher(applicationEventPublisher);
 	 * 							    authenticationEventPublisher.setAdditionalExceptionMappings(mapping);
 	 * 							    return authenticationEventPublisher;
-	 * 							}
+	 *                            }
 	 * */
 	/**
-	 * 看到这里 https://docs.spring.io/spring-security/reference/5.8/servlet/authorization/index.html
+	 * Authorization
+	 * 		Spring Security 中的高级授权功能是其流行的最引人注目的原因之一。无论您选择如何进行身份验证 - 无论是使用 Spring Security 提供的机制和提供者，还是与容器或其他非 Spring Security 身份验证机构集成 - 您都会发现授权服务可以在您的应用程序中以一致且简单的方式使用方式。
+	 * 		在这一部分中，我们将探索在第一部分中介绍的不同的 AbstractSecurityInterceptor 实现。然后我们继续探索如何通过使用域访问控制列表来微调授权。
+	 *
+	 * Authorization Architecture 授权架构
+	 * 		Authentication ，讨论了所有 Authentication 实现如何存储 GrantedAuthority 对象的列表。这些代表已授予委托人的权限。 GrantedAuthority 对象由 AuthenticationManager 插入到 Authentication 对象中，随后在做出授权决定时由 AuthorizationManager 读取。
+	 *
+	 * 		Pre-Invocation Handling 调用前处理
+	 * 			Spring Security 提供拦截器来控制对安全对象（例如方法调用或 Web 请求）的访问。关于是否允许调用继续的调用前决定由 AccessDecisionManager 做出。
+	 *
+	 * 		The AuthorizationManager 授权管理器
+	 *			AuthorizationManager 取代了 AccessDecisionManager 和 AccessDecisionVoter 。
+	 *			鼓励自定义 AccessDecisionManager 或 AccessDecisionVoter 的应用程序更改为使用 AuthorizationManager 。
+	 *			AuthorizationManager 由 AuthorizationFilter 调用并负责做出最终的访问控制决策。 AuthorizationManager 接口包含两个方法：
+	 *				AuthorizationDecision check(Supplier<Authentication> authentication, Object secureObject);
+	 * 				default AuthorizationDecision verify(Supplier<Authentication> authentication, Object secureObject)
+	 * 				        throws AccessDeniedException {
+	 * 				    // ...
+	 *                }
+	 * 			实际安全对象调用中的那些参数。例如，假设安全对象是 MethodInvocation 。在 MethodInvocation 中查询任何 Customer 参数很容易，然后在 AuthorizationManager 中实施某种安全逻辑以确保允许委托人对该客户进行操作。如果授予访问权限，实现应返回正值 AuthorizationDecision ，如果访问被拒绝，则返回负值 AuthorizationDecision ，如果放弃做出决定，则返回空值 AuthorizationDecision 。
+	 * 			verify 调用 check ，随后在 AuthorizationDecision 为负数的情况下抛出 AccessDeniedException 。
+	 *
+	 * 		Delegate-based AuthorizationManager Implementations
+	 * 			虽然用户可以实现自己的 AuthorizationManager 来控制授权的所有方面，但 Spring Security 附带了一个委托 AuthorizationManager 可以与个人 AuthorizationManager 协作。
+	 * 			RequestMatcherDelegatingAuthorizationManager 会将请求与最合适的 Delegate AuthorizationManager 匹配。对于方法安全，您可以使用 AuthorizationManagerBeforeMethodInterceptor 和 AuthorizationManagerAfterMethodInterceptor 。
+	 * 			使用这种方法，可以轮询 AuthorizationManager 实现的组合以做出授权决定。
+	 * 			Authorization Manager Implementations https://docs.spring.io/spring-security/reference/5.8/_images/servlet/authorization/authorizationhierarchy.png
+	 *
+	 *		AuthorityAuthorizationManager 权限授权管理器
+	 *			Spring Security 提供的最常见的 AuthorizationManager 是 AuthorityAuthorizationManager 。它配置了一组给定的权限以在当前 Authentication 上查找。如果 Authentication 包含任何已配置的权限，它将返回肯定的 AuthorizationDecision 。否则它将返回负值 AuthorizationDecision 。
+	 *
+	 *		AuthenticatedAuthorizationManager
+	 *			另一位 manager 是 AuthenticatedAuthorizationManager 。它可用于区分匿名用户、完全身份验证用户和记住我身份验证用户。许多站点允许在记住我身份验证的情况下进行某些有限的访问，但要求用户通过登录来确认其身份以获得完全访问权限。
+	 *
+	 *		Custom Authorization Managers 自定义授权管理器
+	 *			显然，您还可以实现一个自定义的 AuthorizationManager ，您可以在其中放入您想要的任何访问控制逻辑。它可能特定于您的应用程序（与业务逻辑相关），或者它可能实现一些安全管理逻辑。例如，您可以创建一个可以查询 Open Policy Agent 或您自己的授权数据库的实现。
+	 *
+	 *		Hierarchical Roles 分层角色
+	 *			应用程序中的特定角色应该自动“包含”其他角色是一个常见的要求。例如，在具有“管理员”和“用户”角色概念的应用程序中，您可能希望管理员能够执行普通用户可以执行的所有操作。为此，您可以确保所有管理员用户也被分配了“用户”角色。或者，您可以修改每个需要“用户”角色的访问约束，以同时包含“管理员”角色。如果您的应用程序中有很多不同的角色，这可能会变得非常复杂。
+	 *			角色层次结构的使用允许您配置哪些角色（或权限）应包括其他角色。 Spring Security 的 RoleVoter 的扩展版本， RoleHierarchyVoter 配置了 RoleHierarchy ，它从中获取分配给用户的所有“可达权限”。典型的配置可能如下所示：
+	 *
+	 *
 	 * */
+	/**
+	 * 可以看到权限的配置方式，没细看。 https://docs.spring.io/spring-security/reference/5.8/servlet/authorization/authorize-http-requests.html
+	 * Authorize HttpServletRequests with AuthorizationFilter
+	 * 		AuthorizationFilter 取代 FilterSecurityInterceptor 。为了保持向后兼容， FilterSecurityInterceptor 保持默认。本节讨论 AuthorizationFilter 的工作原理以及如何覆盖默认配置。
+	 * 		AuthorizationFilter 为 HttpServletRequest 提供授权。它作为安全过滤器之一插入到 FilterChainProxy 中。
+	 * 		您可以在声明 SecurityFilterChain 时覆盖默认值。不要使用 authorizeRequests ，而是使用 authorizeHttpRequests ，如下所示：
+	 *                        @Bean
+	 *                            SecurityFilterChain web(HttpSecurity http) throws AuthenticationException {
+	 * 							    http
+	 * 							        .authorizeHttpRequests((authorize) -> authorize
+	 * 							            .anyRequest().authenticated();
+	 * 							        )
+	 * 							        // ...
+	 *
+	 * 							    return http.build();
+	 *                            }
+	 *		当使用 authorizeHttpRequests 代替 authorizeRequests 时，则使用 AuthorizationFilter 代替 FilterSecurityInterceptor
+	 *		我们可以通过按优先顺序添加更多规则来配置 Spring Security 以具有不同的规则。
+	 *                        @Bean
+	 *                        SecurityFilterChain web(HttpSecurity http) throws Exception {
+	 * 							http
+	 * 								// ...
+	 * 								.authorizeHttpRequests(authorize -> authorize
+	 * 									.requestMatchers("/resources/**", "/signup", "/about").permitAll()
+	 * 									.requestMatchers("/admin/**").hasRole("ADMIN")
+	 * 									.requestMatchers("/db/**").access(new WebExpressionAuthorizationManager("hasRole('ADMIN') and hasRole('DBA')"))
+	 * 									// .requestMatchers("/db/**").access(AuthorizationManagers.allOf(AuthorityAuthorizationManager.hasRole("ADMIN"), AuthorityAuthorizationManager.hasRole("DBA")))
+	 * 									.anyRequest().denyAll()
+	 * 								);
+	 *
+	 * 							return http.build();
+	 *                        }
+	 *		您可以通过构建自己的 RequestMatcherDelegatingAuthorizationManager 来采用基于 bean 的方法
+	 *                        @Bean
+	 *                        SecurityFilterChain web(HttpSecurity http, AuthorizationManager<RequestAuthorizationContext> access)
+	 * 						        throws AuthenticationException {
+	 * 						    http
+	 * 						        .authorizeHttpRequests((authorize) -> authorize
+	 * 						            .anyRequest().access(access)
+	 * 						        )
+	 * 						        // ...
+	 *
+	 * 						    return http.build();
+	 *                        }
+	 *
+	 *                        @Bean
+	 *                        AuthorizationManager<RequestAuthorizationContext> requestMatcherAuthorizationManager(HandlerMappingIntrospector introspector) {
+	 * 						    MvcRequestMatcher.Builder mvcMatcherBuilder = new MvcRequestMatcher.Builder(introspector);
+	 * 						    RequestMatcher permitAll =
+	 * 						            new AndRequestMatcher(
+	 * 						                    mvcMatcherBuilder.pattern("/resources/**"),
+	 * 						                    mvcMatcherBuilder.pattern("/signup"),
+	 * 						                    mvcMatcherBuilder.pattern("/about"));
+	 * 						    RequestMatcher admin = mvcMatcherBuilder.pattern("/admin/**");
+	 * 						    RequestMatcher db = mvcMatcherBuilder.pattern("/db/**");
+	 * 						    RequestMatcher any = AnyRequestMatcher.INSTANCE;
+	 * 						    AuthorizationManager<HttpServletRequest> manager = RequestMatcherDelegatingAuthorizationManager.builder()
+	 * 						            .add(permitAll, (context) -> new AuthorizationDecision(true))
+	 * 						            .add(admin, AuthorityAuthorizationManager.hasRole("ADMIN"))
+	 * 						            .add(db, AuthorityAuthorizationManager.hasRole("DBA"))
+	 * 						            .add(any, new AuthenticatedAuthorizationManager())
+	 * 						            .build();
+	 * 						    return (context) -> manager.check(context.getRequest());
+	 *                        }
+	 *		默认情况下， AuthorizationFilter 不适用于 DispatcherType.ERROR 和 DispatcherType.ASYNC 。我们可以使用 shouldFilterAllDispatcherTypes 方法配置 Spring Security 以将授权规则应用于所有调度程序类型：
+	 *                        @Bean
+	 *                        SecurityFilterChain web(HttpSecurity http) throws Exception {
+	 * 						    http
+	 * 						        .authorizeHttpRequests((authorize) -> authorize
+	 * 						            .shouldFilterAllDispatcherTypes(true)
+	 * 						            .anyRequest.authenticated()
+	 * 						        )
+	 * 						        // ...
+	 *
+	 * 						    return http.build();
+	 *                        }
+	 * 		现在，由于授权规则适用于所有调度程序类型，您可以更好地控制它们的授权。例如，您可能希望将 shouldFilterAllDispatcherTypes 配置为 true 但不对调度程序类型为 ASYNC 或 FORWARD 的请求应用授权。
+	 *                        @Bean
+	 *                            SecurityFilterChain web(HttpSecurity http) throws Exception {
+	 * 							    http
+	 * 							        .authorizeHttpRequests((authorize) -> authorize
+	 * 							            .shouldFilterAllDispatcherTypes(true)
+	 * 							            .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.FORWARD).permitAll()
+	 * 							            .anyRequest().authenticated()
+	 * 							        )
+	 * 							        // ...
+	 *
+	 * 							    return http.build();
+	 *                            }
+	 *
+	 *		如果您想使用特定的 RequestMatcher ，只需将实现传递给 securityMatcher 和/或 requestMatcher 方法：
+	 *			import static org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher; (1)
+	 * import static org.springframework.security.web.util.matcher.RegexRequestMatcher.regexMatcher;
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
+	 * */
+	/**
+	 * Authorize HttpServletRequest with FilterSecurityInterceptor
+	 *
+	 * 	FilterSecurityInterceptor 正在被 AuthorizationFilter 替换。了解即可
+	 *                @Bean
+	 *                public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+	 * 					http
+	 * 						// ...
+	 * 						.authorizeRequests(authorize -> authorize
+	 * 							.anyRequest().authenticated()
+	 * 						);
+	 * 					return http.build();
+	 *                }
+	 * */
+	/**
+	 * Expression-Based Access Control 基于表达式的访问控制
+	 * 		Spring Security 使用 Spring EL 来支持表达式，根对象是 SecurityExpressionRoot，看根对象就知道 SpEL 表达式支持那些内置属性和方法了
+	 *
+	 * 		如果您希望扩展可用的表达式，您可以轻松地引用您公开的任何 Spring Bean。例如，假设您有一个名为 webSecurity 的 Bean，其中包含以下方法签名：
+	 * 		http
+	 *     .authorizeHttpRequests(authorize -> authorize
+	 *         .requestMatchers("/user/**").access(new WebExpressionAuthorizationManager("@webSecurity.check(authentication,request)"))
+	 *         ...
+	 *     )
+	 *
+	 *     http
+	 * 		.authorizeHttpRequests(authorize -> authorize
+	 * 			.requestMatchers("/user/{userId}/**").access(new WebExpressionAuthorizationManager("@webSecurity.checkUserId(authentication,#userId)"))
+	 * 			...
+	 * 		);
+	 *
+	 *        @PreAuthorize 、 @PreFilter 、 @PostAuthorize 和 @PostFilter
+	 * 		主体的使用demo 看官方文档把：https://docs.spring.io/spring-security/reference/5.8/servlet/authorization/expression-based.html
+	 * */
+	/**
+	 * Method Security
+	 * 	从 2.0 版开始，Spring Security 大大改进了对向服务层方法添加安全性的支持。它支持 JSR-250 注释安全性以及框架的原始 @Secured 注释。从 3.0 开始，您还可以使用新的基于表达式的注释。您可以将安全性应用于单个 bean，使用 intercept-methods 元素来装饰 bean 声明，或者您可以使用 AspectJ 样式切入点保护整个服务层中的多个 bean
+	 *
+	 *    @EnableMethodSecurity 和 @EnableGlobalMethodSecurity
+	 * 	在 Spring Security 5.6 中，我们可以在任何 @Configuration 实例上使用 @EnableMethodSecurity 注解来启用基于注解的安全性。这在很多方面改进了 @EnableGlobalMethodSecurity：
+	 *
+	 * 	Spring Security 的 @PreAuthorize 、 @PostAuthorize 、 @PreFilter 和 @PostFilter 附带了丰富的基于表达式的支持。
+	 * 	如果您需要自定义处理表达式的方式，您可以公开一个自定义的 MethodSecurityExpressionHandler
+	 *        @Bean
+	 *             static MethodSecurityExpressionHandler methodSecurityExpressionHandler() {
+	 *			 	DefaultMethodSecurityExpressionHandler handler = new DefaultMethodSecurityExpressionHandler();
+	 *			 	handler.setTrustResolver(myCustomTrustResolver);
+	 *			 	return handler;
+	 *             }
+	 *		注：我们使用 static 方法公开 MethodSecurityExpressionHandler 以确保Spring 在它初始化Spring Security 的方法安全 @Configuration 类之前发布它
+	 *
+	 *	您可以通过公开 GrantedAuthorityDefaults bean 将授权规则配置为使用不同的前缀，如下所示：
+	 *        @Bean
+	 *         static GrantedAuthorityDefaults grantedAuthorityDefaults() {
+	 *		 	return new GrantedAuthorityDefaults("MYPREFIX_");
+	 *         }
+		 * */
+	/**
+	 * Authorization Events 授权事件
+	 * 	对于每个被拒绝的授权，都会触发一个 AuthorizationDeniedEvent 。此外，可以为授予的授权触发和 AuthorizationGrantedEvent 。
+	 * 	要侦听这些事件，您必须首先发布一个 AuthorizationEventPublisher 。
+	 * 	Spring Security 的 SpringAuthorizationEventPublisher 可能会很好。它使用 Spring 的 ApplicationEventPublisher 来发布授权事件：
+	 *                @Bean
+	 * 					public AuthorizationEventPublisher authorizationEventPublisher
+	 * 					        (ApplicationEventPublisher applicationEventPublisher) {
+	 * 					    return new SpringAuthorizationEventPublisher(applicationEventPublisher);
+	 * 					}
+	 * 然后，您可以使用 Spring 的 @EventListener 支持：
+	 *                @Component
+	 * 				public class AuthenticationEvents {
+	 *
+	 * 				    @EventListener
+	 * 				    public void onFailure(AuthorizationDeniedEvent failure) {
+	 * 						// ...
+	 * 				    }
+	 * 				}
+	 * */
+	/**
+	 * 没有细看的内容，用到再说吧，先了解整体框架的实现逻辑，后面的内容只是锦上添花而已
+	 *
+	 * Spring Security 提供全面的 OAuth 2 支持。本节讨论如何将 OAuth 2 集成到基于 servlet 的应用程序中。
+	 * Spring Security 提供全面的 SAML 2 支持。本节讨论如何将 SAML 2 集成到基于 servlet 的应用程序中。
+	 * 本节讨论 Spring Security 对 servlet 环境的跨站请求伪造 (CSRF) 支持。
+	 * */
+	/**
+	 * Spring MVC Integration
+	 * 从 Spring Security 4.0 开始，不推荐使用 @EnableWebMvcSecurity 。替换为 @EnableWebSecurity ，它将根据类路径确定添加 Spring MVC 功能。
+	 * 要启用 Spring Security 与 Spring MVC 的集成，请将 @EnableWebSecurity 注释添加到您的配置中。
+	 * 		注：Spring Security 使用 Spring MVC 的 WebMvcConfigurer 提供配置。这意味着如果您使用更高级的选项，比如直接与 WebMvcConfigurationSupport 集成，那么您将需要手动提供 Spring Security 配置。
+	 *
+	 * MvcRequestMatcher
+	 * 		Spring Security 提供了与 Spring MVC 如何匹配带有 MvcRequestMatcher 的 URL 的深度集成。这有助于确保您的安全规则与用于处理您的请求的逻辑相匹配。
+	 * 		使用 Spring MVC 时的一个常见要求是指定 servlet 路径属性，因为您可以使用 MvcRequestMatcher.Builder 创建多个共享相同 servlet 路径的 MvcRequestMatcher 实例：
+	 *                        @Bean
+	 * 						public SecurityFilterChain filterChain(HttpSecurity http, HandlerMappingIntrospector introspector) throws Exception {
+	 * 							MvcRequestMatcher.Builder mvcMatcherBuilder = new MvcRequestMatcher.Builder(introspector).servletPath("/path");
+	 * 							http
+	 * 								.authorizeHttpRequests((authorize) -> authorize
+	 * 									.requestMatchers(mvcMatcherBuilder.pattern("/admin")).hasRole("ADMIN")
+	 * 									.requestMatchers(mvcMatcherBuilder.pattern("/user")).hasRole("USER")
+	 * 								);
+	 * 							return http.build();
+	 * 						}
+	 *
+	 *		SpringMVC 这么写。访问 /admin 和 /admin.html 都可以，所以如果写起来会很费劲，这时候就可以使用 MvcRequestMatcher 来解决这个问题
+	 *		幸运的是，当使用 requestMatchers DSL 方法时，如果 Spring Security 检测到 Spring MVC 在类路径中可用，它会自动创建一个 MvcRequestMatcher 。因此，它将通过使用 Spring MVC 匹配 URL 来保护 Spring MVC 将匹配的相同 URL。
+	 *
+	 *                @RequestMapping("/admin")
+	 * 				 public String admin() {}
+	 *
+	 * Spring Security 提供 AuthenticationPrincipalArgumentResolver 可以自动解析当前 Authentication.getPrincipal() 的Spring MVC 参数。通过使用 @EnableWebSecurity ，您将自动将其添加到您的 Spring MVC 配置中。如果您使用基于 XML 的配置，则必须
+	 * 		import org.springframework.security.core.annotation.AuthenticationPrincipal;
+	 * 		@RequestMapping("/messages/inbox")
+	 * 		public ModelAndView findMessagesForUser(@AuthenticationPrincipal CustomUser customUser) {
+	 * 		}
+	 *
+	 * Spring Security 提供 CsrfTokenArgumentResolver 可以自动解析当前 CsrfToken 的Spring MVC 参数。通过使用 @EnableWebSecurity ，您将自动将其添加到您的 Spring MVC 配置中。如果您使用基于 XML 的配置，则必须自己添加。
+	 * 		@RestController
+	 * 		public class CsrfController {
+	 *
+	 * 		       @RequestMapping("/csrf")
+	 * 		   public CsrfToken csrf(CsrfToken token) {
+	 * 				return token;
+	 * 		   }
+	 * 		}
+	 * */
+	public static interface TestSecurityAnnotation {
+		public interface BankService {
+
+			@Secured("IS_AUTHENTICATED_ANONYMOUSLY")
+			public Account readAccount(Long id);
+
+			@Secured("IS_AUTHENTICATED_ANONYMOUSLY")
+			public Account[] findAccounts();
+
+			@Secured("ROLE_TELLER")
+			public Account post(Account account, double amount);
+
+			class Account { }
+		}
+
+		@PreAuthorize("hasRole('USER')")
+		public void create(Contact contact);
+
+		@PreAuthorize("hasPermission(#contact, 'admin')")
+		public void deletePermission(Contact contact, String recipient, Permission permission);
+
+		@PreAuthorize("#c.name == authentication.name")
+		public void doSomething(@P("c") Contact contact);
+
+		@PreAuthorize("#contact.name == authentication.name")
+		public void doSomething2(Contact contact);
+
+		@PreAuthorize("hasRole('USER')")
+		@PostFilter("hasPermission(filterObject, 'read') or hasPermission(filterObject, 'admin')")
+		public List<Contact> getAll();
+
+		@Retention(RetentionPolicy.RUNTIME)
+		@PreAuthorize("#contact.name == authentication.name")
+		public @interface ContactPermission { }
+
+		public class Contact { }
+	}
+
 	public static void main(String[] args) throws Exception {
 		startTomcat();
 	}
@@ -573,8 +907,8 @@ public class Main {
 		http
 
 				.sessionManagement((session) -> session
-						// 如果您不想创建会话，可以使用 SessionCreationPolicy.STATELESS
-						.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+								// 如果您不想创建会话，可以使用 SessionCreationPolicy.STATELESS
+								.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
 						//	自定义无效会话策略
 						//.invalidSessionStrategy(new MyCustomInvalidSessionStrategy())
 				)
