@@ -55,19 +55,26 @@ class WebMvcSecurityConfiguration implements WebMvcConfigurer, ApplicationContex
 	private SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder
 			.getContextHolderStrategy();
 
+	/**
+	 * 扩展 MVC 会用到的参数解析器
+	 * @param argumentResolvers initially an empty list
+	 */
 	@Override
 	@SuppressWarnings("deprecation")
 	public void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers) {
+		// 处理有 @AuthenticationPrincipal 注解的参数
 		AuthenticationPrincipalArgumentResolver authenticationPrincipalResolver = new AuthenticationPrincipalArgumentResolver();
 		authenticationPrincipalResolver.setBeanResolver(this.beanResolver);
 		authenticationPrincipalResolver.setSecurityContextHolderStrategy(this.securityContextHolderStrategy);
 		argumentResolvers.add(authenticationPrincipalResolver);
 		argumentResolvers
 				.add(new org.springframework.security.web.bind.support.AuthenticationPrincipalArgumentResolver());
+		// 处理有 @CurrentSecurityContext 注解的参数
 		CurrentSecurityContextArgumentResolver currentSecurityContextArgumentResolver = new CurrentSecurityContextArgumentResolver();
 		currentSecurityContextArgumentResolver.setBeanResolver(this.beanResolver);
 		currentSecurityContextArgumentResolver.setSecurityContextHolderStrategy(this.securityContextHolderStrategy);
 		argumentResolvers.add(currentSecurityContextArgumentResolver);
+		// 处理 CsrfToken 类型的参数
 		argumentResolvers.add(new CsrfTokenArgumentResolver());
 	}
 
@@ -80,6 +87,7 @@ class WebMvcSecurityConfiguration implements WebMvcConfigurer, ApplicationContex
 	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
 		this.beanResolver = new BeanFactoryResolver(applicationContext.getAutowireCapableBeanFactory());
 		if (applicationContext.getBeanNamesForType(SecurityContextHolderStrategy.class).length == 1) {
+			// 获取容器中的 SecurityContextHolderStrategy
 			this.securityContextHolderStrategy = applicationContext.getBean(SecurityContextHolderStrategy.class);
 		}
 	}

@@ -102,17 +102,29 @@ public abstract class AbstractSecurityWebApplicationInitializer implements WebAp
 
 	@Override
 	public final void onStartup(ServletContext servletContext) {
+		// 预留的模板方法
 		beforeSpringSecurityFilterChain(servletContext);
+		// 存在 	configurationClasses
 		if (this.configurationClasses != null) {
 			AnnotationConfigWebApplicationContext rootAppContext = new AnnotationConfigWebApplicationContext();
 			rootAppContext.register(this.configurationClasses);
+			/**
+			 * 注册一个 Listener ，是用来触发 rootAppContext.refresh()
+			 * */
 			servletContext.addListener(new ContextLoaderListener(rootAppContext));
 		}
+		// 默认是 false
 		if (enableHttpSessionEventPublisher()) {
+			// 添加一个 Listener
 			servletContext.addListener("org.springframework.security.web.session.HttpSessionEventPublisher");
 		}
 		servletContext.setSessionTrackingModes(getSessionTrackingModes());
+		/**
+		 * 注册 DelegatingFilterProxy 到 servletContext 中，注册的 filterName 是 {@link AbstractSecurityWebApplicationInitializer#DEFAULT_FILTER_NAME}
+		 * 而  DelegatingFilterProxy.doFilter 其实是委托给 context.getName("springSecurityFilterChain",Filter.class) 执行
+		 * */
 		insertSpringSecurityFilterChain(servletContext);
+		// 预留的模板方法
 		afterSpringSecurityFilterChain(servletContext);
 	}
 
@@ -132,11 +144,13 @@ public abstract class AbstractSecurityWebApplicationInitializer implements WebAp
 	 */
 	private void insertSpringSecurityFilterChain(ServletContext servletContext) {
 		String filterName = DEFAULT_FILTER_NAME;
+		// DelegatingFilterProxy
 		DelegatingFilterProxy springSecurityFilterChain = new DelegatingFilterProxy(filterName);
 		String contextAttribute = getWebApplicationContextAttribute();
 		if (contextAttribute != null) {
 			springSecurityFilterChain.setContextAttribute(contextAttribute);
 		}
+		// 将 DelegatingFilterProxy 注册到 servletContext 中
 		registerFilter(servletContext, true, filterName, springSecurityFilterChain);
 	}
 

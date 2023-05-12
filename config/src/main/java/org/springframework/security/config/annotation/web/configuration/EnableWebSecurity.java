@@ -83,6 +83,12 @@ import org.springframework.security.web.SecurityFilterChain;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Documented
+/**
+ * WebSecurityConfiguration：
+ * SpringWebMvcImportSelector：
+ * OAuth2ImportSelector：不说
+ * HttpSecurityConfiguration：
+ * */
 @Import({ WebSecurityConfiguration.class, SpringWebMvcImportSelector.class, OAuth2ImportSelector.class,
 		HttpSecurityConfiguration.class })
 @EnableGlobalAuthentication
