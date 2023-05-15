@@ -293,6 +293,7 @@ public final class WebSecurity extends AbstractConfiguredSecurityBuilder<Filter,
 
 	@Override
 	protected Filter performBuild() throws Exception {
+		// 校验 securityFilterChainBuilders 不能是空
 		Assert.state(!this.securityFilterChainBuilders.isEmpty(),
 				() -> "At least one SecurityBuilder<? extends SecurityFilterChain> needs to be specified. "
 						+ "Typically this is done by exposing a SecurityFilterChain bean. "
@@ -301,24 +302,34 @@ public final class WebSecurity extends AbstractConfiguredSecurityBuilder<Filter,
 		int chainSize = this.ignoredRequests.size() + this.securityFilterChainBuilders.size();
 		List<SecurityFilterChain> securityFilterChains = new ArrayList<>(chainSize);
 		List<RequestMatcherEntry<List<WebInvocationPrivilegeEvaluator>>> requestMatcherPrivilegeEvaluatorsEntries = new ArrayList<>();
+		// 遍历 ignoredRequests
 		for (RequestMatcher ignoredRequest : this.ignoredRequests) {
 			WebSecurity.this.logger.warn("You are asking Spring Security to ignore " + ignoredRequest
 					+ ". This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.");
+			// 装饰成 DefaultSecurityFilterChain
 			SecurityFilterChain securityFilterChain = new DefaultSecurityFilterChain(ignoredRequest);
+			// 记录起来
 			securityFilterChains.add(securityFilterChain);
+			// 根据 securityFilterChain.getFilters() 筛选出 FilterSecurityInterceptor、AuthorizationFilter 用来构造 RequestMatcherEntry
 			requestMatcherPrivilegeEvaluatorsEntries
 					.add(getRequestMatcherPrivilegeEvaluatorsEntry(securityFilterChain));
 		}
+		// 遍历 securityFilterChainBuilders
 		for (SecurityBuilder<? extends SecurityFilterChain> securityFilterChainBuilder : this.securityFilterChainBuilders) {
+			// build
 			SecurityFilterChain securityFilterChain = securityFilterChainBuilder.build();
+			// 记录起来
 			securityFilterChains.add(securityFilterChain);
+			// 根据 securityFilterChain.getFilters() 筛选出 FilterSecurityInterceptor、AuthorizationFilter 用来构造 RequestMatcherEntry
 			requestMatcherPrivilegeEvaluatorsEntries
 					.add(getRequestMatcherPrivilegeEvaluatorsEntry(securityFilterChain));
 		}
 		if (this.privilegeEvaluator == null) {
+			// 默认用这个
 			this.privilegeEvaluator = new RequestMatcherDelegatingWebInvocationPrivilegeEvaluator(
 					requestMatcherPrivilegeEvaluatorsEntries);
 		}
+		// 装饰成 FilterChainProxy
 		FilterChainProxy filterChainProxy = new FilterChainProxy(securityFilterChains);
 		if (this.httpFirewall != null) {
 			filterChainProxy.setFirewall(this.httpFirewall);
@@ -326,17 +337,24 @@ public final class WebSecurity extends AbstractConfiguredSecurityBuilder<Filter,
 		if (this.requestRejectedHandler != null) {
 			filterChainProxy.setRequestRejectedHandler(this.requestRejectedHandler);
 		}
+		// 回调方法，默认是啥都没干
 		filterChainProxy.afterPropertiesSet();
 
 		Filter result = filterChainProxy;
+		// 开启了 debug
 		if (this.debugEnabled) {
 			this.logger.warn("\n\n" + "********************************************************************\n"
 					+ "**********        Security debugging is enabled.       *************\n"
 					+ "**********    This may include sensitive information.  *************\n"
 					+ "**********      Do not use in a production system!     *************\n"
 					+ "********************************************************************\n\n");
+			/**
+			 * 装饰成 DebugFilter。
+			 * 作用：先打印 info 日志输出命中的 Filter 信息，再委托给 filterChainProxy 执行
+			 * */
 			result = new DebugFilter(filterChainProxy);
 		}
+		// 回调方法
 		this.postBuildAction.run();
 		return result;
 	}
@@ -345,22 +363,29 @@ public final class WebSecurity extends AbstractConfiguredSecurityBuilder<Filter,
 			SecurityFilterChain securityFilterChain) {
 		List<WebInvocationPrivilegeEvaluator> privilegeEvaluators = new ArrayList<>();
 		for (Filter filter : securityFilterChain.getFilters()) {
+			// 是 FilterSecurityInterceptor 类型
 			if (filter instanceof FilterSecurityInterceptor) {
+				// 装饰成 DefaultWebInvocationPrivilegeEvaluator
 				DefaultWebInvocationPrivilegeEvaluator defaultWebInvocationPrivilegeEvaluator = new DefaultWebInvocationPrivilegeEvaluator(
 						(FilterSecurityInterceptor) filter);
 				defaultWebInvocationPrivilegeEvaluator.setServletContext(this.servletContext);
+				// 记录
 				privilegeEvaluators.add(defaultWebInvocationPrivilegeEvaluator);
 				continue;
 			}
+			// 是 AuthorizationFilter 类型
 			if (filter instanceof AuthorizationFilter) {
+				// 装饰成 AuthorizationManagerWebInvocationPrivilegeEvaluator
 				AuthorizationManager<HttpServletRequest> authorizationManager = ((AuthorizationFilter) filter)
 						.getAuthorizationManager();
 				AuthorizationManagerWebInvocationPrivilegeEvaluator evaluator = new AuthorizationManagerWebInvocationPrivilegeEvaluator(
 						authorizationManager);
 				evaluator.setServletContext(this.servletContext);
+				// 记录
 				privilegeEvaluators.add(evaluator);
 			}
 		}
+		// 构造出 RequestMatcherEntry
 		return new RequestMatcherEntry<>(securityFilterChain::matches, privilegeEvaluators);
 	}
 

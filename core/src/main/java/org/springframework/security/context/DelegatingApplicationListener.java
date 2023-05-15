@@ -40,10 +40,13 @@ public final class DelegatingApplicationListener implements ApplicationListener<
 		if (event == null) {
 			return;
 		}
+		// 遍历 listeners，将收到 event 发布给适配的 listener
 		for (SmartApplicationListener listener : this.listeners) {
 			Object source = event.getSource();
+			// 适配
 			if (source != null && listener.supportsEventType(event.getClass())
 					&& listener.supportsSourceType(source.getClass())) {
+				// 发布事件
 				listener.onApplicationEvent(event);
 			}
 		}

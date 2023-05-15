@@ -85,8 +85,12 @@ import org.springframework.security.web.SecurityFilterChain;
 @Documented
 /**
  * WebSecurityConfiguration：
+ * 		-
  * SpringWebMvcImportSelector：
- * OAuth2ImportSelector：不说
+ * 		- 扩展 HandlerMethodArgumentResolver，支持 @AuthenticationPrincipal、@CurrentSecurityContext、CsrfToken
+ * 		- 注册 CsrfRequestDataValueProcessor 到容器中
+ *
+ * OAuth2ImportSelector：用到在看
  * HttpSecurityConfiguration：
  * */
 @Import({ WebSecurityConfiguration.class, SpringWebMvcImportSelector.class, OAuth2ImportSelector.class,

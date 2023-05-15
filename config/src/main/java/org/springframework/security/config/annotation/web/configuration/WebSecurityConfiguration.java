@@ -37,6 +37,7 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.security.access.expression.SecurityExpressionHandler;
+import org.springframework.security.config.annotation.AbstractConfiguredSecurityBuilder;
 import org.springframework.security.config.annotation.ObjectPostProcessor;
 import org.springframework.security.config.annotation.SecurityConfigurer;
 import org.springframework.security.config.annotation.web.WebSecurityConfigurer;
@@ -84,6 +85,10 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 
 	@Bean
 	public static DelegatingApplicationListener delegatingApplicationListener() {
+		/**
+		 * 实现了 ApplicationListener<ApplicationEvent> 接口，
+		 * 会将收到的事件广播给适配的 ApplicationListener (DelegatingApplicationListener 内部的 ApplicationListener)
+		 * */
 		return new DelegatingApplicationListener();
 	}
 
@@ -104,24 +109,43 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 		boolean hasFilterChain = !this.securityFilterChains.isEmpty();
 		Assert.state(!(hasConfigurers && hasFilterChain),
 				"Found WebSecurityConfigurerAdapter as well as SecurityFilterChain. Please select just one.");
+		// 没有配置类 && 没有 FilterChain
 		if (!hasConfigurers && !hasFilterChain) {
+			// （是依赖注入得到的）
 			WebSecurityConfigurerAdapter adapter = this.objectObjectPostProcessor
-					.postProcess(new WebSecurityConfigurerAdapter() {
-					});
+					// 使用 objectObjectPostProcessor 加工 adapter
+					.postProcess(new WebSecurityConfigurerAdapter() {});
+			// 应用 adapter
 			this.webSecurity.apply(adapter);
 		}
+		// 遍历 securityFilterChains（是依赖注入得到的）
 		for (SecurityFilterChain securityFilterChain : this.securityFilterChains) {
+			// 添加 SecurityFilterChainBuilder
 			this.webSecurity.addSecurityFilterChainBuilder(() -> securityFilterChain);
 			for (Filter filter : securityFilterChain.getFilters()) {
 				if (filter instanceof FilterSecurityInterceptor) {
+					/**
+					 * 设置 FilterSecurityInterceptor。
+					 *
+					 * 注：这不是一个集合属性，所以后设置的 FilterSecurityInterceptor 会覆盖前面的
+					 * */
 					this.webSecurity.securityInterceptor((FilterSecurityInterceptor) filter);
 					break;
 				}
 			}
 		}
+		// 遍历 WebSecurityCustomizer 对 webSecurity 进行自定义（是依赖注入得到的）
 		for (WebSecurityCustomizer customizer : this.webSecurityCustomizers) {
 			customizer.customize(this.webSecurity);
 		}
+		/**
+		 * 生成 Filter 实例
+		 *
+		 * {@link AbstractConfiguredSecurityBuilder#doBuild()}
+		 * 		1. 回调 SecurityConfigurer#init
+		 * 		2. 回调 SecurityConfigurer#configure
+		 * 		3. 构造出实例对象
+		 * */
 		return this.webSecurity.build();
 	}
 
@@ -149,17 +173,27 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 	@Autowired(required = false)
 	public void setFilterChainProxySecurityConfigurer(ObjectPostProcessor<Object> objectPostProcessor,
 			ConfigurableListableBeanFactory beanFactory) throws Exception {
+		// 依赖 objectPostProcessor 加工得到 WebSecurity
 		this.webSecurity = objectPostProcessor.postProcess(new WebSecurity(objectPostProcessor));
 		if (this.debugEnabled != null) {
+			// 设置 debug 属性
 			this.webSecurity.debug(this.debugEnabled);
 		}
+		// 从 BeanFactory 中获取 WebSecurityConfigurer 类型的bean
 		List<SecurityConfigurer<Filter, WebSecurity>> webSecurityConfigurers = new AutowiredWebSecurityConfigurersIgnoreParents(
 				beanFactory).getWebSecurityConfigurers();
+		// 排序
 		webSecurityConfigurers.sort(AnnotationAwareOrderComparator.INSTANCE);
 		Integer previousOrder = null;
 		Object previousConfig = null;
+		// 遍历
 		for (SecurityConfigurer<Filter, WebSecurity> config : webSecurityConfigurers) {
 			Integer order = AnnotationAwareOrderComparator.lookupOrder(config);
+			/**
+			 * 校验，不允许有相同的 order 值。
+			 *
+			 * 注：因为前面已经排序过了，所以相同值肯定是相邻的
+			 * */
 			if (previousOrder != null && previousOrder.equals(order)) {
 				throw new IllegalStateException("@Order on WebSecurityConfigurers must be unique. Order of " + order
 						+ " was already used on " + previousConfig + ", so it cannot be used on " + config + " too.");
@@ -167,9 +201,14 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 			previousOrder = order;
 			previousConfig = config;
 		}
+		// 遍历
 		for (SecurityConfigurer<Filter, WebSecurity> webSecurityConfigurer : webSecurityConfigurers) {
+			/**
+			 * 将 webSecurityConfigurer 记录到集合中
+			 * */
 			this.webSecurity.apply(webSecurityConfigurer);
 		}
+		// 设置为属性
 		this.webSecurityConfigurers = webSecurityConfigurers;
 	}
 
@@ -185,14 +224,21 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 
 	@Bean
 	public static BeanFactoryPostProcessor conversionServicePostProcessor() {
+		/**
+		 * 是 BeanFactoryPostProcessor 接口的实现类，用来给 BeanFactory 设置 类型转换的东西
+		 * 		String ---> RSAPrivateKey
+		 * 		String ---> RSAPublicKey
+		 * */
 		return new RsaKeyConversionServicePostProcessor();
 	}
 
 	@Override
 	public void setImportMetadata(AnnotationMetadata importMetadata) {
+		// 获取 @EnableWebSecurity 的元数据
 		Map<String, Object> enableWebSecurityAttrMap = importMetadata
 				.getAnnotationAttributes(EnableWebSecurity.class.getName());
 		AnnotationAttributes enableWebSecurityAttrs = AnnotationAttributes.fromMap(enableWebSecurityAttrMap);
+		// 拿到 debug 注解属性值，设置给 webSecurity
 		this.debugEnabled = enableWebSecurityAttrs.getBoolean("debug");
 		if (this.webSecurity != null) {
 			this.webSecurity.debug(this.debugEnabled);

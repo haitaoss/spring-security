@@ -105,7 +105,7 @@ public class HelloWeb {
 		}
 	}
 
-	public class SecurityWebApplicationInitializer
+	/*public class SecurityWebApplicationInitializer
 			extends AbstractSecurityWebApplicationInitializer {
 
 	}
@@ -129,5 +129,5 @@ public class HelloWeb {
 		}
 
 		// ... other overrides ...
-	}
+	}*/
 }

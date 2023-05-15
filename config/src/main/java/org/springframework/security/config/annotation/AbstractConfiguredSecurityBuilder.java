@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.util.Assert;
 import org.springframework.web.filter.DelegatingFilterProxy;
@@ -177,7 +178,12 @@ public abstract class AbstractConfiguredSecurityBuilder<O, B extends SecurityBui
 		Assert.notNull(configurer, "configurer cannot be null");
 		Class<? extends SecurityConfigurer<O, B>> clazz = (Class<? extends SecurityConfigurer<O, B>>) configurer
 				.getClass();
+		/**
+		 * 生命周期在这里；INITIALIZING ---> CONFIGURING ---> BUILDING ---> BUILT
+		 * {@link AbstractConfiguredSecurityBuilder#doBuild()}
+		 * */
 		synchronized (this.configurers) {
+			// 已经配置完了(说明过了初始化阶段)，就不能添加 configurer 了，直接报错
 			if (this.buildState.isConfigured()) {
 				throw new IllegalStateException("Cannot apply " + configurer + " to already built object");
 			}
@@ -187,8 +193,11 @@ public abstract class AbstractConfiguredSecurityBuilder<O, B extends SecurityBui
 			}
 			configs = (configs != null) ? configs : new ArrayList<>(1);
 			configs.add(configurer);
+			// 添加到 configurers
 			this.configurers.put(clazz, configs);
+			// 是 初始中
 			if (this.buildState.isInitializing()) {
+				// 添加到 configurersAddedInInitializing
 				this.configurersAddedInInitializing.add(configurer);
 			}
 		}
@@ -236,6 +245,7 @@ public abstract class AbstractConfiguredSecurityBuilder<O, B extends SecurityBui
 		if (configs == null) {
 			return null;
 		}
+		// 只能有一个
 		Assert.state(configs.size() == 1,
 				() -> "Only one configurer expected for type " + clazz + ", but got " + configs);
 		return (C) configs.get(0);
@@ -295,13 +305,23 @@ public abstract class AbstractConfiguredSecurityBuilder<O, B extends SecurityBui
 	@Override
 	protected final O doBuild() throws Exception {
 		synchronized (this.configurers) {
+			// 初始化
 			this.buildState = BuildState.INITIALIZING;
+			// 预留的模板方法
 			beforeInit();
+			/**
+			 * 遍历设置的 List<SecurityConfigurer> ,回调 {@link SecurityConfigurer#init(SecurityBuilder)} 用来配置 this
+			 * */
 			init();
 			this.buildState = BuildState.CONFIGURING;
+			// 预留的模板方法
 			beforeConfigure();
+			/**
+			 * 遍历设置的 List<SecurityConfigurer> ,回调 {@link SecurityConfigurer#configure(SecurityBuilder)} 用来配置 this
+			 * */
 			configure();
 			this.buildState = BuildState.BUILDING;
+			// 生成实例
 			O result = performBuild();
 			this.buildState = BuildState.BUILT;
 			return result;
@@ -334,6 +354,7 @@ public abstract class AbstractConfiguredSecurityBuilder<O, B extends SecurityBui
 	@SuppressWarnings("unchecked")
 	private void init() throws Exception {
 		Collection<SecurityConfigurer<O, B>> configurers = getConfigurers();
+		// 遍历 SecurityConfigurer 用来配置 this
 		for (SecurityConfigurer<O, B> configurer : configurers) {
 			configurer.init((B) this);
 		}
@@ -346,6 +367,7 @@ public abstract class AbstractConfiguredSecurityBuilder<O, B extends SecurityBui
 	private void configure() throws Exception {
 		Collection<SecurityConfigurer<O, B>> configurers = getConfigurers();
 		for (SecurityConfigurer<O, B> configurer : configurers) {
+			// 回调 configurer
 			configurer.configure((B) this);
 		}
 	}

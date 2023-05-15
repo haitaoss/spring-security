@@ -64,9 +64,11 @@ public class RsaKeyConversionServicePostProcessor implements BeanFactoryPostProc
 
 	@Override
 	public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+		// beanFactory 设置了 ConversionService 就直接 return
 		if (hasUserDefinedConversionService(beanFactory)) {
 			return;
 		}
+		// 扩展
 		ConversionService service = beanFactory.getConversionService();
 		if (service instanceof ConverterRegistry) {
 			ConverterRegistry registry = (ConverterRegistry) service;

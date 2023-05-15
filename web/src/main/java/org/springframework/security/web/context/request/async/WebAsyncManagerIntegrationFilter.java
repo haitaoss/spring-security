@@ -51,14 +51,18 @@ public final class WebAsyncManagerIntegrationFilter extends OncePerRequestFilter
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
+		// 设置或者从 request 中拿到 WebAsyncManager
 		WebAsyncManager asyncManager = WebAsyncUtils.getAsyncManager(request);
+		// 拿出 SecurityContextCallableProcessingInterceptor
 		SecurityContextCallableProcessingInterceptor securityProcessingInterceptor = (SecurityContextCallableProcessingInterceptor) asyncManager
 				.getCallableInterceptor(CALLABLE_INTERCEPTOR_KEY);
 		if (securityProcessingInterceptor == null) {
 			SecurityContextCallableProcessingInterceptor interceptor = new SecurityContextCallableProcessingInterceptor();
 			interceptor.setSecurityContextHolderStrategy(this.securityContextHolderStrategy);
+			// 注册
 			asyncManager.registerCallableInterceptor(CALLABLE_INTERCEPTOR_KEY, interceptor);
 		}
+		// 放行
 		filterChain.doFilter(request, response);
 	}
 

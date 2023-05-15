@@ -3219,6 +3219,7 @@ public final class HttpSecurity extends AbstractConfiguredSecurityBuilder<Defaul
 	@Override
 	protected void beforeConfigure() throws Exception {
 		if (this.authenticationManager != null) {
+			// 存到 Map 中
 			setSharedObject(AuthenticationManager.class, this.authenticationManager);
 		}
 		else {
@@ -3229,17 +3230,24 @@ public final class HttpSecurity extends AbstractConfiguredSecurityBuilder<Defaul
 	@SuppressWarnings("unchecked")
 	@Override
 	protected DefaultSecurityFilterChain performBuild() {
+		// 获取 ExpressionUrlAuthorizationConfigurer 类型的 configurer
 		ExpressionUrlAuthorizationConfigurer<?> expressionConfigurer = getConfigurer(
 				ExpressionUrlAuthorizationConfigurer.class);
+		// 获取 AuthorizeHttpRequestsConfigurer 类型的 configurer
 		AuthorizeHttpRequestsConfigurer<?> httpConfigurer = getConfigurer(AuthorizeHttpRequestsConfigurer.class);
+		// 设置了一个
 		boolean oneConfigurerPresent = expressionConfigurer == null ^ httpConfigurer == null;
+		// expressionConfigurer 和 httpConfigurer 都设置了 就报错
 		Assert.state((expressionConfigurer == null && httpConfigurer == null) || oneConfigurerPresent,
 				"authorizeHttpRequests cannot be used in conjunction with authorizeRequests. Please select just one.");
+		// 排序
 		this.filters.sort(OrderComparator.INSTANCE);
 		List<Filter> sortedFilters = new ArrayList<>(this.filters.size());
 		for (Filter filter : this.filters) {
+			//	filters 记录的时候 OrderedFilter 类型，所以这里强转一下
 			sortedFilters.add(((OrderedFilter) filter).filter);
 		}
+		// 构造出 DefaultSecurityFilterChain
 		return new DefaultSecurityFilterChain(this.requestMatcher, sortedFilters);
 	}
 

@@ -69,27 +69,35 @@ public final class DebugFilter implements Filter {
 
 	private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws IOException, ServletException {
+		// 获取适配的 Filter
 		List<Filter> filters = getFilters(request);
+		// 输出日志
 		this.logger.info("Request received for " + request.getMethod() + " '" + UrlUtils.buildRequestUrl(request)
 				+ "':\n\n" + request + "\n\n" + "servletPath:" + request.getServletPath() + "\n" + "pathInfo:"
 				+ request.getPathInfo() + "\n" + "headers: \n" + formatHeaders(request) + "\n\n"
 				+ formatFilters(filters));
 		if (request.getAttribute(ALREADY_FILTERED_ATTR_NAME) == null) {
+			// 装饰 request 在委托给 filterChainProxy 执行
 			invokeWithWrappedRequest(request, response, filterChain);
 		}
 		else {
+			// 委托给 filterChainProxy 执行
 			this.filterChainProxy.doFilter(request, response, filterChain);
 		}
 	}
 
 	private void invokeWithWrappedRequest(HttpServletRequest request, HttpServletResponse response,
 			FilterChain filterChain) throws IOException, ServletException {
+		// 设置属性
 		request.setAttribute(ALREADY_FILTERED_ATTR_NAME, Boolean.TRUE);
+		// 装饰一下
 		request = new DebugRequestWrapper(request);
 		try {
+			// 委托给 filterChainProxy 执行
 			this.filterChainProxy.doFilter(request, response, filterChain);
 		}
 		finally {
+			// 移除属性
 			request.removeAttribute(ALREADY_FILTERED_ATTR_NAME);
 		}
 	}

@@ -99,7 +99,7 @@ class HttpSecurityConfiguration {
 	}
 
 	@Bean(HTTPSECURITY_BEAN_NAME)
-	@Scope("prototype")
+	@Scope("prototype") // 原型的
 	HttpSecurity httpSecurity() throws Exception {
 		WebSecurityConfigurerAdapter.LazyPasswordEncoder passwordEncoder = new WebSecurityConfigurerAdapter.LazyPasswordEncoder(
 				this.context);
@@ -107,12 +107,18 @@ class HttpSecurityConfiguration {
 				this.objectPostProcessor, passwordEncoder);
 		authenticationBuilder.parentAuthenticationManager(authenticationManager());
 		authenticationBuilder.authenticationEventPublisher(getAuthenticationEventPublisher());
+		// new 一个 HttpSecurity
 		HttpSecurity http = new HttpSecurity(this.objectPostProcessor, authenticationBuilder, createSharedObjects());
 		WebAsyncManagerIntegrationFilter webAsyncManagerIntegrationFilter = new WebAsyncManagerIntegrationFilter();
 		webAsyncManagerIntegrationFilter.setSecurityContextHolderStrategy(this.securityContextHolderStrategy);
 		// @formatter:off
 		http
+			// 会添加 CsrfConfigurer
 			.csrf(withDefaults())
+			/**
+			 * 默认的 filter 。是用来设置、清空 securityContextHolderStrategy 中记录的 context
+			 * todo 看到这里
+			 * */
 			.addFilter(webAsyncManagerIntegrationFilter)
 			.exceptionHandling(withDefaults())
 			.headers(withDefaults())
@@ -124,6 +130,10 @@ class HttpSecurityConfiguration {
 			.apply(new DefaultLoginPageConfigurer<>());
 		http.logout(withDefaults());
 		// @formatter:on
+		/**
+		 * 读取 META-INF/spring.factories 文件 key是 `AbstractHttpConfigurer.class.getName()`
+		 * 添加到 http 中
+		 * */
 		applyDefaultConfigurers(http);
 		return http;
 	}
@@ -142,9 +152,11 @@ class HttpSecurityConfiguration {
 
 	private void applyDefaultConfigurers(HttpSecurity http) throws Exception {
 		ClassLoader classLoader = this.context.getClassLoader();
+		// 读取 META-INF/spring.factories 文件 key是 `AbstractHttpConfigurer.class.getName()`
 		List<AbstractHttpConfigurer> defaultHttpConfigurers = SpringFactoriesLoader
 				.loadFactories(AbstractHttpConfigurer.class, classLoader);
 		for (AbstractHttpConfigurer configurer : defaultHttpConfigurers) {
+			// 添加默认 configurer
 			http.apply(configurer);
 		}
 	}

@@ -1,11 +1,16 @@
 
 package cn.haitaoss;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.security.acl.Permission;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletRequest;
@@ -18,6 +23,7 @@ import org.apache.catalina.startup.Tomcat;
 import org.apache.catalina.webresources.DirResourceSet;
 import org.apache.catalina.webresources.StandardRoot;
 import org.apache.coyote.http11.Http11NioProtocol;
+import sun.rmi.transport.proxy.HttpReceiveSocket;
 
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.context.annotation.Bean;
@@ -48,7 +54,7 @@ import static org.springframework.security.web.header.writers.ClearSiteDataHeade
  * date 2023-05-05 10:44
  *
  */
-public class Main extends AbstractSecurityWebApplicationInitializer {
+public class Main /*extends AbstractSecurityWebApplicationInitializer*/ {
 	/**
 	 * AbstractSecurityWebApplicationInitializer 实现 WebApplicationInitializer 接口
 	 *		注册 DelegatingFilterProxy 到 servletContext 中，注册的 filterName 是 springSecurityFilterChain。
@@ -57,7 +63,7 @@ public class Main extends AbstractSecurityWebApplicationInitializer {
 	 *		注：最终的目的是让name是 springSecurityFilterChain 的Filter生效。
 	 *
 	 * {@link org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext#createWebServer()
-	 * 		嵌入式和非嵌入式的Web容器都会找到IOC容器中类型是 ServletRegistrationBean、FilterRegistrationBean、ServletListenerRegistrationBean、Servlet、Filter、EventListener 的bean
+	 * 		SpringBoot的嵌入式和非嵌入式的Web容器都会找到IOC容器中类型是 ServletRegistrationBean、FilterRegistrationBean、ServletListenerRegistrationBean、Servlet、Filter、EventListener 的bean
 	 * 		注册到 ServletContext 中。
 	 *
 	 * 		扩展：@ServletComponentScan 的作用是将标注了 @WebServlet、@WebFilter、@WebListener 的类映射成 ServletRegistrationBean、FilterRegistrationBean、ServletListenerRegistrationBean 类型的bean注册到容器中。
