@@ -76,6 +76,7 @@ public abstract class SecurityConfigurerAdapter<O, B extends SecurityBuilder<O>>
 	 */
 	@SuppressWarnings("unchecked")
 	protected <T> T postProcess(T object) {
+		// 遍历 List<ObjectPostProcessor<T>> 找到泛型类型适配 Filter 的就回调 ObjectPostProcessor#postProcess
 		return (T) this.objectPostProcessor.postProcess(object);
 	}
 
@@ -111,10 +112,14 @@ public abstract class SecurityConfigurerAdapter<O, B extends SecurityBuilder<O>>
 		@Override
 		@SuppressWarnings({ "rawtypes", "unchecked" })
 		public Object postProcess(Object object) {
+			// 遍历
 			for (ObjectPostProcessor opp : this.postProcessors) {
 				Class<?> oppClass = opp.getClass();
+				// 获取泛型参数类型
 				Class<?> oppType = GenericTypeResolver.resolveTypeArgument(oppClass, ObjectPostProcessor.class);
+				// object 是 泛型参数类型
 				if (oppType == null || oppType.isAssignableFrom(object.getClass())) {
+					// 回调 ObjectPostProcessor
 					object = opp.postProcess(object);
 				}
 			}

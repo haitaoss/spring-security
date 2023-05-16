@@ -108,15 +108,19 @@ public final class ExpressionUrlAuthorizationConfigurer<H extends HttpSecurityBu
 	 * @see HttpSecurity#authorizeRequests()
 	 */
 	public ExpressionUrlAuthorizationConfigurer(ApplicationContext context) {
+		// 从 IOC容器中 获取 GrantedAuthorityDefaults 的bean信息
 		String[] grantedAuthorityDefaultsBeanNames = context.getBeanNamesForType(GrantedAuthorityDefaults.class);
+		// 只有一个
 		if (grantedAuthorityDefaultsBeanNames.length == 1) {
 			GrantedAuthorityDefaults grantedAuthorityDefaults = context.getBean(grantedAuthorityDefaultsBeanNames[0],
 					GrantedAuthorityDefaults.class);
+			// 得到 rolePrefix
 			this.rolePrefix = grantedAuthorityDefaults.getRolePrefix();
 		}
 		else {
 			this.rolePrefix = "ROLE_";
 		}
+		// 实例化
 		this.REGISTRY = new ExpressionInterceptUrlRegistry(context);
 	}
 
@@ -152,6 +156,7 @@ public final class ExpressionUrlAuthorizationConfigurer<H extends HttpSecurityBu
 
 	@Override
 	ExpressionBasedFilterInvocationSecurityMetadataSource createMetadataSource(H http) {
+		// 根据注册信息生成 requestMap
 		LinkedHashMap<RequestMatcher, Collection<ConfigAttribute>> requestMap = this.REGISTRY.createRequestMap();
 		Assert.state(!requestMap.isEmpty(),
 				"At least one mapping is required (i.e. authorizeRequests().anyRequest().authenticated())");

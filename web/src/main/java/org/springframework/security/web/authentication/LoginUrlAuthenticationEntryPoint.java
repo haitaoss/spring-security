@@ -119,9 +119,12 @@ public class LoginUrlAuthenticationEntryPoint implements AuthenticationEntryPoin
 	@Override
 	public void commence(HttpServletRequest request, HttpServletResponse response,
 			AuthenticationException authException) throws IOException, ServletException {
+		// 不使用转发
 		if (!this.useForward) {
+			// 生成登录页面的url地址
 			// redirect to login page. Use https if forceHttps true
 			String redirectUrl = buildRedirectUrlToLoginPage(request, response, authException);
+			// 重定向到登录页面
 			this.redirectStrategy.sendRedirect(request, response, redirectUrl);
 			return;
 		}
@@ -132,23 +135,30 @@ public class LoginUrlAuthenticationEntryPoint implements AuthenticationEntryPoin
 			redirectUrl = buildHttpsRedirectUrlForRequest(request);
 		}
 		if (redirectUrl != null) {
+			// 重定向到登录页面
 			this.redirectStrategy.sendRedirect(request, response, redirectUrl);
 			return;
 		}
+		// 登录页面的相对地址
 		String loginForm = determineUrlToUseForThisRequest(request, response, authException);
 		logger.debug(LogMessage.format("Server side forward to: %s", loginForm));
 		RequestDispatcher dispatcher = request.getRequestDispatcher(loginForm);
+		// 转发
 		dispatcher.forward(request, response);
 		return;
 	}
 
 	protected String buildRedirectUrlToLoginPage(HttpServletRequest request, HttpServletResponse response,
 			AuthenticationException authException) {
+		// 获取 登录页面地址
 		String loginForm = determineUrlToUseForThisRequest(request, response, authException);
+		// 是完全的url 就直接返回
 		if (UrlUtils.isAbsoluteUrl(loginForm)) {
 			return loginForm;
 		}
+		// 获取端口
 		int serverPort = this.portResolver.getServerPort(request);
+		// 协议名
 		String scheme = request.getScheme();
 		RedirectUrlBuilder urlBuilder = new RedirectUrlBuilder();
 		urlBuilder.setScheme(scheme);
@@ -168,6 +178,7 @@ public class LoginUrlAuthenticationEntryPoint implements AuthenticationEntryPoin
 						serverPort));
 			}
 		}
+		// 构造出url
 		return urlBuilder.getUrl();
 	}
 

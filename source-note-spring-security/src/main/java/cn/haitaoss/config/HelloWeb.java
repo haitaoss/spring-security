@@ -34,6 +34,22 @@ public class HelloWeb {
 	@EnableWebSecurity
 	public class WebSecurityConfig {
 
+		/**
+		 * 使用的组件一般都会使用 ObjectPostProcessor 进行加工，所以
+		 * 我们可以通过这个拦截
+		 * @return
+		 */
+		@Bean
+		public ObjectPostProcessor<Object> objectPostProcessor() {
+			return new ObjectPostProcessor<Object>() {
+				@Override
+				public <O> O postProcess(O object) {
+					System.out.println("ObjectPostProcessor#postProcess..." + object.getClass().getSimpleName());
+					return object;
+				}
+			};
+		}
+
 		@Bean
 		public UserDetailsService userDetailsService() {
 			InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();

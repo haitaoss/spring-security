@@ -101,17 +101,22 @@ public class HttpSessionRequestCache implements RequestCache {
 
 	@Override
 	public HttpServletRequest getMatchingRequest(HttpServletRequest request, HttpServletResponse response) {
+		// 不匹配
 		if (this.matchingRequestParameterName != null
 				&& request.getParameter(this.matchingRequestParameterName) == null) {
 			this.logger.trace(
 					"matchingRequestParameterName is required for getMatchingRequest to lookup a value, but not provided");
+			// 直接return
 			return null;
 		}
+		// 从session中获取
 		SavedRequest saved = getRequest(request, response);
+		// 为空就快速返回
 		if (saved == null) {
 			this.logger.trace("No saved request");
 			return null;
 		}
+		// 不匹配就快速返回
 		if (!matchesSavedRequest(request, saved)) {
 			if (this.logger.isTraceEnabled()) {
 				this.logger.trace(LogMessage.format("Did not match request %s to the saved one %s",
@@ -119,6 +124,7 @@ public class HttpSessionRequestCache implements RequestCache {
 			}
 			return null;
 		}
+		// 从session中移除
 		removeRequest(request, response);
 		if (this.logger.isDebugEnabled()) {
 			this.logger.debug(LogMessage.format("Loaded matching saved request %s", saved.getRedirectUrl()));

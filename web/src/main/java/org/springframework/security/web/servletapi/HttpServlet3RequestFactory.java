@@ -36,6 +36,7 @@ import org.springframework.security.authentication.AuthenticationDetailsSource;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationTrustResolver;
 import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.concurrent.DelegatingSecurityContextRunnable;
 import org.springframework.security.core.Authentication;
@@ -219,9 +220,11 @@ final class HttpServlet3RequestFactory implements HttpServletRequestFactory {
 						"authenticationEntryPoint is null, so allowing original HttpServletRequest to handle authenticate");
 				return super.authenticate(response);
 			}
+			// 认证过就返回 true
 			if (isAuthenticated()) {
 				return true;
 			}
+			// 开始认证
 			entryPoint.commence(this, response,
 					new AuthenticationCredentialsNotFoundException("User is not Authenticated"));
 			return false;
@@ -229,6 +232,7 @@ final class HttpServlet3RequestFactory implements HttpServletRequestFactory {
 
 		@Override
 		public void login(String username, String password) throws ServletException {
+			// 认证过了，就直接报错，也就是不允许重复认证
 			if (isAuthenticated()) {
 				throw new ServletException("Cannot perform login for '" + username + "' already authenticated as '"
 						+ getRemoteUser() + "'");
@@ -240,23 +244,32 @@ final class HttpServlet3RequestFactory implements HttpServletRequestFactory {
 				super.login(username, password);
 				return;
 			}
+			// 获取认证信息（会使用 authManager 进行认证）
 			Authentication authentication = getAuthentication(authManager, username, password);
+			// 生成 SecurityContext
 			SecurityContext context = HttpServlet3RequestFactory.this.securityContextHolderStrategy
 					.createEmptyContext();
 			context.setAuthentication(authentication);
+			// 存储 SecurityContext
 			HttpServlet3RequestFactory.this.securityContextHolderStrategy.setContext(context);
 		}
 
 		private Authentication getAuthentication(AuthenticationManager authManager, String username, String password)
 				throws ServletException {
 			try {
+				// 生成 UsernamePasswordAuthenticationToken
 				UsernamePasswordAuthenticationToken authentication = UsernamePasswordAuthenticationToken
 						.unauthenticated(username, password);
 				Object details = HttpServlet3RequestFactory.this.authenticationDetailsSource.buildDetails(this);
 				authentication.setDetails(details);
+				/**
+				 * 使用 AuthenticationManager 进行认证
+				 * 		{@link ProviderManager#authenticate(Authentication)}
+				 * */
 				return authManager.authenticate(authentication);
 			}
 			catch (AuthenticationException ex) {
+				// 清除
 				HttpServlet3RequestFactory.this.securityContextHolderStrategy.clearContext();
 				throw new ServletException(ex.getMessage(), ex);
 			}
@@ -274,6 +287,7 @@ final class HttpServlet3RequestFactory implements HttpServletRequestFactory {
 			Authentication authentication = HttpServlet3RequestFactory.this.securityContextHolderStrategy.getContext()
 					.getAuthentication();
 			for (LogoutHandler handler : handlers) {
+				// 回调
 				handler.logout(this, this.response, authentication);
 			}
 		}

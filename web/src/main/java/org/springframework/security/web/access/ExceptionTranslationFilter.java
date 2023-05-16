@@ -40,6 +40,7 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.security.web.authentication.DelegatingAuthenticationEntryPoint;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.util.ThrowableAnalyzer;
@@ -123,27 +124,42 @@ public class ExceptionTranslationFilter extends GenericFilterBean implements Mes
 	private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
 			throws IOException, ServletException {
 		try {
+			// 放行
 			chain.doFilter(request, response);
 		}
 		catch (IOException ex) {
 			throw ex;
 		}
 		catch (Exception ex) {
+			/**
+			 * 构造出 causeChain。其实就是遍历异常调用找，收集期望的异常对象
+			 * */
 			// Try to extract a SpringSecurityException from the stacktrace
 			Throwable[] causeChain = this.throwableAnalyzer.determineCauseChain(ex);
+			// 遍历 causeChain 拿到 AuthenticationException 类型的异常对象
 			RuntimeException securityException = (AuthenticationException) this.throwableAnalyzer
 					.getFirstThrowableOfType(AuthenticationException.class, causeChain);
 			if (securityException == null) {
+				// 补偿策略，获取 AccessDeniedException
 				securityException = (AccessDeniedException) this.throwableAnalyzer
 						.getFirstThrowableOfType(AccessDeniedException.class, causeChain);
 			}
+			// 为空，说明抛出的异常不是我们关注的异常
 			if (securityException == null) {
+				// 直接抛出异常
 				rethrow(ex);
 			}
 			if (response.isCommitted()) {
 				throw new ServletException("Unable to handle the Spring Security Exception "
 						+ "because the response is already committed.", ex);
 			}
+			/**
+			 * 处理 SpringSecurityException
+			 * 1. 是 AuthenticationException 异常，那就 往响应体设置异常信息 或者 重定向到登录页面 或者 转发到登录页面
+			 * 2. 是 AccessDeniedException 异常：
+			 * 		2.1 是匿名用户 或者 是rememberMe 就开始认证(执行步骤1的逻辑)
+			 * 		2.2 往响应体设置异常信息 或者 重定向到错误页面
+			 * */
 			handleSpringSecurityException(request, response, chain, securityException);
 		}
 	}
@@ -172,9 +188,15 @@ public class ExceptionTranslationFilter extends GenericFilterBean implements Mes
 	private void handleSpringSecurityException(HttpServletRequest request, HttpServletResponse response,
 			FilterChain chain, RuntimeException exception) throws IOException, ServletException {
 		if (exception instanceof AuthenticationException) {
+			// 处理 AuthenticationException（往响应体设置异常信息 或者 重定向到登录页面 或者 转发到登录页面）
 			handleAuthenticationException(request, response, chain, (AuthenticationException) exception);
 		}
 		else if (exception instanceof AccessDeniedException) {
+			/**
+			 * 处理 AccessDeniedException
+			 * 	是匿名用户 或者 是rememberMe 就 handleAuthenticationException
+			 * 	否则就 往响应体设置异常信息 或者 重定向到错误页面
+			 * */
 			handleAccessDeniedException(request, response, chain, (AccessDeniedException) exception);
 		}
 	}
@@ -182,18 +204,23 @@ public class ExceptionTranslationFilter extends GenericFilterBean implements Mes
 	private void handleAuthenticationException(HttpServletRequest request, HttpServletResponse response,
 			FilterChain chain, AuthenticationException exception) throws ServletException, IOException {
 		this.logger.trace("Sending to authentication entry point since authentication failed", exception);
+		// 发送开始认证（往响应体设置异常信息 或者 重定向到登录页面 或者 转发到登录页面）
 		sendStartAuthentication(request, response, chain, exception);
 	}
 
 	private void handleAccessDeniedException(HttpServletRequest request, HttpServletResponse response,
 			FilterChain chain, AccessDeniedException exception) throws ServletException, IOException {
+		// 重上下文化中拿到 authentication
 		Authentication authentication = this.securityContextHolderStrategy.getContext().getAuthentication();
+		// 是匿名用户
 		boolean isAnonymous = this.authenticationTrustResolver.isAnonymous(authentication);
+		// 是匿名用户 或者 是rememberMe
 		if (isAnonymous || this.authenticationTrustResolver.isRememberMe(authentication)) {
 			if (logger.isTraceEnabled()) {
 				logger.trace(LogMessage.format("Sending %s to authentication entry point since access is denied",
 						authentication), exception);
 			}
+			// 发送开始认证（往响应体设置异常信息 或者 重定向到登录页面 或者 转发到登录页面）
 			sendStartAuthentication(request, response, chain,
 					new InsufficientAuthenticationException(
 							this.messages.getMessage("ExceptionTranslationFilter.insufficientAuthentication",
@@ -205,6 +232,10 @@ public class ExceptionTranslationFilter extends GenericFilterBean implements Mes
 						LogMessage.format("Sending %s to access denied handler since access is denied", authentication),
 						exception);
 			}
+			/**
+			 * 使用 accessDeniedHandler 处理异常（往响应体设置异常信息 或者 重定向到错误页面）
+			 * 		{@link DelegatingAccessDeniedHandler#handle(HttpServletRequest, HttpServletResponse, AccessDeniedException)}
+			 * */
 			this.accessDeniedHandler.handle(request, response, exception);
 		}
 	}
@@ -213,9 +244,16 @@ public class ExceptionTranslationFilter extends GenericFilterBean implements Mes
 			AuthenticationException reason) throws ServletException, IOException {
 		// SEC-112: Clear the SecurityContextHolder's Authentication, as the
 		// existing Authentication is no longer considered valid
+		// 初始化一个空的 SecurityContext
 		SecurityContext context = this.securityContextHolderStrategy.createEmptyContext();
+		// 设置到上下文中(一般是ThreadLocal)
 		this.securityContextHolderStrategy.setContext(context);
+		// 缓存原始的request信息
 		this.requestCache.saveRequest(request, response);
+		/**
+		 * 开始认证。根据配置的参数决定是 重定向还是转发的方式 访问登录页面
+		 * 		{@link DelegatingAuthenticationEntryPoint#commence(HttpServletRequest, HttpServletResponse, AuthenticationException)}
+		 * */
 		this.authenticationEntryPoint.commence(request, response, reason);
 	}
 

@@ -142,20 +142,26 @@ public final class AnonymousConfigurer<H extends HttpSecurityBuilder<H>>
 	@Override
 	public void init(H http) {
 		if (this.authenticationProvider == null) {
+			// 默认的
 			this.authenticationProvider = new AnonymousAuthenticationProvider(getKey());
 		}
 		if (this.authenticationFilter == null) {
+			// 实例化 Filter
 			this.authenticationFilter = new AnonymousAuthenticationFilter(getKey(), this.principal, this.authorities);
 			this.authenticationFilter.setSecurityContextHolderStrategy(getSecurityContextHolderStrategy());
 		}
 		this.authenticationFilter.setSecurityContextHolderStrategy(getSecurityContextHolderStrategy());
+		// 使用 ObjectPostProcessor 加工
 		this.authenticationProvider = postProcess(this.authenticationProvider);
+		// 设置给 http
 		http.authenticationProvider(this.authenticationProvider);
 	}
 
 	@Override
 	public void configure(H http) {
+		// 回调方法
 		this.authenticationFilter.afterPropertiesSet();
+		// 注册Filter
 		http.addFilter(this.authenticationFilter);
 	}
 

@@ -1893,6 +1893,7 @@ public final class HttpSecurity extends AbstractConfiguredSecurityBuilder<Defaul
 	 */
 	public HttpSecurity csrf(Customizer<CsrfConfigurer<HttpSecurity>> csrfCustomizer) throws Exception {
 		ApplicationContext context = getContext();
+		// 获取或者添加 configurer
 		csrfCustomizer.customize(getOrApply(new CsrfConfigurer<>(context)));
 		return HttpSecurity.this;
 	}
@@ -3291,11 +3292,17 @@ public final class HttpSecurity extends AbstractConfiguredSecurityBuilder<Defaul
 
 	@Override
 	public HttpSecurity addFilter(Filter filter) {
+		/**
+		 * 从缓存中获取 order 值
+		 * {@link FilterOrderRegistration#FilterOrderRegistration()}
+		 * */
 		Integer order = this.filterOrders.getOrder(filter.getClass());
+		// 没有与设置就报错
 		if (order == null) {
 			throw new IllegalArgumentException("The Filter class " + filter.getClass().getName()
 					+ " does not have a registered order and cannot be added without a specified order. Consider using addFilterBefore or addFilterAfter instead.");
 		}
+		// 装饰成 OrderedFilter
 		this.filters.add(new OrderedFilter(filter, order));
 		return this;
 	}
@@ -4002,10 +4009,13 @@ public final class HttpSecurity extends AbstractConfiguredSecurityBuilder<Defaul
 	@SuppressWarnings("unchecked")
 	private <C extends SecurityConfigurerAdapter<DefaultSecurityFilterChain, HttpSecurity>> C getOrApply(C configurer)
 			throws Exception {
+		// 获取
 		C existingConfig = (C) getConfigurer(configurer.getClass());
+		// 存在就返回
 		if (existingConfig != null) {
 			return existingConfig;
 		}
+		// 注册
 		return apply(configurer);
 	}
 

@@ -96,14 +96,18 @@ public final class RequestCacheConfigurer<H extends HttpSecurityBuilder<H>>
 
 	@Override
 	public void init(H http) {
+		// 添加 RequestCache
 		http.setSharedObject(RequestCache.class, getRequestCache(http));
 	}
 
 	@Override
 	public void configure(H http) {
 		RequestCache requestCache = getRequestCache(http);
+		// new 一个
 		RequestCacheAwareFilter requestCacheFilter = new RequestCacheAwareFilter(requestCache);
+		// 使用 ObjectPostProcessor 加工
 		requestCacheFilter = postProcess(requestCacheFilter);
+		// 注册
 		http.addFilter(requestCacheFilter);
 	}
 
@@ -120,10 +124,12 @@ public final class RequestCacheConfigurer<H extends HttpSecurityBuilder<H>>
 		if (result != null) {
 			return result;
 		}
+		// 从 IOC容器 中获取 RequestCache
 		result = getBeanOrNull(RequestCache.class);
 		if (result != null) {
 			return result;
 		}
+		// 作为默认的
 		HttpSessionRequestCache defaultCache = new HttpSessionRequestCache();
 		defaultCache.setRequestMatcher(createDefaultSavedRequestMatcher(http));
 		return defaultCache;

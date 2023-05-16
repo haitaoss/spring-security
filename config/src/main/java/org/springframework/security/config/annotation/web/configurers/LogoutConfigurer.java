@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.springframework.security.config.annotation.SecurityConfigurer;
@@ -275,13 +276,19 @@ public final class LogoutConfigurer<H extends HttpSecurityBuilder<H>>
 
 	@Override
 	public void init(H http) {
+		// 允许全部
 		if (this.permitAll) {
+			// 为 登出成功页面 和 登出页面 设置允许权限
 			PermitAllSupport.permitAll(http, this.logoutSuccessUrl);
 			PermitAllSupport.permitAll(http, this.getLogoutRequestMatcher(http));
 		}
 		DefaultLoginPageGeneratingFilter loginPageGeneratingFilter = http
 				.getSharedObject(DefaultLoginPageGeneratingFilter.class);
 		if (loginPageGeneratingFilter != null && !isCustomLogoutSuccess()) {
+			/**
+			 * 设置 登出成功url。会根据这个值决定生成的html的内容
+			 * 		{@link DefaultLoginPageGeneratingFilter#generateLoginPageHtml(HttpServletRequest, boolean, boolean)}
+			 * */
 			loginPageGeneratingFilter.setLogoutSuccessUrl(getLogoutSuccessUrl());
 		}
 	}
@@ -289,6 +296,7 @@ public final class LogoutConfigurer<H extends HttpSecurityBuilder<H>>
 	@Override
 	public void configure(H http) throws Exception {
 		LogoutFilter logoutFilter = createLogoutFilter(http);
+		// 注册
 		http.addFilter(logoutFilter);
 	}
 
@@ -332,10 +340,16 @@ public final class LogoutConfigurer<H extends HttpSecurityBuilder<H>>
 		this.logoutHandlers.add(this.contextLogoutHandler);
 		this.logoutHandlers.add(postProcess(new LogoutSuccessEventPublishingLogoutHandler()));
 		LogoutHandler[] handlers = this.logoutHandlers.toArray(new LogoutHandler[0]);
+		/**
+		 * 依赖 handlers 构造一个 LogoutFilter。
+		 * doFilter 满足 logout 的匹配规则会回调 handlers
+		 * */
 		LogoutFilter result = new LogoutFilter(getLogoutSuccessHandler(), handlers);
 		result.setSecurityContextHolderStrategy(getSecurityContextHolderStrategy());
+		// 设置 LogoutRequestMatcher。用来匹配request匹配规则
 		result.setLogoutRequestMatcher(getLogoutRequestMatcher(http));
 		result.setSecurityContextHolderStrategy(getSecurityContextHolderStrategy());
+		// 使用 ObjectPostProcessor 对 result 进行最后的处理
 		result = postProcess(result);
 		return result;
 	}

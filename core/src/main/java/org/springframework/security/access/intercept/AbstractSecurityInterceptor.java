@@ -192,13 +192,16 @@ public abstract class AbstractSecurityInterceptor
 
 	protected InterceptorStatusToken beforeInvocation(Object object) {
 		Assert.notNull(object, "Object was null");
+		// 校验类型
 		if (!getSecureObjectClass().isAssignableFrom(object.getClass())) {
 			throw new IllegalArgumentException("Security invocation attempted for object " + object.getClass().getName()
 					+ " but AbstractSecurityInterceptor only configured to support secure objects of type: "
 					+ getSecureObjectClass());
 		}
+		// 获取 attributes，这里面记录了权限信息
 		Collection<ConfigAttribute> attributes = this.obtainSecurityMetadataSource().getAttributes(object);
 		if (CollectionUtils.isEmpty(attributes)) {
+			// 必须是true
 			Assert.isTrue(!this.rejectPublicInvocations,
 					() -> "Secure object invocation " + object
 							+ " was denied as public invocations are not allowed via this interceptor. "
@@ -207,23 +210,32 @@ public abstract class AbstractSecurityInterceptor
 			if (this.logger.isDebugEnabled()) {
 				this.logger.debug(LogMessage.format("Authorized public object %s", object));
 			}
+			// 发布事件
 			publishEvent(new PublicInvocationEvent(object));
 			return null; // no further work post-invocation
 		}
+		// 没有认证信息
 		if (this.securityContextHolderStrategy.getContext().getAuthentication() == null) {
+			// 发布事件然后抛出异常
 			credentialsNotFound(this.messages.getMessage("AbstractSecurityInterceptor.authenticationNotFound",
 					"An Authentication object was not found in the SecurityContext"), object, attributes);
 		}
+		// 如果需要就进行认证
 		Authentication authenticated = authenticateIfRequired();
 		if (this.logger.isTraceEnabled()) {
 			this.logger.trace(LogMessage.format("Authorizing %s with attributes %s", object, attributes));
 		}
+		/**
+		 * 尝试授权
+		 * // TODOHAITAO: 2023/5/16
+		 * */
 		// Attempt authorization
 		attemptAuthorization(object, attributes, authenticated);
 		if (this.logger.isDebugEnabled()) {
 			this.logger.debug(LogMessage.format("Authorized %s with attributes %s", object, attributes));
 		}
 		if (this.publishAuthorizationSuccess) {
+			// 发布事件
 			publishEvent(new AuthorizedEvent(object, attributes, authenticated));
 		}
 
@@ -260,6 +272,7 @@ public abstract class AbstractSecurityInterceptor
 			else if (this.logger.isDebugEnabled()) {
 				this.logger.debug(LogMessage.format("Failed to authorize %s with attributes %s", object, attributes));
 			}
+			// 发布事件
 			publishEvent(new AuthorizationFailureEvent(object, attributes, authenticated, ex));
 			throw ex;
 		}
@@ -273,7 +286,9 @@ public abstract class AbstractSecurityInterceptor
 	 * @param token as returned by the {@link #beforeInvocation(Object)} method
 	 */
 	protected void finallyInvocation(InterceptorStatusToken token) {
+		// 需要刷新
 		if (token != null && token.isContextHolderRefreshRequired()) {
+			// 更新 SecurityContext
 			this.securityContextHolderStrategy.setContext(token.getSecurityContext());
 			if (this.logger.isDebugEnabled()) {
 				this.logger.debug(LogMessage.of(
@@ -300,10 +315,12 @@ public abstract class AbstractSecurityInterceptor
 		if (this.afterInvocationManager != null) {
 			// Attempt after invocation handling
 			try {
+				// 回调
 				returnedObject = this.afterInvocationManager.decide(token.getSecurityContext().getAuthentication(),
 						token.getSecureObject(), token.getAttributes(), returnedObject);
 			}
 			catch (AccessDeniedException ex) {
+				// 发布事件
 				publishEvent(new AuthorizationFailureEvent(token.getSecureObject(), token.getAttributes(),
 						token.getSecurityContext().getAuthentication(), ex));
 				throw ex;
@@ -320,12 +337,14 @@ public abstract class AbstractSecurityInterceptor
 	 */
 	private Authentication authenticateIfRequired() {
 		Authentication authentication = this.securityContextHolderStrategy.getContext().getAuthentication();
+		// 认证过了
 		if (authentication.isAuthenticated() && !this.alwaysReauthenticate) {
 			if (this.logger.isTraceEnabled()) {
 				this.logger.trace(LogMessage.format("Did not re-authenticate %s before authorizing", authentication));
 			}
 			return authentication;
 		}
+		// 进行认证
 		authentication = this.authenticationManager.authenticate(authentication);
 		// Don't authenticated.setAuthentication(true) because each provider does that
 		if (this.logger.isDebugEnabled()) {
@@ -333,6 +352,7 @@ public abstract class AbstractSecurityInterceptor
 		}
 		SecurityContext context = this.securityContextHolderStrategy.createEmptyContext();
 		context.setAuthentication(authentication);
+		// 设置上下文
 		this.securityContextHolderStrategy.setContext(context);
 		return authentication;
 	}
@@ -350,7 +370,9 @@ public abstract class AbstractSecurityInterceptor
 		AuthenticationCredentialsNotFoundException exception = new AuthenticationCredentialsNotFoundException(reason);
 		AuthenticationCredentialsNotFoundEvent event = new AuthenticationCredentialsNotFoundEvent(secureObject,
 				configAttribs, exception);
+		// 发布事件
 		publishEvent(event);
+		// 抛出异常
 		throw exception;
 	}
 

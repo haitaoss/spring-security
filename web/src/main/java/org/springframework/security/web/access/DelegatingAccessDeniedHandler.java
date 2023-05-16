@@ -62,14 +62,18 @@ public final class DelegatingAccessDeniedHandler implements AccessDeniedHandler 
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response,
 			AccessDeniedException accessDeniedException) throws IOException, ServletException {
+		// 遍历 handlers
 		for (Entry<Class<? extends AccessDeniedException>, AccessDeniedHandler> entry : this.handlers.entrySet()) {
 			Class<? extends AccessDeniedException> handlerClass = entry.getKey();
+			// 符合异常类型
 			if (handlerClass.isAssignableFrom(accessDeniedException.getClass())) {
 				AccessDeniedHandler handler = entry.getValue();
+				// 回调 handler （往响应体设置异常信息 或者 重定向到错误页面）
 				handler.handle(request, response, accessDeniedException);
 				return;
 			}
 		}
+		// 兜底逻辑，使用默认的
 		this.defaultHandler.handle(request, response, accessDeniedException);
 	}
 

@@ -121,8 +121,11 @@ public abstract class AbstractConfiguredSecurityBuilder<O, B extends SecurityBui
 	 */
 	@SuppressWarnings("unchecked")
 	public <C extends SecurityConfigurerAdapter<O, B>> C apply(C configurer) throws Exception {
+		// 关联上 objectPostProcessor
 		configurer.addObjectPostProcessor(this.objectPostProcessor);
+		// 关联上 this
 		configurer.setBuilder((B) this);
+		// 存起来
 		add(configurer);
 		return configurer;
 	}

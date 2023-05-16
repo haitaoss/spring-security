@@ -79,7 +79,9 @@ public class AuthorizationFilter extends GenericFilterBean {
 		HttpServletRequest request = (HttpServletRequest) servletRequest;
 		HttpServletResponse response = (HttpServletResponse) servletResponse;
 
+		// 存在标记
 		if (this.observeOncePerRequest && isApplied(request)) {
+			// 放行
 			chain.doFilter(request, response);
 			return;
 		}
@@ -90,16 +92,23 @@ public class AuthorizationFilter extends GenericFilterBean {
 		}
 
 		String alreadyFilteredAttributeName = getAlreadyFilteredAttributeName();
+		// 设置标记
 		request.setAttribute(alreadyFilteredAttributeName, Boolean.TRUE);
 		try {
+			// TODOHAITAO: 2023/5/16
 			AuthorizationDecision decision = this.authorizationManager.check(this::getAuthentication, request);
+			// 发布事件
 			this.eventPublisher.publishAuthorizationEvent(this::getAuthentication, request, decision);
+			// 没有权限
 			if (decision != null && !decision.isGranted()) {
+				// 抛出异常
 				throw new AccessDeniedException("Access Denied");
 			}
+			// 放行
 			chain.doFilter(request, response);
 		}
 		finally {
+			// 移除标记
 			request.removeAttribute(alreadyFilteredAttributeName);
 		}
 	}

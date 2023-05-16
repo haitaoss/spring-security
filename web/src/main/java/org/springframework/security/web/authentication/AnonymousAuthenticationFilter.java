@@ -95,8 +95,10 @@ public class AnonymousAuthenticationFilter extends GenericFilterBean implements 
 	public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
 			throws IOException, ServletException {
 		Supplier<SecurityContext> deferredContext = this.securityContextHolderStrategy.getDeferredContext();
+		// 设置默认的 DeferredContext
 		this.securityContextHolderStrategy
 				.setDeferredContext(defaultWithAnonymous((HttpServletRequest) req, deferredContext));
+		// 放行
 		chain.doFilter(req, res);
 	}
 
@@ -110,7 +112,9 @@ public class AnonymousAuthenticationFilter extends GenericFilterBean implements 
 
 	private SecurityContext defaultWithAnonymous(HttpServletRequest request, SecurityContext currentContext) {
 		Authentication currentAuthentication = currentContext.getAuthentication();
+		// 是空
 		if (currentAuthentication == null) {
+			// new 一个 AnonymousAuthenticationToken
 			Authentication anonymous = createAuthentication(request);
 			if (this.logger.isTraceEnabled()) {
 				this.logger.trace(LogMessage.of(() -> "Set SecurityContextHolder to " + anonymous));

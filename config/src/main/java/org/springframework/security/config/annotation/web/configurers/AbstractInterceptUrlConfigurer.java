@@ -79,13 +79,17 @@ public abstract class AbstractInterceptUrlConfigurer<C extends AbstractIntercept
 		if (metadataSource == null) {
 			return;
 		}
+		// 构造出 FilterSecurityInterceptor
 		FilterSecurityInterceptor securityInterceptor = createFilterSecurityInterceptor(http, metadataSource,
 				http.getSharedObject(AuthenticationManager.class));
 		if (this.filterSecurityInterceptorOncePerRequest != null) {
 			securityInterceptor.setObserveOncePerRequest(this.filterSecurityInterceptorOncePerRequest);
 		}
+		// 使用 ObjectPostProcessor 加工
 		securityInterceptor = postProcess(securityInterceptor);
+		// 注册
 		http.addFilter(securityInterceptor);
+		// 添加到 shareObject 中
 		http.setSharedObject(FilterSecurityInterceptor.class, securityInterceptor);
 	}
 

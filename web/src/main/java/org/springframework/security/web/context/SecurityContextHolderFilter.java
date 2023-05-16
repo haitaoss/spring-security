@@ -71,18 +71,26 @@ public class SecurityContextHolderFilter extends GenericFilterBean {
 
 	private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
 			throws ServletException, IOException {
+		// 有标记了 就放行，防止重复执行
 		if (request.getAttribute(FILTER_APPLIED) != null) {
+			// 放行
 			chain.doFilter(request, response);
 			return;
 		}
+		// 标记执行过了
 		request.setAttribute(FILTER_APPLIED, Boolean.TRUE);
+		// 加载 SecurityContext
 		Supplier<SecurityContext> deferredContext = this.securityContextRepository.loadDeferredContext(request);
 		try {
+			// 设置 deferredContext
 			this.securityContextHolderStrategy.setDeferredContext(deferredContext);
+			// 放行
 			chain.doFilter(request, response);
 		}
 		finally {
+			// 清空
 			this.securityContextHolderStrategy.clearContext();
+			// 移除标记
 			request.removeAttribute(FILTER_APPLIED);
 		}
 	}

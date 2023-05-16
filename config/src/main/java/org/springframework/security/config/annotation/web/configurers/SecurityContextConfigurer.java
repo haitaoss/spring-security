@@ -16,6 +16,10 @@
 
 package org.springframework.security.config.annotation.web.configurers;
 
+import javax.servlet.FilterChain;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.springframework.security.config.annotation.web.HttpSecurityBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -105,13 +109,33 @@ public final class SecurityContextConfigurer<H extends HttpSecurityBuilder<H>>
 	@SuppressWarnings("unchecked")
 	public void configure(H http) {
 		SecurityContextRepository securityContextRepository = getSecurityContextRepository();
+		// 需要显示保存
 		if (this.requireExplicitSave) {
+			/**
+			 * 使用 ObjectPostProcessor 加工。
+			 *
+			 * SecurityContextHolderFilter 的逻辑逻辑：
+			 * 		1. 从 SecurityContextRepository 获取(生成) SecurityContext
+			 * 		2. 将 SecurityContext 设置到 SecurityContextHolderStrategy
+			 * 		3. doFilter
+			 * 		4. 将 SecurityContext 从 SecurityContextHolderStrategy 中清除
+			 * */
 			SecurityContextHolderFilter securityContextHolderFilter = postProcess(
 					new SecurityContextHolderFilter(securityContextRepository));
 			securityContextHolderFilter.setSecurityContextHolderStrategy(getSecurityContextHolderStrategy());
+			// 注册
 			http.addFilter(securityContextHolderFilter);
 		}
 		else {
+			/**
+			 * SecurityContextHolderFilter 的逻辑逻辑：
+			 * 		1. 从 SecurityContextRepository 获取(生成) SecurityContext
+			 * 		2. 将 SecurityContext 设置到 SecurityContextHolderStrategy
+			 * 		3. doFilter
+			 * 		4. 将 SecurityContext 保存到 SecurityContextRepository
+			 * 		5. 将 SecurityContext 从 SecurityContextHolderStrategy 中清除
+			 * {@link SecurityContextPersistenceFilter#doFilter(HttpServletRequest, HttpServletResponse, FilterChain)}
+			 * */
 			SecurityContextPersistenceFilter securityContextFilter = new SecurityContextPersistenceFilter(
 					securityContextRepository);
 			securityContextFilter.setSecurityContextHolderStrategy(getSecurityContextHolderStrategy());
@@ -120,9 +144,12 @@ public final class SecurityContextConfigurer<H extends HttpSecurityBuilder<H>>
 					? sessionManagement.getSessionCreationPolicy() : null;
 			if (SessionCreationPolicy.ALWAYS == sessionCreationPolicy) {
 				securityContextFilter.setForceEagerSessionCreation(true);
+				// 注册
 				http.addFilter(postProcess(new ForceEagerSessionCreationFilter()));
 			}
+			// 使用 ObjectPostProcessor 加工
 			securityContextFilter = postProcess(securityContextFilter);
+			// 注册
 			http.addFilter(securityContextFilter);
 		}
 	}

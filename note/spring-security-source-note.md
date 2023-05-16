@@ -108,3 +108,13 @@ credentials：资格证书
 Explicit：明确的、清楚的
 
 restrict：限制、限定
+
+commence：开始
+
+entryPoint：入口点
+
+permit：允许
+
+attempt：参数
+
+decide：决定

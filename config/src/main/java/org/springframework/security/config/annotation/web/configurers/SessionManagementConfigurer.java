@@ -338,12 +338,15 @@ public final class SessionManagementConfigurer<H extends HttpSecurityBuilder<H>>
 	@Override
 	public void init(H http) {
 		SecurityContextRepository securityContextRepository = http.getSharedObject(SecurityContextRepository.class);
+		// 是无状态的
 		boolean stateless = isStateless();
 		if (securityContextRepository == null) {
 			if (stateless) {
+				// 使用 NullSecurityContextRepository
 				http.setSharedObject(SecurityContextRepository.class, new NullSecurityContextRepository());
 			}
 			else {
+				// 初始化一个
 				HttpSessionSecurityContextRepository httpSecurityRepository = new HttpSessionSecurityContextRepository();
 				httpSecurityRepository.setDisableUrlRewriting(!this.enableSessionUrlRewriting);
 				httpSecurityRepository.setAllowSessionCreation(isAllowSessionCreation());
@@ -351,12 +354,14 @@ public final class SessionManagementConfigurer<H extends HttpSecurityBuilder<H>>
 				if (trustResolver != null) {
 					httpSecurityRepository.setTrustResolver(trustResolver);
 				}
+				// 使用 HttpSessionSecurityContextRepository
 				http.setSharedObject(SecurityContextRepository.class, httpSecurityRepository);
 			}
 		}
 		RequestCache requestCache = http.getSharedObject(RequestCache.class);
 		if (requestCache == null) {
 			if (stateless) {
+				// 使用 NullRequestCache
 				http.setSharedObject(RequestCache.class, new NullRequestCache());
 			}
 		}
@@ -366,20 +371,27 @@ public final class SessionManagementConfigurer<H extends HttpSecurityBuilder<H>>
 
 	@Override
 	public void configure(H http) {
+		// new SessionManagementFilter
 		SessionManagementFilter sessionManagementFilter = createSessionManagementFilter(http);
 		if (sessionManagementFilter != null) {
+			// 注册
 			http.addFilter(sessionManagementFilter);
 		}
 		if (isConcurrentSessionControlEnabled()) {
+			// new
 			ConcurrentSessionFilter concurrentSessionFilter = createConcurrencyFilter(http);
-
+			// 使用 ObjectPostProcessor 加工
 			concurrentSessionFilter = postProcess(concurrentSessionFilter);
+			// 注册
 			http.addFilter(concurrentSessionFilter);
 		}
+		// 没有启用
 		if (!this.enableSessionUrlRewriting) {
+			// 注册
 			http.addFilter(new DisableEncodeUrlFilter());
 		}
 		if (this.sessionPolicy == SessionCreationPolicy.ALWAYS) {
+			// 注册
 			http.addFilter(new ForceEagerSessionCreationFilter());
 		}
 	}
@@ -389,6 +401,7 @@ public final class SessionManagementConfigurer<H extends HttpSecurityBuilder<H>>
 			return null;
 		}
 		SecurityContextRepository securityContextRepository = http.getSharedObject(SecurityContextRepository.class);
+		// 一大堆配置属性
 		SessionManagementFilter sessionManagementFilter = new SessionManagementFilter(securityContextRepository,
 				getSessionAuthenticationStrategy(http));
 		if (this.sessionAuthenticationErrorUrl != null) {
@@ -408,6 +421,7 @@ public final class SessionManagementConfigurer<H extends HttpSecurityBuilder<H>>
 			sessionManagementFilter.setTrustResolver(trustResolver);
 		}
 		sessionManagementFilter.setSecurityContextHolderStrategy(getSecurityContextHolderStrategy());
+		// 使用 ObjectPostProcessor 加工
 		return postProcess(sessionManagementFilter);
 	}
 

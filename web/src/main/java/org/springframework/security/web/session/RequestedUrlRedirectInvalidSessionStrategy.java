@@ -52,6 +52,7 @@ public final class RequestedUrlRedirectInvalidSessionStrategy implements Invalid
 		if (this.createNewSession) {
 			request.getSession();
 		}
+		// 重定向
 		this.redirectStrategy.sendRedirect(request, response, destinationUrl);
 	}
 

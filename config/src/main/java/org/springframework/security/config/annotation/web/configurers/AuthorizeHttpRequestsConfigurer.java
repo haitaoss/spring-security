@@ -87,6 +87,7 @@ public final class AuthorizeHttpRequestsConfigurer<H extends HttpSecurityBuilder
 		authorizationFilter.setAuthorizationEventPublisher(this.publisher);
 		authorizationFilter.setShouldFilterAllDispatcherTypes(this.registry.shouldFilterAllDispatcherTypes);
 		authorizationFilter.setSecurityContextHolderStrategy(getSecurityContextHolderStrategy());
+		// 注册
 		http.addFilter(postProcess(authorizationFilter));
 	}
 

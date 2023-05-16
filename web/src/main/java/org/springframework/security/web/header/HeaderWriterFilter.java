@@ -68,17 +68,22 @@ public class HeaderWriterFilter extends OncePerRequestFilter {
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
+		// 应该早的设置头
 		if (this.shouldWriteHeadersEagerly) {
+			// 先设置头 再放行
 			doHeadersBefore(request, response, filterChain);
 		}
 		else {
+			// 先放行在设置头
 			doHeadersAfter(request, response, filterChain);
 		}
 	}
 
 	private void doHeadersBefore(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws IOException, ServletException {
+		// 设置 header
 		writeHeaders(request, response);
+		// 放行
 		filterChain.doFilter(request, response);
 	}
 
@@ -87,9 +92,11 @@ public class HeaderWriterFilter extends OncePerRequestFilter {
 		HeaderWriterResponse headerWriterResponse = new HeaderWriterResponse(request, response);
 		HeaderWriterRequest headerWriterRequest = new HeaderWriterRequest(request, headerWriterResponse);
 		try {
+			// 放行
 			filterChain.doFilter(headerWriterRequest, headerWriterResponse);
 		}
 		finally {
+			// 设置头
 			headerWriterResponse.writeHeaders();
 		}
 	}

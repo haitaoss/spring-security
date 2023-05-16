@@ -108,27 +108,35 @@ public final class CsrfFilter extends OncePerRequestFilter {
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
 		DeferredCsrfToken deferredCsrfToken = this.tokenRepository.loadDeferredToken(request, response);
+		// 设置到 request 中
 		request.setAttribute(DeferredCsrfToken.class.getName(), deferredCsrfToken);
+		// 执行 requestHandler
 		this.requestHandler.handle(request, response, deferredCsrfToken::get);
+		// request 不满足规则
 		if (!this.requireCsrfProtectionMatcher.matches(request)) {
 			if (this.logger.isTraceEnabled()) {
 				this.logger.trace("Did not protect against CSRF since request did not match "
 						+ this.requireCsrfProtectionMatcher);
 			}
+			// 放行
 			filterChain.doFilter(request, response);
 			return;
 		}
 		CsrfToken csrfToken = deferredCsrfToken.get();
+		// 拿到 token
 		String actualToken = this.requestHandler.resolveCsrfTokenValue(request, csrfToken);
+		// token 不一致
 		if (!equalsConstantTime(csrfToken.getToken(), actualToken)) {
 			boolean missingToken = deferredCsrfToken.isGenerated();
 			this.logger.debug(
 					LogMessage.of(() -> "Invalid CSRF token found for " + UrlUtils.buildFullRequestUrl(request)));
 			AccessDeniedException exception = (!missingToken) ? new InvalidCsrfTokenException(csrfToken, actualToken)
 					: new MissingCsrfTokenException(actualToken);
+			// 执行 accessDeniedHandler
 			this.accessDeniedHandler.handle(request, response, exception);
 			return;
 		}
+		// 放行
 		filterChain.doFilter(request, response);
 	}
 

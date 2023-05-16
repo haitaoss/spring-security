@@ -70,7 +70,9 @@ public final class BearerTokenAccessDeniedHandler implements AccessDeniedHandler
 			parameters.put("error_uri", "https://tools.ietf.org/html/rfc6750#section-3.1");
 		}
 		String wwwAuthenticate = computeWWWAuthenticateHeaderValue(parameters);
+		// 响应头
 		response.addHeader(HttpHeaders.WWW_AUTHENTICATE, wwwAuthenticate);
+		// 响应状态码
 		response.setStatus(HttpStatus.FORBIDDEN.value());
 	}
 

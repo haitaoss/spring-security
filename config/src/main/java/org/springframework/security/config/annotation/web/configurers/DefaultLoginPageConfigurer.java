@@ -78,6 +78,7 @@ public final class DefaultLoginPageConfigurer<H extends HttpSecurityBuilder<H>>
 	public void init(H http) {
 		this.loginPageGeneratingFilter.setResolveHiddenInputs(DefaultLoginPageConfigurer.this::hiddenInputs);
 		this.logoutPageGeneratingFilter.setResolveHiddenInputs(DefaultLoginPageConfigurer.this::hiddenInputs);
+		// 设置为共享对象
 		http.setSharedObject(DefaultLoginPageGeneratingFilter.class, this.loginPageGeneratingFilter);
 	}
 
@@ -93,13 +94,18 @@ public final class DefaultLoginPageConfigurer<H extends HttpSecurityBuilder<H>>
 		AuthenticationEntryPoint authenticationEntryPoint = null;
 		ExceptionHandlingConfigurer<?> exceptionConf = http.getConfigurer(ExceptionHandlingConfigurer.class);
 		if (exceptionConf != null) {
+			// 拿到 authenticationEntryPoint
 			authenticationEntryPoint = exceptionConf.getAuthenticationEntryPoint();
 		}
+		// 启用登录页面生成Filter 且 authenticationEntryPoint不为空
 		if (this.loginPageGeneratingFilter.isEnabled() && authenticationEntryPoint == null) {
+			// 使用 ObjectPostProcessor 加工
 			this.loginPageGeneratingFilter = postProcess(this.loginPageGeneratingFilter);
+			// 注册
 			http.addFilter(this.loginPageGeneratingFilter);
 			LogoutConfigurer<H> logoutConfigurer = http.getConfigurer(LogoutConfigurer.class);
 			if (logoutConfigurer != null) {
+				// 注册
 				http.addFilter(this.logoutPageGeneratingFilter);
 			}
 		}

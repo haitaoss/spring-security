@@ -9,6 +9,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.acl.Permission;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,6 +18,7 @@ import javax.servlet.FilterChain;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
+import lombok.Data;
 import org.apache.catalina.WebResourceRoot;
 import org.apache.catalina.connector.Connector;
 import org.apache.catalina.core.StandardContext;
@@ -25,25 +28,38 @@ import org.apache.catalina.webresources.StandardRoot;
 import org.apache.coyote.http11.Http11NioProtocol;
 import sun.rmi.transport.proxy.HttpReceiveSocket;
 
+import org.springframework.beans.MutablePropertyValues;
+import org.springframework.beans.PropertyValue;
+import org.springframework.beans.PropertyValues;
+import org.springframework.beans.PropertyValuesEditor;
 import org.springframework.beans.factory.ListableBeanFactory;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.security.access.AccessDecisionManager;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.ObjectPostProcessor;
+import org.springframework.security.config.annotation.web.HttpSecurityBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.ExpressionUrlAuthorizationConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.parameters.P;
 import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.logout.HeaderWriterLogoutHandler;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.AbstractSecurityWebApplicationInitializer;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.header.writers.ClearSiteDataHeaderWriter;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.validation.DataBinder;
 import org.springframework.web.filter.DelegatingFilterProxy;
 
 import static org.springframework.security.web.header.writers.ClearSiteDataHeaderWriter.Directive.COOKIES;
@@ -54,6 +70,7 @@ import static org.springframework.security.web.header.writers.ClearSiteDataHeade
  * date 2023-05-05 10:44
  *
  */
+@Data
 public class Main /*extends AbstractSecurityWebApplicationInitializer*/ {
 	/**
 	 * AbstractSecurityWebApplicationInitializer 实现 WebApplicationInitializer 接口
@@ -70,6 +87,19 @@ public class Main /*extends AbstractSecurityWebApplicationInitializer*/ {
 	 *
 	 * {@link EnableWebSecurity}
 	 * 		会注册名为 springSecurityFilterChain 到容器中
+	 *
+	 *
+	 * 深入研究：
+	 * 	1. 进行认证的Filter： FilterSecurityInterceptor、AuthorizationFilter
+	 * 	2. AuthenticationManager 是什么时候注册的？？？？
+	 * 			{@link HttpSecurityConfiguration#httpSecurity()}
+	 *
+	 * {@link PermitAllSupport#permitAll(HttpSecurityBuilder, RequestMatcher...)}
+	 * {@link ExpressionUrlAuthorizationConfigurer#ExpressionUrlAuthorizationConfigurer(ApplicationContext)}
+	 * {@link AuthorizationFilter#doFilter(ServletRequest, ServletResponse, FilterChain)}
+	 * {@link AuthorizationFilter#doFilter(ServletRequest, ServletResponse, FilterChain)}
+	 * {@link AuthenticationManager#authenticate(Authentication)}
+	 * {@link AccessDecisionManager#decide(Authentication, Object, Collection)}
 	 * */
 	public static void main(String[] args) throws Exception {
 		startTomcat();

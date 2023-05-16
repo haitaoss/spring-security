@@ -20,7 +20,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 
+import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpMethod;
@@ -31,6 +33,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.AccessDeniedHandlerImpl;
 import org.springframework.security.web.access.DelegatingAccessDeniedHandler;
+import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.csrf.CsrfAuthenticationStrategy;
 import org.springframework.security.web.csrf.CsrfFilter;
@@ -248,27 +251,42 @@ public final class CsrfConfigurer<H extends HttpSecurityBuilder<H>>
 	@SuppressWarnings("unchecked")
 	@Override
 	public void configure(H http) {
+		// new 一个 	CsrfFilter
 		CsrfFilter filter = new CsrfFilter(this.csrfTokenRepository);
 		RequestMatcher requireCsrfProtectionMatcher = getRequireCsrfProtectionMatcher();
 		if (requireCsrfProtectionMatcher != null) {
+			// 设置匹配规则，规则满足才执行 CsrfFilter 的核心逻辑，否则是放行
 			filter.setRequireCsrfProtectionMatcher(requireCsrfProtectionMatcher);
 		}
 		AccessDeniedHandler accessDeniedHandler = createAccessDeniedHandler(http);
 		if (accessDeniedHandler != null) {
+			// token 不一致时，会回调 accessDeniedHandler
 			filter.setAccessDeniedHandler(accessDeniedHandler);
 		}
+		// 获取 LogoutConfigurer
 		LogoutConfigurer<H> logoutConfigurer = http.getConfigurer(LogoutConfigurer.class);
 		if (logoutConfigurer != null) {
+			/**
+			 * 设置 LogoutHandler。LogoutConfigurer 会将 LogoutHandler 设置给 LogoutFilter，
+			 * {@link LogoutFilter#doFilter(HttpServletRequest, HttpServletResponse, FilterChain)} 会回调 LogoutHandler
+			 * */
 			logoutConfigurer.addLogoutHandler(new CsrfLogoutHandler(this.csrfTokenRepository));
 		}
+		// 获取 SessionManagementConfigurer
 		SessionManagementConfigurer<H> sessionConfigurer = http.getConfigurer(SessionManagementConfigurer.class);
 		if (sessionConfigurer != null) {
+			// 设置
 			sessionConfigurer.addSessionAuthenticationStrategy(getSessionAuthenticationStrategy());
 		}
 		if (this.requestHandler != null) {
+			// CsrfFilter 的核心逻辑会执行这个
 			filter.setRequestHandler(this.requestHandler);
 		}
+		/**
+		 * 遍历 List<ObjectPostProcessor<T>> 找到泛型类型适配 Filter 的就回调 ObjectPostProcessor#postProcess
+		 * */
 		filter = postProcess(filter);
+		// 添加 Filter 到 http 中
 		http.addFilter(filter);
 	}
 

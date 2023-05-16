@@ -76,16 +76,23 @@ public class DelegatingAuthenticationEntryPoint implements AuthenticationEntryPo
 	@Override
 	public void commence(HttpServletRequest request, HttpServletResponse response,
 			AuthenticationException authException) throws IOException, ServletException {
+		// 遍历 entryPoints
 		for (RequestMatcher requestMatcher : this.entryPoints.keySet()) {
 			logger.debug(LogMessage.format("Trying to match using %s", requestMatcher));
+			// 匹配 request 对象
 			if (requestMatcher.matches(request)) {
 				AuthenticationEntryPoint entryPoint = this.entryPoints.get(requestMatcher);
 				logger.debug(LogMessage.format("Match found! Executing %s", entryPoint));
+				/**
+				 * 使用匹配的 entryPoint 开始认证
+				 * {@link LoginUrlAuthenticationEntryPoint#commence(HttpServletRequest, HttpServletResponse, AuthenticationException)}
+				 * */
 				entryPoint.commence(request, response, authException);
 				return;
 			}
 		}
 		logger.debug(LogMessage.format("No match found. Using default entry point %s", this.defaultEntryPoint));
+		// 没有匹配的，那就是用默认的
 		// No EntryPoint matched, use defaultEntryPoint
 		this.defaultEntryPoint.commence(request, response, authException);
 	}

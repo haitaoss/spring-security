@@ -32,9 +32,19 @@ import org.springframework.security.authentication.DefaultAuthenticationEventPub
 import org.springframework.security.config.annotation.ObjectPostProcessor;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.web.HttpSecurityBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.AnonymousConfigurer;
+import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.config.annotation.web.configurers.DefaultLoginPageConfigurer;
+import org.springframework.security.config.annotation.web.configurers.ExceptionHandlingConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.config.annotation.web.configurers.LogoutConfigurer;
+import org.springframework.security.config.annotation.web.configurers.RequestCacheConfigurer;
+import org.springframework.security.config.annotation.web.configurers.SecurityContextConfigurer;
+import org.springframework.security.config.annotation.web.configurers.ServletApiConfigurer;
+import org.springframework.security.config.annotation.web.configurers.SessionManagementConfigurer;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter;
@@ -107,27 +117,78 @@ class HttpSecurityConfiguration {
 				this.objectPostProcessor, passwordEncoder);
 		authenticationBuilder.parentAuthenticationManager(authenticationManager());
 		authenticationBuilder.authenticationEventPublisher(getAuthenticationEventPublisher());
-		// new 一个 HttpSecurity
+		/**
+		 * new 一个 HttpSecurity
+		 *
+		 * 会设置 setSharedObject(AuthenticationManagerBuilder.class, authenticationBuilder);
+		 * */
 		HttpSecurity http = new HttpSecurity(this.objectPostProcessor, authenticationBuilder, createSharedObjects());
+		// 是用来设置、清空 securityContextHolderStrategy 中记录的 context
 		WebAsyncManagerIntegrationFilter webAsyncManagerIntegrationFilter = new WebAsyncManagerIntegrationFilter();
 		webAsyncManagerIntegrationFilter.setSecurityContextHolderStrategy(this.securityContextHolderStrategy);
 		// @formatter:off
 		http
-			// 会添加 CsrfConfigurer
+			/**
+			 * 会添加 CsrfConfigurer 它的作用是添加 CsrfFilter
+			 * 		{@link CsrfConfigurer#configure( HttpSecurityBuilder)}
+			 * */
 			.csrf(withDefaults())
 			/**
-			 * 默认的 filter 。是用来设置、清空 securityContextHolderStrategy 中记录的 context
-			 * todo 看到这里
+			 * webAsyncManagerIntegrationFilter 作为默认的 filter
+			 *
+			 * 注：filter 的类型是有限定的，必须是内置的类型，否则会报错。
+			 * 	内置的Filter类型看这里 {@link FilterOrderRegistration#FilterOrderRegistration()}
 			 * */
 			.addFilter(webAsyncManagerIntegrationFilter)
+			/**
+			 * 会添加 ExceptionHandlingConfigurer 它的作用是添加 ExceptionTranslationFilter
+			 * 		{@link ExceptionHandlingConfigurer#configure( HttpSecurityBuilder)}
+			 * */
 			.exceptionHandling(withDefaults())
+			/**
+			 * 会添加 HeadersConfigurer 它的作用是添加 HeaderWriterFilter
+			 * 		{@link HeadersConfigurer#configure( HttpSecurityBuilder)}
+			 * */
 			.headers(withDefaults())
+			/**
+			 * 会添加 SessionManagementConfigurer 它的作用是添加 SessionManagementFilter
+			 * 		{@link SessionManagementConfigurer#init( HttpSecurityBuilder)}
+			 * 		{@link SessionManagementConfigurer#configure( HttpSecurityBuilder)}
+			 * */
 			.sessionManagement(withDefaults())
+			/**
+			 * 会添加 SecurityContextConfigurer 它的作用是添加 SecurityContextHolderFilter 或者 SecurityContextPersistenceFilter
+			 * 		{@link SecurityContextConfigurer#configure( HttpSecurityBuilder)}
+			 * */
 			.securityContext(withDefaults())
+			/**
+			 * 会添加 RequestCacheConfigurer 它的作用是添加 RequestCacheAwareFilter
+			 * 		{@link RequestCacheConfigurer#init( HttpSecurityBuilder)}
+			 * 		{@link RequestCacheConfigurer#configure( HttpSecurityBuilder)}
+			 * */
 			.requestCache(withDefaults())
+			/**
+			 * 会添加 AnonymousConfigurer 它的作用是添加 AnonymousAuthenticationFilter
+			 * 		{@link AnonymousConfigurer#init( HttpSecurityBuilder)}
+			 *		{@link AnonymousConfigurer#configure( HttpSecurityBuilder)}
+			 * */
 			.anonymous(withDefaults())
+			/**
+			 * 会添加 ServletApiConfigurer 它的作用是添加 SecurityContextHolderAwareRequestFilter
+			 * 		{@link ServletApiConfigurer#configure( HttpSecurityBuilder)}
+			 * */
 			.servletApi(withDefaults())
+			/**
+			 * 会添加 DefaultLoginPageConfigurer 它的作用是添加 DefaultLoginPageGeneratingFilter、DefaultLogoutPageGeneratingFilter
+			 * 		{@link DefaultLoginPageConfigurer#init( HttpSecurityBuilder)}
+			 * 		{@link DefaultLoginPageConfigurer#configure( HttpSecurityBuilder)}
+			 * */
 			.apply(new DefaultLoginPageConfigurer<>());
+		/**
+		 * 会添加 LogoutConfigurer 它的作用是添加 LogoutFilter
+		 * 		{@link LogoutConfigurer#init( HttpSecurityBuilder)}
+		 * 		{@link LogoutConfigurer#configure( HttpSecurityBuilder)}
+		 * */
 		http.logout(withDefaults());
 		// @formatter:on
 		/**

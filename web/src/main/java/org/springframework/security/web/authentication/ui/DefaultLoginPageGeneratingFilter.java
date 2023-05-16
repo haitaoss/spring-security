@@ -225,15 +225,21 @@ public class DefaultLoginPageGeneratingFilter extends GenericFilterBean {
 
 	private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
 			throws IOException, ServletException {
+		// 是登录错误页面的地址
 		boolean loginError = isErrorPage(request);
+		// 是退出登录成功
 		boolean logoutSuccess = isLogoutSuccess(request);
+		// 是
 		if (isLoginUrlRequest(request) || loginError || logoutSuccess) {
+			// 生成登录页面字符串
 			String loginPageHtml = generateLoginPageHtml(request, loginError, logoutSuccess);
 			response.setContentType("text/html;charset=UTF-8");
 			response.setContentLength(loginPageHtml.getBytes(StandardCharsets.UTF_8).length);
+			// 输出到 response 中
 			response.getWriter().write(loginPageHtml);
 			return;
 		}
+		// 放行
 		chain.doFilter(request, response);
 	}
 

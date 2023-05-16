@@ -89,21 +89,28 @@ public class SecurityContextPersistenceFilter extends GenericFilterBean {
 
 	private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
 			throws IOException, ServletException {
+		// 存在标记就放行，防止重复执行
 		// ensure that filter is only applied once per request
 		if (request.getAttribute(FILTER_APPLIED) != null) {
 			chain.doFilter(request, response);
 			return;
 		}
+		// 设置标记
 		request.setAttribute(FILTER_APPLIED, Boolean.TRUE);
+		// 强制提前创建session
 		if (this.forceEagerSessionCreation) {
+			// 获取session，没有就出发创建
 			HttpSession session = request.getSession();
 			if (this.logger.isDebugEnabled() && session.isNew()) {
 				this.logger.debug(LogMessage.format("Created session %s eagerly", session.getId()));
 			}
 		}
+		// 装饰成 HttpRequestResponseHolder
 		HttpRequestResponseHolder holder = new HttpRequestResponseHolder(request, response);
+		// 读取(生成) SecurityContext
 		SecurityContext contextBeforeChainExecution = this.repo.loadContext(holder);
 		try {
+			// 设置
 			this.securityContextHolderStrategy.setContext(contextBeforeChainExecution);
 			if (contextBeforeChainExecution.getAuthentication() == null) {
 				logger.debug("Set SecurityContextHolder to empty SecurityContext");
@@ -114,13 +121,16 @@ public class SecurityContextPersistenceFilter extends GenericFilterBean {
 							.debug(LogMessage.format("Set SecurityContextHolder to %s", contextBeforeChainExecution));
 				}
 			}
+			// 放行
 			chain.doFilter(holder.getRequest(), holder.getResponse());
 		}
 		finally {
 			SecurityContext contextAfterChainExecution = this.securityContextHolderStrategy.getContext();
 			// Crucial removal of SecurityContextHolder contents before anything else.
 			this.securityContextHolderStrategy.clearContext();
+			// 保存到 repo
 			this.repo.saveContext(contextAfterChainExecution, holder.getRequest(), holder.getResponse());
+			// 移除标记
 			request.removeAttribute(FILTER_APPLIED);
 			this.logger.debug("Cleared SecurityContextHolder to complete request");
 		}

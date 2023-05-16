@@ -57,8 +57,10 @@ public class AccessDeniedHandlerImpl implements AccessDeniedHandler {
 			logger.trace("Did not write to response since already committed");
 			return;
 		}
+		// 没有设置错误页面
 		if (this.errorPage == null) {
 			logger.debug("Responding with 403 status code");
+			// 设置错误状态码 就完事了
 			response.sendError(HttpStatus.FORBIDDEN.value(), HttpStatus.FORBIDDEN.getReasonPhrase());
 			return;
 		}
@@ -70,6 +72,7 @@ public class AccessDeniedHandlerImpl implements AccessDeniedHandler {
 		if (logger.isDebugEnabled()) {
 			logger.debug(LogMessage.format("Forwarding to %s with status code 403", this.errorPage));
 		}
+		// 转发到 错误页面
 		request.getRequestDispatcher(this.errorPage).forward(request, response);
 	}
 

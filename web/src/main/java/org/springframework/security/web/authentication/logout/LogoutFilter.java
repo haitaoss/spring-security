@@ -95,15 +95,19 @@ public class LogoutFilter extends GenericFilterBean {
 
 	private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
 			throws IOException, ServletException {
+		// request 匹配配置的 logout 路径
 		if (requiresLogout(request, response)) {
 			Authentication auth = this.securityContextHolderStrategy.getContext().getAuthentication();
 			if (this.logger.isDebugEnabled()) {
 				this.logger.debug(LogMessage.format("Logging out [%s]", auth));
 			}
+			// 回调 LogoutHandler
 			this.handler.logout(request, response, auth);
+			// 回调 LogoutSuccessHandler
 			this.logoutSuccessHandler.onLogoutSuccess(request, response, auth);
 			return;
 		}
+		// 放行
 		chain.doFilter(request, response);
 	}
 
@@ -114,6 +118,7 @@ public class LogoutFilter extends GenericFilterBean {
 	 * @return <code>true</code> if logout should occur, <code>false</code> otherwise
 	 */
 	protected boolean requiresLogout(HttpServletRequest request, HttpServletResponse response) {
+		// 匹配配置的 logout 路径
 		if (this.logoutRequestMatcher.matches(request)) {
 			return true;
 		}

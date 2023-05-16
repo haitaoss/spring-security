@@ -18,8 +18,14 @@ package org.springframework.security.config.annotation.web.configurers;
 
 import java.util.LinkedHashMap;
 
+import javax.servlet.FilterChain;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.config.annotation.web.HttpSecurityBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.AccessDeniedHandlerImpl;
@@ -182,13 +188,28 @@ public final class ExceptionHandlingConfigurer<H extends HttpSecurityBuilder<H>>
 
 	@Override
 	public void configure(H http) {
+		/**
+		 * 默认是这个 DelegatingAuthenticationEntryPoint。
+		 * AuthenticationEntryPoint 是用来决定采用那种方式开始认证，使用的地方在 {@link ExceptionTranslationFilter#sendStartAuthentication(HttpServletRequest, HttpServletResponse, FilterChain, AuthenticationException)}
+		 * */
 		AuthenticationEntryPoint entryPoint = getAuthenticationEntryPoint(http);
+
+		// 实例化
 		ExceptionTranslationFilter exceptionTranslationFilter = new ExceptionTranslationFilter(entryPoint,
 				getRequestCache(http));
+
+		/**
+		 * 默认是 RequestMatcherDelegatingAccessDeniedHandler
+		 * AccessDeniedHandler 是用来决定如果处理认证异常的，使用的地方在 {@link ExceptionTranslationFilter#handleAccessDeniedException(HttpServletRequest, HttpServletResponse, FilterChain, AccessDeniedException)}
+		 * */
 		AccessDeniedHandler deniedHandler = getAccessDeniedHandler(http);
 		exceptionTranslationFilter.setAccessDeniedHandler(deniedHandler);
 		exceptionTranslationFilter.setSecurityContextHolderStrategy(getSecurityContextHolderStrategy());
+
+		// 使用 ObjectPostProcessor 对 exceptionTranslationFilter 进行加工
 		exceptionTranslationFilter = postProcess(exceptionTranslationFilter);
+
+		// 注册 Filter
 		http.addFilter(exceptionTranslationFilter);
 	}
 
@@ -200,6 +221,7 @@ public final class ExceptionHandlingConfigurer<H extends HttpSecurityBuilder<H>>
 	 * @return the {@link AccessDeniedHandler} to use
 	 */
 	AccessDeniedHandler getAccessDeniedHandler(H http) {
+		// 默认是空的
 		AccessDeniedHandler deniedHandler = this.accessDeniedHandler;
 		if (deniedHandler == null) {
 			deniedHandler = createDefaultDeniedHandler(http);
@@ -215,8 +237,10 @@ public final class ExceptionHandlingConfigurer<H extends HttpSecurityBuilder<H>>
 	 * @return the {@link AuthenticationEntryPoint} to use
 	 */
 	AuthenticationEntryPoint getAuthenticationEntryPoint(H http) {
+		// 默认是空的
 		AuthenticationEntryPoint entryPoint = this.authenticationEntryPoint;
 		if (entryPoint == null) {
+
 			entryPoint = createDefaultEntryPoint(http);
 		}
 		return entryPoint;
@@ -240,8 +264,10 @@ public final class ExceptionHandlingConfigurer<H extends HttpSecurityBuilder<H>>
 		if (this.defaultEntryPointMappings.size() == 1) {
 			return this.defaultEntryPointMappings.values().iterator().next();
 		}
+		// 作为默认值
 		DelegatingAuthenticationEntryPoint entryPoint = new DelegatingAuthenticationEntryPoint(
 				this.defaultEntryPointMappings);
+		// 第一个作为默认的
 		entryPoint.setDefaultEntryPoint(this.defaultEntryPointMappings.values().iterator().next());
 		return entryPoint;
 	}

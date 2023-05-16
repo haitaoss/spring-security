@@ -82,25 +82,35 @@ public final class ServletApiConfigurer<H extends HttpSecurityBuilder<H>>
 		ExceptionHandlingConfigurer<H> exceptionConf = http.getConfigurer(ExceptionHandlingConfigurer.class);
 		AuthenticationEntryPoint authenticationEntryPoint = (exceptionConf != null)
 				? exceptionConf.getAuthenticationEntryPoint(http) : null;
+
+		// 会使用这个进行认证
 		this.securityContextRequestFilter.setAuthenticationEntryPoint(authenticationEntryPoint);
+
 		LogoutConfigurer<H> logoutConf = http.getConfigurer(LogoutConfigurer.class);
 		List<LogoutHandler> logoutHandlers = (logoutConf != null) ? logoutConf.getLogoutHandlers() : null;
+		// logout 时会回调 logoutHandlers
 		this.securityContextRequestFilter.setLogoutHandlers(logoutHandlers);
+
 		AuthenticationTrustResolver trustResolver = http.getSharedObject(AuthenticationTrustResolver.class);
 		if (trustResolver != null) {
 			this.securityContextRequestFilter.setTrustResolver(trustResolver);
 		}
 		ApplicationContext context = http.getSharedObject(ApplicationContext.class);
 		if (context != null) {
+			// 从 IOC容器中 获取 GrantedAuthorityDefaults 的bean信息
 			String[] grantedAuthorityDefaultsBeanNames = context.getBeanNamesForType(GrantedAuthorityDefaults.class);
+			// 只有一个
 			if (grantedAuthorityDefaultsBeanNames.length == 1) {
 				GrantedAuthorityDefaults grantedAuthorityDefaults = context
 						.getBean(grantedAuthorityDefaultsBeanNames[0], GrantedAuthorityDefaults.class);
+				// 设置 rolePrefix
 				this.securityContextRequestFilter.setRolePrefix(grantedAuthorityDefaults.getRolePrefix());
 			}
 			this.securityContextRequestFilter.setSecurityContextHolderStrategy(getSecurityContextHolderStrategy());
 		}
+		// 使用 ObjectPostProcessor 加工
 		this.securityContextRequestFilter = postProcess(this.securityContextRequestFilter);
+		// 注册
 		http.addFilter(this.securityContextRequestFilter);
 	}
 

@@ -102,7 +102,9 @@ public class FilterSecurityInterceptor extends AbstractSecurityInterceptor imple
 	}
 
 	public void invoke(FilterInvocation filterInvocation) throws IOException, ServletException {
+		// 是适配的（其实就是有标记）
 		if (isApplied(filterInvocation) && this.observeOncePerRequest) {
+			// 放行
 			// filter already applied to this request and user wants us to observe
 			// once-per-request handling, so don't re-do security checking
 			filterInvocation.getChain().doFilter(filterInvocation.getRequest(), filterInvocation.getResponse());
@@ -110,15 +112,20 @@ public class FilterSecurityInterceptor extends AbstractSecurityInterceptor imple
 		}
 		// first time this request being called, so perform security checking
 		if (filterInvocation.getRequest() != null && this.observeOncePerRequest) {
+			// 设置标记
 			filterInvocation.getRequest().setAttribute(FILTER_APPLIED, Boolean.TRUE);
 		}
+		// 执行前（会进行认证授权操作）
 		InterceptorStatusToken token = super.beforeInvocation(filterInvocation);
 		try {
+			// 放行
 			filterInvocation.getChain().doFilter(filterInvocation.getRequest(), filterInvocation.getResponse());
 		}
 		finally {
+			// 执行完
 			super.finallyInvocation(token);
 		}
+		// 执行后
 		super.afterInvocation(token, null);
 	}
 

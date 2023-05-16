@@ -155,7 +155,11 @@ public class ThrowableAnalyzer {
 		List<Throwable> chain = new ArrayList<>();
 		Throwable currentThrowable = throwable;
 		while (currentThrowable != null) {
+			// 记录
 			chain.add(currentThrowable);
+			/**
+			 * 提取异常了信息
+			 * */
 			currentThrowable = extractCause(currentThrowable);
 		}
 		return chain.toArray(new Throwable[0]);
@@ -167,10 +171,18 @@ public class ThrowableAnalyzer {
 	 * @return the cause, may be <code>null</code> if none could be resolved
 	 */
 	private Throwable extractCause(Throwable throwable) {
+		/**
+		 * 遍历
+		 *
+		 * 注：默认只会处理这两个类型的异常 InvocationTargetException、Throwable
+		 * */
 		for (Map.Entry<Class<? extends Throwable>, ThrowableCauseExtractor> entry : this.extractorMap.entrySet()) {
 			Class<? extends Throwable> throwableType = entry.getKey();
+			// throwable 是 throwableType 实例对象
 			if (throwableType.isInstance(throwable)) {
+				// 获取 ThrowableCauseExtractor
 				ThrowableCauseExtractor extractor = entry.getValue();
+				// 提取
 				return extractor.extractCause(throwable);
 			}
 		}

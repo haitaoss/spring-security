@@ -52,6 +52,9 @@ public final class CsrfLogoutHandler implements LogoutHandler {
 	 */
 	@Override
 	public void logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+		/**
+		 * 设置为 null 从而达到清除的效果，具体看使用的是啥 csrfTokenRepository
+		 * */
 		this.csrfTokenRepository.saveToken(null, request, response);
 	}
 

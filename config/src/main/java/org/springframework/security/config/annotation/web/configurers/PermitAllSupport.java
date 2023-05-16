@@ -46,22 +46,38 @@ final class PermitAllSupport {
 	@SuppressWarnings("unchecked")
 	static void permitAll(HttpSecurityBuilder<? extends HttpSecurityBuilder<?>> http,
 			RequestMatcher... requestMatchers) {
+		/**
+		 * ExpressionUrlAuthorizationConfigurer 会注册 FilterSecurityInterceptor
+		 * 这是基于 SpEL 表达式的。
+		 *
+		 * TODOHAITAO: 2023/5/16 功能很复杂包含了 认证鉴权的逻辑
+		 * */
 		ExpressionUrlAuthorizationConfigurer<?> configurer = http
 				.getConfigurer(ExpressionUrlAuthorizationConfigurer.class);
+		/**
+		 * AuthorizeHttpRequestsConfigurer 会注册 AuthorizationFilter
+		 *
+		 * TODOHAITAO: 2023/5/16 功能很复杂包含了 认证鉴权的逻辑
+		 * */
 		AuthorizeHttpRequestsConfigurer<?> httpConfigurer = http.getConfigurer(AuthorizeHttpRequestsConfigurer.class);
 
+		// 存在一个
 		boolean oneConfigurerPresent = configurer == null ^ httpConfigurer == null;
+		// 有且只能有一个
 		Assert.state(oneConfigurerPresent,
 				"permitAll only works with either HttpSecurity.authorizeRequests() or HttpSecurity.authorizeHttpRequests(). "
 						+ "Please define one or the other but not both.");
 
+		// 遍历
 		for (RequestMatcher matcher : requestMatchers) {
 			if (matcher != null) {
 				if (configurer != null) {
+					// 注册规则
 					configurer.getRegistry().addMapping(0, new UrlMapping(matcher,
 							SecurityConfig.createList(ExpressionUrlAuthorizationConfigurer.permitAll)));
 				}
 				else {
+					// 注册映射规则
 					httpConfigurer.addFirst(matcher, AuthorizeHttpRequestsConfigurer.permitAllAuthorizationManager);
 				}
 			}

@@ -62,14 +62,18 @@ public final class RequestMatcherDelegatingAccessDeniedHandler implements Access
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response,
 			AccessDeniedException accessDeniedException) throws IOException, ServletException {
+		// 遍历
 		for (Entry<RequestMatcher, AccessDeniedHandler> entry : this.handlers.entrySet()) {
 			RequestMatcher matcher = entry.getKey();
+			// 匹配 request
 			if (matcher.matches(request)) {
 				AccessDeniedHandler handler = entry.getValue();
+				// 使用 handler 处理
 				handler.handle(request, response, accessDeniedException);
 				return;
 			}
 		}
+		// 使用默认的兜底处理
 		this.defaultHandler.handle(request, response, accessDeniedException);
 	}
 

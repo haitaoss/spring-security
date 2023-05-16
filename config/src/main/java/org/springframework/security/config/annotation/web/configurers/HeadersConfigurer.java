@@ -374,7 +374,9 @@ public class HeadersConfigurer<H extends HttpSecurityBuilder<H>>
 
 	@Override
 	public void configure(H http) {
+		// new
 		HeaderWriterFilter headersFilter = createHeaderWriterFilter();
+		// 注册
 		http.addFilter(headersFilter);
 	}
 
@@ -383,12 +385,15 @@ public class HeadersConfigurer<H extends HttpSecurityBuilder<H>>
 	 * @return the {@link HeaderWriter}
 	 */
 	private HeaderWriterFilter createHeaderWriterFilter() {
+		// 默认的 HeaderWriter
 		List<HeaderWriter> writers = getHeaderWriters();
 		if (writers.isEmpty()) {
 			throw new IllegalStateException(
 					"Headers security is enabled, but no headers will be added. Either add headers or disable headers security");
 		}
+		// 构造出 HeaderWriterFilter
 		HeaderWriterFilter headersFilter = new HeaderWriterFilter(writers);
+		// 使用 ObjectPostProcessor 加工
 		headersFilter = postProcess(headersFilter);
 		return headersFilter;
 	}

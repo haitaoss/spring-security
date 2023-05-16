@@ -47,7 +47,9 @@ public class DefaultLogoutPageGeneratingFilter extends OncePerRequestFilter {
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
+		// 匹配路径
 		if (this.matcher.matches(request)) {
+			// 往 response 中写入html
 			renderLogout(request, response);
 		}
 		else {
@@ -55,6 +57,7 @@ public class DefaultLogoutPageGeneratingFilter extends OncePerRequestFilter {
 				logger.trace(LogMessage.format("Did not render default logout page since request did not match [%s]",
 						this.matcher));
 			}
+			// 放行
 			filterChain.doFilter(request, response);
 		}
 	}
