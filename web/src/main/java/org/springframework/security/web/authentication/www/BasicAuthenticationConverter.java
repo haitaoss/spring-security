@@ -76,24 +76,31 @@ public class BasicAuthenticationConverter implements AuthenticationConverter {
 
 	@Override
 	public UsernamePasswordAuthenticationToken convert(HttpServletRequest request) {
+		// 获取请求头 Authorization 的值
 		String header = request.getHeader(HttpHeaders.AUTHORIZATION);
 		if (header == null) {
 			return null;
 		}
+		// 取出空格
 		header = header.trim();
+		// 不是以 Basic 开头
 		if (!StringUtils.startsWithIgnoreCase(header, AUTHENTICATION_SCHEME_BASIC)) {
 			return null;
 		}
 		if (header.equalsIgnoreCase(AUTHENTICATION_SCHEME_BASIC)) {
 			throw new BadCredentialsException("Empty basic authentication token");
 		}
+		// 去除前缀
 		byte[] base64Token = header.substring(6).getBytes(StandardCharsets.UTF_8);
+		// 解码
 		byte[] decoded = decode(base64Token);
 		String token = new String(decoded, getCredentialsCharset(request));
+		// username:password 的格式
 		int delim = token.indexOf(":");
 		if (delim == -1) {
 			throw new BadCredentialsException("Invalid basic authentication token");
 		}
+		// 装饰成 UsernamePasswordAuthenticationToken
 		UsernamePasswordAuthenticationToken result = UsernamePasswordAuthenticationToken
 				.unauthenticated(token.substring(0, delim), token.substring(delim + 1));
 		result.setDetails(this.authenticationDetailsSource.buildDetails(request));

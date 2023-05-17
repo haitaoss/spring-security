@@ -41,7 +41,6 @@ import static org.springframework.security.web.header.writers.ClearSiteDataHeade
  * date 2023-05-05 10:44
  *
  */
-@ComponentScan
 public class Document {
 	/**
 	 * {@link EnableWebSecurity}

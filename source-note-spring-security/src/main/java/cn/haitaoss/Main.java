@@ -17,6 +17,8 @@ import java.util.stream.Collectors;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import lombok.Data;
 import org.apache.catalina.WebResourceRoot;
@@ -52,6 +54,9 @@ import org.springframework.security.core.parameters.P;
 import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.security.web.access.intercept.FilterSecurityInterceptor;
+import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
+import org.springframework.security.web.authentication.AuthenticationFilter;
 import org.springframework.security.web.authentication.logout.HeaderWriterLogoutHandler;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.AbstractSecurityWebApplicationInitializer;
@@ -70,8 +75,7 @@ import static org.springframework.security.web.header.writers.ClearSiteDataHeade
  * date 2023-05-05 10:44
  *
  */
-@Data
-public class Main /*extends AbstractSecurityWebApplicationInitializer*/ {
+public class Main  {
 	/**
 	 * AbstractSecurityWebApplicationInitializer 实现 WebApplicationInitializer 接口
 	 *		注册 DelegatingFilterProxy 到 servletContext 中，注册的 filterName 是 springSecurityFilterChain。
@@ -96,10 +100,21 @@ public class Main /*extends AbstractSecurityWebApplicationInitializer*/ {
 	 *
 	 * {@link PermitAllSupport#permitAll(HttpSecurityBuilder, RequestMatcher...)}
 	 * {@link ExpressionUrlAuthorizationConfigurer#ExpressionUrlAuthorizationConfigurer(ApplicationContext)}
-	 * {@link AuthorizationFilter#doFilter(ServletRequest, ServletResponse, FilterChain)}
-	 * {@link AuthorizationFilter#doFilter(ServletRequest, ServletResponse, FilterChain)}
+	 *
+	 * 认证
+	 * XxxAuthenticationFilter
+	 * {@link BasicAuthenticationFilter#doFilterInternal(HttpServletRequest, HttpServletResponse, FilterChain)}
+	 * {@link UsernamePasswordAuthenticationFilter#doFilter(ServletRequest, ServletResponse, FilterChain)}
+	 * {@link AbstractAuthenticationProcessingFilter#doFilter(ServletRequest, ServletResponse, FilterChain)}
+	 *
 	 * {@link AuthenticationManager#authenticate(Authentication)}
+	 *
+	 * 鉴权
+	 * {@link FilterSecurityInterceptor#doFilter(ServletRequest, ServletResponse, FilterChain)}
+	 * {@link AuthorizationFilter#doFilter(ServletRequest, ServletResponse, FilterChain)}
 	 * {@link AccessDecisionManager#decide(Authentication, Object, Collection)}
+	 *
+	 * authenticationEntryPoint 是在认证失败时用来 决定作何种行为
 	 * */
 	public static void main(String[] args) throws Exception {
 		startTomcat();

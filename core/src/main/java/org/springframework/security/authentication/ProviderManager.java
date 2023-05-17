@@ -28,6 +28,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.MessageSourceAware;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.core.log.LogMessage;
+import org.springframework.security.authentication.dao.AbstractUserDetailsAuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.CredentialsContainer;
@@ -163,6 +164,7 @@ public class ProviderManager implements AuthenticationManager, MessageSourceAwar
 	 */
 	@Override
 	public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+		// 认证的类型
 		Class<? extends Authentication> toTest = authentication.getClass();
 		AuthenticationException lastException = null;
 		AuthenticationException parentException = null;
@@ -170,8 +172,11 @@ public class ProviderManager implements AuthenticationManager, MessageSourceAwar
 		Authentication parentResult = null;
 		int currentPosition = 0;
 		int size = this.providers.size();
+		// 遍历 AuthenticationProvider
 		for (AuthenticationProvider provider : getProviders()) {
+			// 不支持
 			if (!provider.supports(toTest)) {
+				// 跳过
 				continue;
 			}
 			if (logger.isTraceEnabled()) {
@@ -179,13 +184,19 @@ public class ProviderManager implements AuthenticationManager, MessageSourceAwar
 						provider.getClass().getSimpleName(), ++currentPosition, size));
 			}
 			try {
+				/**
+				 * 使用 provider 进行认证
+				 * 		{@link AbstractUserDetailsAuthenticationProvider#authenticate(Authentication)}
+				 * */
 				result = provider.authenticate(authentication);
 				if (result != null) {
+					// 将 authentication 的内容拷贝给 result
 					copyDetails(authentication, result);
 					break;
 				}
 			}
 			catch (AccountStatusException | InternalAuthenticationServiceException ex) {
+				// 发布事件
 				prepareException(ex, authentication);
 				// SEC-546: Avoid polling additional providers if auth failure is due to
 				// invalid account status
@@ -195,9 +206,11 @@ public class ProviderManager implements AuthenticationManager, MessageSourceAwar
 				lastException = ex;
 			}
 		}
+		// 没有认证结果 且 存在parent
 		if (result == null && this.parent != null) {
 			// Allow the parent to try.
 			try {
+				// 委托给 parent 进行认证
 				parentResult = this.parent.authenticate(authentication);
 				result = parentResult;
 			}
@@ -214,15 +227,18 @@ public class ProviderManager implements AuthenticationManager, MessageSourceAwar
 		}
 		if (result != null) {
 			if (this.eraseCredentialsAfterAuthentication && (result instanceof CredentialsContainer)) {
+				// 清除凭证信息
 				// Authentication is complete. Remove credentials and other secret data
 				// from authentication
 				((CredentialsContainer) result).eraseCredentials();
 			}
+			// parentResult == null 才发布，因为如果是通过 parent 获取的认证信息，parent 会发布事件
 			// If the parent AuthenticationManager was attempted and successful then it
 			// will publish an AuthenticationSuccessEvent
 			// This check prevents a duplicate AuthenticationSuccessEvent if the parent
 			// AuthenticationManager already published it
 			if (parentResult == null) {
+				// 发布事件
 				this.eventPublisher.publishAuthenticationSuccess(result);
 			}
 
@@ -231,6 +247,7 @@ public class ProviderManager implements AuthenticationManager, MessageSourceAwar
 
 		// Parent was null, or didn't authenticate (or throw an exception).
 		if (lastException == null) {
+			// 设置缺省异常信息
 			lastException = new ProviderNotFoundException(this.messages.getMessage("ProviderManager.providerNotFound",
 					new Object[] { toTest.getName() }, "No AuthenticationProvider found for {0}"));
 		}
@@ -241,6 +258,7 @@ public class ProviderManager implements AuthenticationManager, MessageSourceAwar
 		if (parentException == null) {
 			prepareException(lastException, authentication);
 		}
+		// 抛出异常
 		throw lastException;
 	}
 

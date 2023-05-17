@@ -86,7 +86,9 @@ public class AuthorizationFilter extends GenericFilterBean {
 			return;
 		}
 
+		// 是跳过的转发类型
 		if (skipDispatch(request)) {
+			// 放行
 			chain.doFilter(request, response);
 			return;
 		}

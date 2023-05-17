@@ -28,6 +28,7 @@ import org.springframework.core.log.LogMessage;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationDetailsSource;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -163,57 +164,76 @@ public class BasicAuthenticationFilter extends OncePerRequestFilter {
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
 			throws IOException, ServletException {
 		try {
+			// 默认是获取请求头的值，构造出的对象
 			UsernamePasswordAuthenticationToken authRequest = this.authenticationConverter.convert(request);
+			// 为空
 			if (authRequest == null) {
 				this.logger.trace("Did not process authentication request since failed to find "
 						+ "username and password in Basic Authorization header");
+				// 放行
 				chain.doFilter(request, response);
 				return;
 			}
 			String username = authRequest.getName();
 			this.logger.trace(LogMessage.format("Found username '%s' in Basic Authorization header", username));
+			// 需要验证(未认证过 | 存在的认证信息与username不一致 | 是匿名用户认证信息)
 			if (authenticationIsRequired(username)) {
+				/**
+				 * 认证 {@link ProviderManager#authenticate(Authentication)}
+				 * */
 				Authentication authResult = this.authenticationManager.authenticate(authRequest);
 				SecurityContext context = this.securityContextHolderStrategy.createEmptyContext();
 				context.setAuthentication(authResult);
+				// 保存认证信息到 上下文中
 				this.securityContextHolderStrategy.setContext(context);
 				if (this.logger.isDebugEnabled()) {
 					this.logger.debug(LogMessage.format("Set SecurityContextHolder to %s", authResult));
 				}
+				// rememberMe 的回调
 				this.rememberMeServices.loginSuccess(request, response, authResult);
+				// 存储
 				this.securityContextRepository.saveContext(context, request, response);
 				onSuccessfulAuthentication(request, response, authResult);
 			}
 		}
 		catch (AuthenticationException ex) {
+			// 清除
 			this.securityContextHolderStrategy.clearContext();
 			this.logger.debug("Failed to process authentication request", ex);
+			// rememberMe 的回调
 			this.rememberMeServices.loginFail(request, response);
 			onUnsuccessfulAuthentication(request, response, ex);
+			// 忽略失败
 			if (this.ignoreFailure) {
+				// 直接放行
 				chain.doFilter(request, response);
 			}
 			else {
+				// 使用认证入口处理异常
 				this.authenticationEntryPoint.commence(request, response, ex);
 			}
 			return;
 		}
 
+		// 放行
 		chain.doFilter(request, response);
 	}
 
 	private boolean authenticationIsRequired(String username) {
+		// 未认证过
 		// Only reauthenticate if username doesn't match SecurityContextHolder and user
 		// isn't authenticated (see SEC-53)
 		Authentication existingAuth = this.securityContextHolderStrategy.getContext().getAuthentication();
 		if (existingAuth == null || !existingAuth.isAuthenticated()) {
 			return true;
 		}
+		// 与已存在的认证信息不一致
 		// Limit username comparison to providers which use usernames (ie
 		// UsernamePasswordAuthenticationToken) (see SEC-348)
 		if (existingAuth instanceof UsernamePasswordAuthenticationToken && !existingAuth.getName().equals(username)) {
 			return true;
 		}
+		// 是匿名用户的认证信息
 		// Handle unusual condition where an AnonymousAuthenticationToken is already
 		// present. This shouldn't happen very often, as BasicProcessingFitler is meant to
 		// be earlier in the filter chain than AnonymousAuthenticationFilter.

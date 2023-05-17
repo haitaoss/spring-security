@@ -2,6 +2,7 @@ package cn.haitaoss.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.format.FormatterRegistry;
@@ -26,29 +27,8 @@ import org.springframework.web.servlet.support.AbstractDispatcherServletInitiali
  *
  */
 @EnableWebMvc
-@Controller
-@Import(Demo.class)
+@ComponentScan
 public class MvcConfig extends AbstractAnnotationConfigDispatcherServletInitializer implements WebMvcConfigurer {
-	@Autowired
-	private ApplicationContext context;
-
-	@GetMapping("/index")
-	@ResponseBody
-	public Object index(@RequestParam("po") MvcConfig mvcConfig) {
-		System.out.println("===");
-		return "ok";
-	}
-
-	@Override
-	public void addFormatters(FormatterRegistry registry) {
-		registry.addConverter(new Converter<String, MvcConfig>() {
-			@Override
-			public MvcConfig convert(String source) {
-				System.out.println("source = " + source);
-				return new MvcConfig();
-			}
-		});
-	}
 
 	@Override
 	public void addResourceHandlers(ResourceHandlerRegistry registry) {

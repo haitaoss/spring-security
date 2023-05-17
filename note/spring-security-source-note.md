@@ -118,3 +118,7 @@ permit：允许
 attempt：参数
 
 decide：决定
+
+erase：清除
+
+AccessDecisionManager：访问决策管理器

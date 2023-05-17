@@ -115,7 +115,9 @@ class HttpSecurityConfiguration {
 				this.context);
 		AuthenticationManagerBuilder authenticationBuilder = new WebSecurityConfigurerAdapter.DefaultPasswordEncoderAuthenticationManagerBuilder(
 				this.objectPostProcessor, passwordEncoder);
+		// 设置 parentAuthenticationManager
 		authenticationBuilder.parentAuthenticationManager(authenticationManager());
+		// 默认是这个 AuthenticationEventPublisher
 		authenticationBuilder.authenticationEventPublisher(getAuthenticationEventPublisher());
 		/**
 		 * new 一个 HttpSecurity
@@ -171,6 +173,8 @@ class HttpSecurityConfiguration {
 			 * 会添加 AnonymousConfigurer 它的作用是添加 AnonymousAuthenticationFilter
 			 * 		{@link AnonymousConfigurer#init( HttpSecurityBuilder)}
 			 *		{@link AnonymousConfigurer#configure( HttpSecurityBuilder)}
+			 *
+			 * Tips: 这个很关键，这是用来作为默认的 AuthenticationProvider
 			 * */
 			.anonymous(withDefaults())
 			/**
@@ -205,9 +209,11 @@ class HttpSecurityConfiguration {
 	}
 
 	private AuthenticationEventPublisher getAuthenticationEventPublisher() {
+		// 从IOC容器中获取
 		if (this.context.getBeanNamesForType(AuthenticationEventPublisher.class).length > 0) {
 			return this.context.getBean(AuthenticationEventPublisher.class);
 		}
+		// 使用默认的
 		return this.objectPostProcessor.postProcess(new DefaultAuthenticationEventPublisher());
 	}
 

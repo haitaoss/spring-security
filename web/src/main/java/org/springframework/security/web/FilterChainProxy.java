@@ -180,27 +180,38 @@ public class FilterChainProxy extends GenericFilterBean {
 	@Override
 	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
 			throws IOException, ServletException {
+		// 没有标记
 		boolean clearContext = request.getAttribute(FILTER_APPLIED) == null;
+		// 存在标志
 		if (!clearContext) {
+			// 放行
 			doFilterInternal(request, response, chain);
 			return;
 		}
 		try {
+			// 设置标记
 			request.setAttribute(FILTER_APPLIED, Boolean.TRUE);
+			// 放行
 			doFilterInternal(request, response, chain);
 		}
 		catch (Exception ex) {
+			// 构造出 causeChain。其实就是遍历异常调用找，收集期望的异常对象
 			Throwable[] causeChain = this.throwableAnalyzer.determineCauseChain(ex);
 			Throwable requestRejectedException = this.throwableAnalyzer
 					.getFirstThrowableOfType(RequestRejectedException.class, causeChain);
+			// 不是期望的异常
 			if (!(requestRejectedException instanceof RequestRejectedException)) {
+				// 直接抛出
 				throw ex;
 			}
+			// 处理异常（没啥特别的逻辑，默认是直接抛出异常）
 			this.requestRejectedHandler.handle((HttpServletRequest) request, (HttpServletResponse) response,
 					(RequestRejectedException) requestRejectedException);
 		}
 		finally {
+			// 清除上下文
 			this.securityContextHolderStrategy.clearContext();
+			// 移除标记
 			request.removeAttribute(FILTER_APPLIED);
 		}
 	}
@@ -209,19 +220,24 @@ public class FilterChainProxy extends GenericFilterBean {
 			throws IOException, ServletException {
 		FirewalledRequest firewallRequest = this.firewall.getFirewalledRequest((HttpServletRequest) request);
 		HttpServletResponse firewallResponse = this.firewall.getFirewalledResponse((HttpServletResponse) response);
+		// 遍历 SecurityFilterChain ，根据 firewallRequest 找到匹配的直接返回
 		List<Filter> filters = getFilters(firewallRequest);
+		// 没有找到
 		if (filters == null || filters.size() == 0) {
 			if (logger.isTraceEnabled()) {
 				logger.trace(LogMessage.of(() -> "No security for " + requestLine(firewallRequest)));
 			}
 			firewallRequest.reset();
+			// 直接放行
 			chain.doFilter(firewallRequest, firewallResponse);
 			return;
 		}
 		if (logger.isDebugEnabled()) {
 			logger.debug(LogMessage.of(() -> "Securing " + requestLine(firewallRequest)));
 		}
+		// 装饰成 VirtualFilterChain
 		VirtualFilterChain virtualFilterChain = new VirtualFilterChain(firewallRequest, chain, filters);
+		// 执行
 		virtualFilterChain.doFilter(firewallRequest, firewallResponse);
 	}
 
@@ -232,12 +248,15 @@ public class FilterChainProxy extends GenericFilterBean {
 	 */
 	private List<Filter> getFilters(HttpServletRequest request) {
 		int count = 0;
+		// 遍历 SecurityFilterChain
 		for (SecurityFilterChain chain : this.filterChains) {
 			if (logger.isTraceEnabled()) {
 				logger.trace(LogMessage.format("Trying to match request against %s (%d/%d)", chain, ++count,
 						this.filterChains.size()));
 			}
+			// 匹配
 			if (chain.matches(request)) {
+				// 返回
 				return chain.getFilters();
 			}
 		}
@@ -343,21 +362,26 @@ public class FilterChainProxy extends GenericFilterBean {
 
 		@Override
 		public void doFilter(ServletRequest request, ServletResponse response) throws IOException, ServletException {
+			// 说明执行完了 additionalFilters，那就可以执行 chain 了
 			if (this.currentPosition == this.size) {
 				if (logger.isDebugEnabled()) {
 					logger.debug(LogMessage.of(() -> "Secured " + requestLine(this.firewalledRequest)));
 				}
 				// Deactivate path stripping as we exit the security filter chain
 				this.firewalledRequest.reset();
+				// 放行
 				this.originalChain.doFilter(request, response);
 				return;
 			}
+			// 递增
 			this.currentPosition++;
+			// 获取当前要执行的Filter
 			Filter nextFilter = this.additionalFilters.get(this.currentPosition - 1);
 			if (logger.isTraceEnabled()) {
 				logger.trace(LogMessage.format("Invoking %s (%d/%d)", nextFilter.getClass().getSimpleName(),
 						this.currentPosition, this.size));
 			}
+			// 执行
 			nextFilter.doFilter(request, response, this);
 		}
 

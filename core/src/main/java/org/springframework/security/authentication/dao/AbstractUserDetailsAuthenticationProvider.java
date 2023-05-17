@@ -121,15 +121,20 @@ public abstract class AbstractUserDetailsAuthenticationProvider
 
 	@Override
 	public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+		// authentication 必须是 UsernamePasswordAuthenticationToken 类型的
 		Assert.isInstanceOf(UsernamePasswordAuthenticationToken.class, authentication,
 				() -> this.messages.getMessage("AbstractUserDetailsAuthenticationProvider.onlySupports",
 						"Only UsernamePasswordAuthenticationToken is supported"));
+		// 提取出 username
 		String username = determineUsername(authentication);
 		boolean cacheWasUsed = true;
+		// 尝试从缓存中获取
 		UserDetails user = this.userCache.getUserFromCache(username);
 		if (user == null) {
+			// 标记没有缓存
 			cacheWasUsed = false;
 			try {
+				// 检索出 user
 				user = retrieveUser(username, (UsernamePasswordAuthenticationToken) authentication);
 			}
 			catch (UsernameNotFoundException ex) {
@@ -140,31 +145,46 @@ public abstract class AbstractUserDetailsAuthenticationProvider
 				throw new BadCredentialsException(this.messages
 						.getMessage("AbstractUserDetailsAuthenticationProvider.badCredentials", "Bad credentials"));
 			}
+			// 为空就报错
 			Assert.notNull(user, "retrieveUser returned null - a violation of the interface contract");
 		}
 		try {
+			// 前置认证检查
 			this.preAuthenticationChecks.check(user);
+			/**
+			 * 进行附加检查。
+			 * 这是抽象方法看具体的子类是如何写的，一般就是验证 凭证是否正确
+			 * */
 			additionalAuthenticationChecks(user, (UsernamePasswordAuthenticationToken) authentication);
 		}
 		catch (AuthenticationException ex) {
+			// 不是缓存的值
 			if (!cacheWasUsed) {
+				// 直接抛出异常
 				throw ex;
 			}
+			// 缓存的值校验错误，那就获取最新的信息 重新进行检查
 			// There was a problem, so try again after checking
 			// we're using latest data (i.e. not from the cache)
 			cacheWasUsed = false;
+			// 检索 user
 			user = retrieveUser(username, (UsernamePasswordAuthenticationToken) authentication);
+			// 前置认证检查
 			this.preAuthenticationChecks.check(user);
 			additionalAuthenticationChecks(user, (UsernamePasswordAuthenticationToken) authentication);
 		}
+		// 后置认证检查
 		this.postAuthenticationChecks.check(user);
+		// 不是缓存
 		if (!cacheWasUsed) {
+			// 设置缓存
 			this.userCache.putUserInCache(user);
 		}
 		Object principalToReturn = user;
 		if (this.forcePrincipalAsString) {
 			principalToReturn = user.getUsername();
 		}
+		// 装饰成 Authentication
 		return createSuccessAuthentication(principalToReturn, authentication, user);
 	}
 

@@ -233,6 +233,7 @@ public class AuthenticationManagerBuilder
 		if (this.eventPublisher != null) {
 			providerManager.setAuthenticationEventPublisher(this.eventPublisher);
 		}
+		// 使用 ObjectPostProcessor 加工
 		providerManager = postProcess(providerManager);
 		return providerManager;
 	}

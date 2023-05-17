@@ -68,14 +68,19 @@ public class DaoAuthenticationProvider extends AbstractUserDetailsAuthentication
 	@SuppressWarnings("deprecation")
 	protected void additionalAuthenticationChecks(UserDetails userDetails,
 			UsernamePasswordAuthenticationToken authentication) throws AuthenticationException {
+		// 凭证为空
 		if (authentication.getCredentials() == null) {
+			// 抛出异常
 			this.logger.debug("Failed to authenticate since no credentials provided");
 			throw new BadCredentialsException(this.messages
 					.getMessage("AbstractUserDetailsAuthenticationProvider.badCredentials", "Bad credentials"));
 		}
+		// 获取凭证
 		String presentedPassword = authentication.getCredentials().toString();
+		// 使用 passwordEncoder 校验凭证不一致
 		if (!this.passwordEncoder.matches(presentedPassword, userDetails.getPassword())) {
 			this.logger.debug("Failed to authenticate since password does not match stored value");
+			// 抛出异常
 			throw new BadCredentialsException(this.messages
 					.getMessage("AbstractUserDetailsAuthenticationProvider.badCredentials", "Bad credentials"));
 		}
@@ -89,10 +94,14 @@ public class DaoAuthenticationProvider extends AbstractUserDetailsAuthentication
 	@Override
 	protected final UserDetails retrieveUser(String username, UsernamePasswordAuthenticationToken authentication)
 			throws AuthenticationException {
+		// 初始化 this.userNotFoundEncodedPassword
 		prepareTimingAttackProtection();
 		try {
+			// 通过 UserDetailsService 加载 User
 			UserDetails loadedUser = this.getUserDetailsService().loadUserByUsername(username);
+			// 没加载到
 			if (loadedUser == null) {
+				// 抛出异常
 				throw new InternalAuthenticationServiceException(
 						"UserDetailsService returned null, which is an interface contract violation");
 			}

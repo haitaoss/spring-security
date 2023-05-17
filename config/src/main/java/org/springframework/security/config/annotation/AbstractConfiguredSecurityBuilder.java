@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.util.Assert;
@@ -317,14 +318,28 @@ public abstract class AbstractConfiguredSecurityBuilder<O, B extends SecurityBui
 			 * */
 			init();
 			this.buildState = BuildState.CONFIGURING;
-			// 预留的模板方法
+			/**
+			 * 预留的模板方法
+			 *
+			 * {@link HttpSecurity#beforeConfigure()}
+			 * 		设置 setSharedObject(AuthenticationManager.class, this.authenticationManager);
+			 * 		这个很重要，AuthenticationManager 是用来实现认证、鉴权的
+			 * */
 			beforeConfigure();
 			/**
 			 * 遍历设置的 List<SecurityConfigurer> ,回调 {@link SecurityConfigurer#configure(SecurityBuilder)} 用来配置 this
 			 * */
 			configure();
 			this.buildState = BuildState.BUILDING;
-			// 生成实例
+			/**
+			 * 生成实例。主要是有这三个子类：
+			 * 	{@link HttpSecurity#performBuild()}
+			 * 			new DefaultSecurityFilterChain(this.requestMatcher, sortedFilters);
+			 * 	{@link WebSecurity#performBuild()}
+			 *			new FilterChainProxy(List<SecurityFilterChain>);
+			 * 	{@link AuthenticationManagerBuilder#performBuild()}
+			 * 			new ProviderManager(this.authenticationProviders,this.parentAuthenticationManager);
+			 * */
 			O result = performBuild();
 			this.buildState = BuildState.BUILT;
 			return result;
