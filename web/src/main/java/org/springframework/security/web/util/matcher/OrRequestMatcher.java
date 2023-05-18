@@ -54,11 +54,14 @@ public final class OrRequestMatcher implements RequestMatcher {
 
 	@Override
 	public boolean matches(HttpServletRequest request) {
+		// 遍历
 		for (RequestMatcher matcher : this.requestMatchers) {
+			// 匹配就返回
 			if (matcher.matches(request)) {
 				return true;
 			}
 		}
+		// 都不匹配就返回 false
 		return false;
 	}
 

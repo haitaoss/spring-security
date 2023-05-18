@@ -96,6 +96,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.filter.CorsFilter;
+import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
 import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
 
 /**
@@ -3251,7 +3253,14 @@ public final class HttpSecurity extends AbstractConfiguredSecurityBuilder<Defaul
 			//	filters 记录的时候 OrderedFilter 类型，所以这里强转一下
 			sortedFilters.add(((OrderedFilter) filter).filter);
 		}
-		// 构造出 DefaultSecurityFilterChain
+		/**
+		 * 构造出 DefaultSecurityFilterChain
+		 * requestMatcher 默认是 AnyRequestMatcher.INSTANCE，其 {@link AnyRequestMatcher#matches(HttpServletRequest)} 一直返回 true
+		 *
+		 * 可以通过这些方法修改默认的值
+		 * 	- {@link #antMatcher}
+		 * 	- {@link #mvcMatcher}
+		 * */
 		return new DefaultSecurityFilterChain(this.requestMatcher, sortedFilters);
 	}
 
@@ -3903,6 +3912,7 @@ public final class HttpSecurity extends AbstractConfiguredSecurityBuilder<Defaul
 	 * @see MvcRequestMatcher
 	 */
 	public HttpSecurity securityMatcher(String... patterns) {
+		// ClassLoader 中有 HandlerMappingIntrospector 就是 true
 		if (mvcPresent) {
 			this.requestMatcher = new OrRequestMatcher(createMvcMatchers(patterns));
 			return this;
@@ -3921,16 +3931,30 @@ public final class HttpSecurity extends AbstractConfiguredSecurityBuilder<Defaul
 
 	private List<RequestMatcher> createMvcMatchers(String... mvcPatterns) {
 		ObjectPostProcessor<Object> opp = getContext().getBean(ObjectPostProcessor.class);
+		/**
+		 * 没有 mvcHandlerMappingIntrospector
+		 *
+		 * Tips: @EnableWebMvc 会注册这个 bean。看 {@link WebMvcConfigurationSupport#mvcHandlerMappingIntrospector()}
+		 * */
 		if (!getContext().containsBean(HANDLER_MAPPING_INTROSPECTOR_BEAN_NAME)) {
+			// 抛出异常
 			throw new NoSuchBeanDefinitionException("A Bean named " + HANDLER_MAPPING_INTROSPECTOR_BEAN_NAME
 					+ " of type " + HandlerMappingIntrospector.class.getName()
 					+ " is required to use MvcRequestMatcher. Please ensure Spring Security & Spring MVC are configured in a shared ApplicationContext.");
 		}
+		// 拿到bean
 		HandlerMappingIntrospector introspector = getContext().getBean(HANDLER_MAPPING_INTROSPECTOR_BEAN_NAME,
 				HandlerMappingIntrospector.class);
 		List<RequestMatcher> matchers = new ArrayList<>(mvcPatterns.length);
 		for (String mvcPattern : mvcPatterns) {
+			/**
+			 * 装饰成 MvcRequestMatcher。
+			 * 会依赖 HandlerMappingIntrospector 来判断是否匹配，其实就是拿到匹配的 RequestMapping 的规则，用来匹配。
+			 * 比如，访问 /index /index.html /index.xx 都是符合 @RequestMapping("/index") 的
+			 * {@link cn.haitaoss.config.WebMvcConfig#configurePathMatch(PathMatchConfigurer)}
+			 * */
 			MvcRequestMatcher matcher = new MvcRequestMatcher(introspector, mvcPattern);
+			// 使用 opp 加工
 			opp.postProcess(matcher);
 			matchers.add(matcher);
 		}

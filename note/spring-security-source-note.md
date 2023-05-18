@@ -115,7 +115,7 @@ entryPoint：入口点
 
 permit：允许
 
-attempt：参数
+attempt：尝试
 
 decide：决定
 

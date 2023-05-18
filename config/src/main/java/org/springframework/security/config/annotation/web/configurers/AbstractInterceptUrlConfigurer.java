@@ -75,11 +75,20 @@ public abstract class AbstractInterceptUrlConfigurer<C extends AbstractIntercept
 
 	@Override
 	public void configure(H http) throws Exception {
+		/**
+		 * metadataSource 是用来描述 资源对应的权限数据
+		 * */
 		FilterInvocationSecurityMetadataSource metadataSource = createMetadataSource(http);
 		if (metadataSource == null) {
 			return;
 		}
-		// 构造出 FilterSecurityInterceptor
+		/**
+		 * 构造出 FilterSecurityInterceptor
+		 *
+		 * 会设置 SecurityMetadataSource，是用来记录 资源对应的权限数据
+		 * 会设置 AccessDecisionManager ，是用来实现 鉴权的逻辑的。默认是 AffirmativeBased
+		 * 会设置 setAuthenticationManager，是用来实现 认证逻辑的。
+		 * */
 		FilterSecurityInterceptor securityInterceptor = createFilterSecurityInterceptor(http, metadataSource,
 				http.getSharedObject(AuthenticationManager.class));
 		if (this.filterSecurityInterceptorOncePerRequest != null) {
@@ -87,7 +96,7 @@ public abstract class AbstractInterceptUrlConfigurer<C extends AbstractIntercept
 		}
 		// 使用 ObjectPostProcessor 加工
 		securityInterceptor = postProcess(securityInterceptor);
-		// 注册
+		// 注册，作为Filter
 		http.addFilter(securityInterceptor);
 		// 添加到 shareObject 中
 		http.setSharedObject(FilterSecurityInterceptor.class, securityInterceptor);
@@ -147,10 +156,18 @@ public abstract class AbstractInterceptUrlConfigurer<C extends AbstractIntercept
 			FilterInvocationSecurityMetadataSource metadataSource, AuthenticationManager authenticationManager)
 			throws Exception {
 		FilterSecurityInterceptor securityInterceptor = new FilterSecurityInterceptor();
+		// metadataSource 记录着 资源应该具有那些权限
 		securityInterceptor.setSecurityMetadataSource(metadataSource);
+		// 访问决策管理器，是用来实现鉴权的。默认是 AffirmativeBased
 		securityInterceptor.setAccessDecisionManager(getAccessDecisionManager(http));
+		// 用来实现认证
 		securityInterceptor.setAuthenticationManager(authenticationManager);
+		// 记录 SecurityContext 的
 		securityInterceptor.setSecurityContextHolderStrategy(getSecurityContextHolderStrategy());
+		/**
+		 * 校验
+		 * 会校验 AccessDecisionManager 是否支持 SecurityMetadataSource
+		 * */
 		securityInterceptor.afterPropertiesSet();
 		return securityInterceptor;
 	}

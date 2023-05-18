@@ -9,7 +9,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.acl.Permission;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -44,6 +47,8 @@ import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.ObjectPostProcessor;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.authentication.configuration.EnableGlobalAuthentication;
 import org.springframework.security.config.annotation.web.HttpSecurityBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -92,11 +97,13 @@ public class Main  {
 	 * {@link EnableWebSecurity}
 	 * 		会注册名为 springSecurityFilterChain 到容器中
 	 *
+	 * {@link EnableGlobalAuthentication}
+	 * {@link AuthenticationConfiguration}
 	 *
 	 * 深入研究：
 	 * 	1. 进行认证的Filter： FilterSecurityInterceptor、AuthorizationFilter
 	 * 	2. AuthenticationManager 是什么时候注册的？？？？
-	 * 			{@link HttpSecurityConfiguration#httpSecurity()}
+	 *            {@link HttpSecurityConfiguration#httpSecurity()}
 	 *
 	 * {@link PermitAllSupport#permitAll(HttpSecurityBuilder, RequestMatcher...)}
 	 * {@link ExpressionUrlAuthorizationConfigurer#ExpressionUrlAuthorizationConfigurer(ApplicationContext)}
@@ -117,6 +124,12 @@ public class Main  {
 	 * authenticationEntryPoint 是在认证失败时用来 决定作何种行为
 	 * */
 	public static void main(String[] args) throws Exception {
+		Collections.sort(Arrays.asList(1, 2, 5, 4), new Comparator<Integer>() {
+			@Override
+			public int compare(Integer o1, Integer o2) {
+				return o1.compareTo(o2);
+			}
+		});
 		startTomcat();
 	}
 

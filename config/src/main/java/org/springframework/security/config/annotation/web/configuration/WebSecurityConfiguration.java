@@ -41,6 +41,7 @@ import org.springframework.security.config.annotation.AbstractConfiguredSecurity
 import org.springframework.security.config.annotation.ObjectPostProcessor;
 import org.springframework.security.config.annotation.SecurityConfigurer;
 import org.springframework.security.config.annotation.web.WebSecurityConfigurer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.crypto.RsaKeyConversionServicePostProcessor;
 import org.springframework.security.context.DelegatingApplicationListener;
@@ -107,6 +108,7 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 	public Filter springSecurityFilterChain() throws Exception {
 		boolean hasConfigurers = this.webSecurityConfigurers != null && !this.webSecurityConfigurers.isEmpty();
 		boolean hasFilterChain = !this.securityFilterChains.isEmpty();
+		// 都有就报错
 		Assert.state(!(hasConfigurers && hasFilterChain),
 				"Found WebSecurityConfigurerAdapter as well as SecurityFilterChain. Please select just one.");
 		// 没有配置类 && 没有 FilterChain
@@ -114,8 +116,14 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 			// （是依赖注入得到的）
 			WebSecurityConfigurerAdapter adapter = this.objectObjectPostProcessor
 					// 使用 objectObjectPostProcessor 加工 adapter
-					.postProcess(new WebSecurityConfigurerAdapter() {});
-			// 应用 adapter
+					.postProcess(new WebSecurityConfigurerAdapter() { });
+			/**
+			 * 注册 WebSecurityConfigurerAdapter 这个 configurer。
+			 * 		{@link WebSecurityConfigurerAdapter#init(WebSecurity)}
+			 * 		{@link WebSecurityConfigurerAdapter#configure(HttpSecurity)}
+			 *
+			 * TODOHAITAO: 2023/5/18 补一下
+			 * */
 			this.webSecurity.apply(adapter);
 		}
 		// 遍历 securityFilterChains（是依赖注入得到的）

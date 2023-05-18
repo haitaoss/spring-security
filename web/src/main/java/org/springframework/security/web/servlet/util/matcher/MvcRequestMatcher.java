@@ -65,14 +65,19 @@ public class MvcRequestMatcher implements RequestMatcher, RequestVariablesExtrac
 
 	@Override
 	public boolean matches(HttpServletRequest request) {
+		// method 或者 servletPath 不匹配直接
 		if (notMatchMethodOrServletPath(request)) {
+			// 返回 false
 			return false;
 		}
+		// 获取匹配的 MatchableHandlerMapping
 		MatchableHandlerMapping mapping = getMapping(request);
 		if (mapping == null) {
+			// 默认的匹配逻辑
 			return this.defaultMatcher.matches(request);
 		}
 		RequestMatchResult matchResult = mapping.match(request, this.pattern);
+		// 返回匹配结果
 		return matchResult != null;
 	}
 

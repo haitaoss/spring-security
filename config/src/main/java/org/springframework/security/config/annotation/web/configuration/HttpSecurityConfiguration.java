@@ -81,6 +81,9 @@ class HttpSecurityConfiguration {
 
 	@Autowired
 	void setObjectPostProcessor(ObjectPostProcessor<Object> objectPostProcessor) {
+		/**
+		 * @EnableWebSecurity 上的 @EnableGlobalAuthentication 会注册
+		 * */
 		this.objectPostProcessor = objectPostProcessor;
 	}
 
@@ -90,6 +93,9 @@ class HttpSecurityConfiguration {
 
 	@Autowired
 	void setAuthenticationConfiguration(AuthenticationConfiguration authenticationConfiguration) {
+		/**
+		 * @EnableWebSecurity 上的 @EnableGlobalAuthentication 会注册
+		 * */
 		this.authenticationConfiguration = authenticationConfiguration;
 	}
 
@@ -113,11 +119,19 @@ class HttpSecurityConfiguration {
 	HttpSecurity httpSecurity() throws Exception {
 		WebSecurityConfigurerAdapter.LazyPasswordEncoder passwordEncoder = new WebSecurityConfigurerAdapter.LazyPasswordEncoder(
 				this.context);
+		// 是用来实现认证逻辑的，密码的匹配是依赖 passwordEncoder 实现的
 		AuthenticationManagerBuilder authenticationBuilder = new WebSecurityConfigurerAdapter.DefaultPasswordEncoderAuthenticationManagerBuilder(
 				this.objectPostProcessor, passwordEncoder);
-		// 设置 parentAuthenticationManager
+		/**
+		 * 设置 parentAuthenticationManager
+		 * 默认会通过 authenticationConfiguration.getAuthenticationManager() 得到
+		 * 		{@link AuthenticationConfiguration#getAuthenticationManager()}
+		 * */
 		authenticationBuilder.parentAuthenticationManager(authenticationManager());
-		// 默认是这个 AuthenticationEventPublisher
+		/**
+		 *
+		 * 从IOC容器中获取 AuthenticationEventPublisher 没有就默认用 AuthenticationEventPublisher
+		 * */
 		authenticationBuilder.authenticationEventPublisher(getAuthenticationEventPublisher());
 		/**
 		 * new 一个 HttpSecurity
@@ -204,6 +218,7 @@ class HttpSecurityConfiguration {
 	}
 
 	private AuthenticationManager authenticationManager() throws Exception {
+		// 为空 就通过 authenticationConfiguration.getAuthenticationManager()
 		return (this.authenticationManager != null) ? this.authenticationManager
 				: this.authenticationConfiguration.getAuthenticationManager();
 	}

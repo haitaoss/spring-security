@@ -62,17 +62,35 @@ final class AutowireBeanFactoryObjectPostProcessor
 		}
 		T result = null;
 		try {
+			/**
+			 * 对 bean 进行初始化。
+			 * 也就是会执行： 初始化前后置、初始化、初始化后置
+			 * */
 			result = (T) this.autowireBeanFactory.initializeBean(object, object.toString());
 		}
 		catch (RuntimeException ex) {
 			Class<?> type = object.getClass();
 			throw new RuntimeException("Could not postProcess " + object + " of type " + type, ex);
 		}
+		/**
+		 * 填充bean。
+		 * 也就是完成bean的属性注入
+		 * */
 		this.autowireBeanFactory.autowireBean(object);
 		if (result instanceof DisposableBean) {
+			/**
+			 * 记录 DisposableBean 类型的 result。
+			 * 因为 AutowireBeanFactoryObjectPostProcessor 实现了 DisposableBean 接口，
+			 * 所以IOC容器在销毁bean的的时候会回调方法 {@link AutowireBeanFactoryObjectPostProcessor#destroy()}
+			 * */
 			this.disposableBeans.add((DisposableBean) result);
 		}
 		if (result instanceof SmartInitializingSingleton) {
+			/**
+			 * 记录 SmartInitializingSingleton 类型的 result。
+			 * 因为 AutowireBeanFactoryObjectPostProcessor 实现了 SmartInitializingSingleton 接口，
+			 * 所以IOC容器在完成单例bean的创建后会回调方法 {@link AutowireBeanFactoryObjectPostProcessor#afterSingletonsInstantiated()}
+			 * */
 			this.smartSingletons.add((SmartInitializingSingleton) result);
 		}
 		return result;
@@ -80,15 +98,19 @@ final class AutowireBeanFactoryObjectPostProcessor
 
 	@Override
 	public void afterSingletonsInstantiated() {
+		// 遍历记录的 SmartInitializingSingleton
 		for (SmartInitializingSingleton singleton : this.smartSingletons) {
+			// 回调
 			singleton.afterSingletonsInstantiated();
 		}
 	}
 
 	@Override
 	public void destroy() {
+		// 回调
 		for (DisposableBean disposable : this.disposableBeans) {
 			try {
+				// 回调
 				disposable.destroy();
 			}
 			catch (Exception ex) {

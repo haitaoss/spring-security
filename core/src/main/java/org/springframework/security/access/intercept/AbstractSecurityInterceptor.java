@@ -153,36 +153,46 @@ public abstract class AbstractSecurityInterceptor
 		Assert.notNull(this.obtainSecurityMetadataSource(), "An SecurityMetadataSource is required");
 		Assert.isTrue(this.obtainSecurityMetadataSource().supports(getSecureObjectClass()),
 				() -> "SecurityMetadataSource does not support secure object class: " + getSecureObjectClass());
+		// runAsManager 支持
 		Assert.isTrue(this.runAsManager.supports(getSecureObjectClass()),
 				() -> "RunAsManager does not support secure object class: " + getSecureObjectClass());
+		// accessDecisionManager 支持
 		Assert.isTrue(this.accessDecisionManager.supports(getSecureObjectClass()),
 				() -> "AccessDecisionManager does not support secure object class: " + getSecureObjectClass());
 		if (this.afterInvocationManager != null) {
+			// afterInvocationManager 支持
 			Assert.isTrue(this.afterInvocationManager.supports(getSecureObjectClass()),
 					() -> "AfterInvocationManager does not support secure object class: " + getSecureObjectClass());
 		}
 		if (this.validateConfigAttributes) {
+			// 权限配置信息
 			Collection<ConfigAttribute> attributeDefs = this.obtainSecurityMetadataSource().getAllConfigAttributes();
 			if (attributeDefs == null) {
 				this.logger.warn("Could not validate configuration attributes as the "
 						+ "SecurityMetadataSource did not return any attributes from getAllConfigAttributes()");
 				return;
 			}
+			// 校验
 			validateAttributeDefs(attributeDefs);
 		}
 	}
 
 	private void validateAttributeDefs(Collection<ConfigAttribute> attributeDefs) {
 		Set<ConfigAttribute> unsupportedAttrs = new HashSet<>();
+		// 遍历
 		for (ConfigAttribute attr : attributeDefs) {
+			// 不支持的 ConfigAttribute
 			if (!this.runAsManager.supports(attr) && !this.accessDecisionManager.supports(attr)
 					&& ((this.afterInvocationManager == null) || !this.afterInvocationManager.supports(attr))) {
+				// 记录
 				unsupportedAttrs.add(attr);
 			}
 		}
+		// 不为空说明存在不支持的
 		if (unsupportedAttrs.size() != 0) {
 			this.logger
 					.trace("Did not validate configuration attributes since validateConfigurationAttributes is false");
+			// 抛出异常
 			throw new IllegalArgumentException("Unsupported configuration attributes: " + unsupportedAttrs);
 		}
 		else {
@@ -227,7 +237,7 @@ public abstract class AbstractSecurityInterceptor
 		}
 		/**
 		 * 尝试授权
-		 * // TODOHAITAO: 2023/5/16
+		 * TODOHAITAO: 2023/5/16
 		 * */
 		// Attempt authorization
 		attemptAuthorization(object, attributes, authenticated);

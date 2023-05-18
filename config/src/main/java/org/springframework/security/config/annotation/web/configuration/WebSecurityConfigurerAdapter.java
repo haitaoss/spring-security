@@ -333,9 +333,13 @@ public abstract class WebSecurityConfigurerAdapter implements WebSecurityConfigu
 
 	@Override
 	public void init(WebSecurity web) throws Exception {
+		// 获取默认的
 		HttpSecurity http = getHttp();
+		// 添加一个 SecurityFilterChainBuilder 并设置 postBuildAction
 		web.addSecurityFilterChainBuilder(http).postBuildAction(() -> {
+			// 拿到 FilterSecurityInterceptor
 			FilterSecurityInterceptor securityInterceptor = http.getSharedObject(FilterSecurityInterceptor.class);
+			// 设置给 web
 			web.securityInterceptor(securityInterceptor);
 		});
 	}

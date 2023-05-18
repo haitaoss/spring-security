@@ -23,7 +23,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Role;
 import org.springframework.security.config.annotation.ObjectPostProcessor;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.web.HttpSecurityBuilder;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.DefaultLoginPageConfigurer;
 
 /**
  * Spring {@link Configuration} that exports the default {@link ObjectPostProcessor}. This
@@ -39,6 +41,14 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 public class ObjectPostProcessorConfiguration {
 
+	/**
+	 * SecurityConfigurer 的实现类都会使用 ObjectPostProcessor 对组件进行处理，
+	 * 而 AutowireBeanFactoryObjectPostProcessor 的逻辑是对组件进行 初始化和属性注入。
+	 *
+	 * 比如 {@link DefaultLoginPageConfigurer#configure(HttpSecurityBuilder)}
+	 * @param beanFactory
+	 * @return
+	 */
 	@Bean
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 	public ObjectPostProcessor<Object> objectPostProcessor(AutowireCapableBeanFactory beanFactory) {

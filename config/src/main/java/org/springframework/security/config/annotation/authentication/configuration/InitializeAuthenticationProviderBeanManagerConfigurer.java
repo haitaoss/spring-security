@@ -44,6 +44,7 @@ class InitializeAuthenticationProviderBeanManagerConfigurer extends GlobalAuthen
 
 	@Override
 	public void init(AuthenticationManagerBuilder auth) throws Exception {
+		// 添加configurer
 		auth.apply(new InitializeAuthenticationProviderManagerConfigurer());
 	}
 
@@ -51,13 +52,21 @@ class InitializeAuthenticationProviderBeanManagerConfigurer extends GlobalAuthen
 
 		@Override
 		public void configure(AuthenticationManagerBuilder auth) {
+			// 已经配置完了
 			if (auth.isConfigured()) {
+				// 直接return
 				return;
 			}
+			/**
+			 * 从IOC容器中获取 AuthenticationProvider 类型的bean
+			 *
+			 * 注：会校验只能有一个 AuthenticationProvider 类型的bean，多个就返回 null
+			 * */
 			AuthenticationProvider authenticationProvider = getBeanOrNull(AuthenticationProvider.class);
 			if (authenticationProvider == null) {
 				return;
 			}
+			// 将 provider 设置给 auth，auth 会使用 provider 完成认证逻辑
 			auth.authenticationProvider(authenticationProvider);
 		}
 

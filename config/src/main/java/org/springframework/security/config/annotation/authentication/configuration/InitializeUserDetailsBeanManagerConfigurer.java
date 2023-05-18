@@ -49,6 +49,7 @@ class InitializeUserDetailsBeanManagerConfigurer extends GlobalAuthenticationCon
 
 	@Override
 	public void init(AuthenticationManagerBuilder auth) throws Exception {
+		// 为 auth 添加 configurer
 		auth.apply(new InitializeUserDetailsManagerConfigurer());
 	}
 
@@ -56,15 +57,26 @@ class InitializeUserDetailsBeanManagerConfigurer extends GlobalAuthenticationCon
 
 		@Override
 		public void configure(AuthenticationManagerBuilder auth) throws Exception {
+			// 已经配置完了
 			if (auth.isConfigured()) {
+				// 直接return
 				return;
 			}
+			/**
+			 * 从IOC容器中获取 UserDetailsService 类型的bean
+			 *
+			 * 注：会校验只能有一个 UserDetailsService 类型的bean，多个就返回 null
+			 * */
 			UserDetailsService userDetailsService = getBeanOrNull(UserDetailsService.class);
+			// 为空
 			if (userDetailsService == null) {
+				// 直接return
 				return;
 			}
+			// 同上
 			PasswordEncoder passwordEncoder = getBeanOrNull(PasswordEncoder.class);
 			UserDetailsPasswordService passwordManager = getBeanOrNull(UserDetailsPasswordService.class);
+			// 实例化 DaoAuthenticationProvider
 			DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
 			provider.setUserDetailsService(userDetailsService);
 			if (passwordEncoder != null) {
@@ -73,7 +85,14 @@ class InitializeUserDetailsBeanManagerConfigurer extends GlobalAuthenticationCon
 			if (passwordManager != null) {
 				provider.setUserDetailsPasswordService(passwordManager);
 			}
+			/**
+			 * 回调方法
+			 * DaoAuthenticationProvider 会校验 userDetailsService 不能是空
+			 * */
 			provider.afterPropertiesSet();
+			/**
+			 * 将 provider 设置给 auth，auth 会使用 provider 完成认证逻辑
+			 * */
 			auth.authenticationProvider(provider);
 		}
 
@@ -83,9 +102,11 @@ class InitializeUserDetailsBeanManagerConfigurer extends GlobalAuthenticationCon
 		 */
 		private <T> T getBeanOrNull(Class<T> type) {
 			String[] beanNames = InitializeUserDetailsBeanManagerConfigurer.this.context.getBeanNamesForType(type);
+			// 只能有一个
 			if (beanNames.length != 1) {
 				return null;
 			}
+			// 获取这个bean
 			return InitializeUserDetailsBeanManagerConfigurer.this.context.getBean(beanNames[0], type);
 		}
 

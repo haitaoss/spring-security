@@ -133,6 +133,7 @@ public abstract class SecurityConfigurerAdapter<O, B extends SecurityBuilder<O>>
 		 */
 		private boolean addObjectPostProcessor(ObjectPostProcessor<?> objectPostProcessor) {
 			boolean result = this.postProcessors.add(objectPostProcessor);
+			// 排序
 			this.postProcessors.sort(AnnotationAwareOrderComparator.INSTANCE);
 			return result;
 		}

@@ -61,6 +61,9 @@ import org.springframework.util.Assert;
  *
  */
 @Configuration(proxyBeanMethods = false)
+/**
+ * 会注册 AutowireBeanFactoryObjectPostProcessor 到容器中
+ * */
 @Import(ObjectPostProcessorConfiguration.class)
 public class AuthenticationConfiguration {
 
@@ -74,13 +77,30 @@ public class AuthenticationConfiguration {
 
 	private List<GlobalAuthenticationConfigurerAdapter> globalAuthConfigurers = Collections.emptyList();
 
+	/**
+	 * 默认注入的是 AutowireBeanFactoryObjectPostProcessor，它的作用是对参数进行初始化和属性填充
+	 */
 	private ObjectPostProcessor<Object> objectPostProcessor;
 
+	/**
+	 * AuthenticationManagerBuilder 是用来生成 AuthenticationManager，
+	 * AuthenticationManager 是用来进行认证的
+	 * @param objectPostProcessor
+	 * @param context
+	 * @return
+	 */
 	@Bean
 	public AuthenticationManagerBuilder authenticationManagerBuilder(ObjectPostProcessor<Object> objectPostProcessor,
 			ApplicationContext context) {
+		/**
+		 * 特点是尝试从IOC容器中获取 PasswordEncoder，拿不到就new一个默认的
+		 * */
 		LazyPasswordEncoder defaultPasswordEncoder = new LazyPasswordEncoder(context);
+		/**
+		 * 尝试从IOC容器中获取 AuthenticationEventPublisher，拿不到就new一个默认的
+		 * */
 		AuthenticationEventPublisher authenticationEventPublisher = getAuthenticationEventPublisher(context);
+		// 构造出 DefaultPasswordEncoderAuthenticationManagerBuilder
 		DefaultPasswordEncoderAuthenticationManagerBuilder result = new DefaultPasswordEncoderAuthenticationManagerBuilder(
 				objectPostProcessor, defaultPasswordEncoder);
 		if (authenticationEventPublisher != null) {
@@ -92,42 +112,79 @@ public class AuthenticationConfiguration {
 	@Bean
 	public static GlobalAuthenticationConfigurerAdapter enableGlobalAuthenticationAutowiredConfigurer(
 			ApplicationContext context) {
+		/**
+		 * 继承 GlobalAuthenticationConfigurerAdapter 抽象类，
+		 * 它的职责是 获取有 @EnableGlobalAuthentication 注解的bean，会进行 getBean 将bean实例化出来，也就是提前初始化
+		 * */
 		return new EnableGlobalAuthenticationAutowiredConfigurer(context);
 	}
 
 	@Bean
 	public static InitializeUserDetailsBeanManagerConfigurer initializeUserDetailsBeanManagerConfigurer(
 			ApplicationContext context) {
+		/**
+		 * 继承 GlobalAuthenticationConfigurerAdapter 抽象类，
+		 * 它的职责是为  AuthenticationManagerBuilder 添加 InitializeUserDetailsManagerConfigurer 这个 configurer，
+		 * 而 InitializeUserDetailsManagerConfigurer 的功能是若IOC容器中只有一个 UserDetailsService 类型的bean，就构造一个
+		 * DaoAuthenticationProvider 设置给 AuthenticationManagerBuilder
+		 * */
 		return new InitializeUserDetailsBeanManagerConfigurer(context);
 	}
 
 	@Bean
 	public static InitializeAuthenticationProviderBeanManagerConfigurer initializeAuthenticationProviderBeanManagerConfigurer(
 			ApplicationContext context) {
+		/**
+		 * 继承 GlobalAuthenticationConfigurerAdapter 抽象类，
+		 * 它的职责是为  AuthenticationManagerBuilder 添加 InitializeAuthenticationProviderManagerConfigurer 这个 configurer，
+		 * 而 InitializeAuthenticationProviderManagerConfigurer 的功能是若IOC容器中只有一个 AuthenticationProvider 类型的bean，
+		 * 就将其设置给 AuthenticationManagerBuilder
+		 * */
 		return new InitializeAuthenticationProviderBeanManagerConfigurer(context);
 	}
 
 	public AuthenticationManager getAuthenticationManager() throws Exception {
+		// 已经初始化了
 		if (this.authenticationManagerInitialized) {
+			// 直接返回
 			return this.authenticationManager;
 		}
+		/**
+		 * 从IOC容器中获取 AuthenticationManagerBuilder
+		 * Tips：本类的 {@link #authenticationManagerBuilder} 方法注册了
+		 * */
 		AuthenticationManagerBuilder authBuilder = this.applicationContext.getBean(AuthenticationManagerBuilder.class);
+		// 默认是false
 		if (this.buildingAuthenticationManager.getAndSet(true)) {
 			return new AuthenticationManagerDelegator(authBuilder);
 		}
+		/**
+		 * 遍历 globalAuthConfigurers
+		 *
+		 * Tips：
+		 * 	1. globalAuthConfigurers 是通过依赖注入得到的
+		 * 	2. 本类的 {@link #enableGlobalAuthenticationAutowiredConfigurer}、
+		 * 		{@link #initializeUserDetailsBeanManagerConfigurer}、
+		 * 		{@link #initializeAuthenticationProviderBeanManagerConfigurer} 方法注册了
+		 * */
 		for (GlobalAuthenticationConfigurerAdapter config : this.globalAuthConfigurers) {
+			// 添加 config
 			authBuilder.apply(config);
 		}
+		// 生成实例
 		this.authenticationManager = authBuilder.build();
 		if (this.authenticationManager == null) {
+			// 会从容器中获取 AuthenticationManager 类型的bean
 			this.authenticationManager = getAuthenticationManagerBean();
 		}
+		// 标记为 true
 		this.authenticationManagerInitialized = true;
 		return this.authenticationManager;
 	}
 
 	@Autowired(required = false)
 	public void setGlobalAuthenticationConfigurers(List<GlobalAuthenticationConfigurerAdapter> configurers) {
+		// 排序
 		configurers.sort(AnnotationAwareOrderComparator.INSTANCE);
 		this.globalAuthConfigurers = configurers;
 	}
@@ -143,9 +200,11 @@ public class AuthenticationConfiguration {
 	}
 
 	private AuthenticationEventPublisher getAuthenticationEventPublisher(ApplicationContext context) {
+		// 尝试从IOC容器中获取
 		if (context.getBeanNamesForType(AuthenticationEventPublisher.class).length > 0) {
 			return context.getBean(AuthenticationEventPublisher.class);
 		}
+		// 使用默认的
 		return this.objectPostProcessor.postProcess(new DefaultAuthenticationEventPublisher());
 	}
 
@@ -161,8 +220,10 @@ public class AuthenticationConfiguration {
 		lazyTargetSource.setTargetBeanName(beanName);
 		lazyTargetSource.setBeanFactory(this.applicationContext);
 		ProxyFactoryBean proxyFactory = new ProxyFactoryBean();
+		// 加工
 		proxyFactory = this.objectPostProcessor.postProcess(proxyFactory);
 		proxyFactory.setTargetSource(lazyTargetSource);
+		// 返回代理对象
 		return (T) proxyFactory.getObject();
 	}
 
@@ -217,6 +278,9 @@ public class AuthenticationConfiguration {
 
 		@Override
 		public void init(AuthenticationManagerBuilder auth) {
+			/**
+			 * 获取有这个注解的bean，会进行 getBean 将bean实例化出来，也就是提前初始化
+			 * */
 			Map<String, Object> beansWithAnnotation = this.context
 					.getBeansWithAnnotation(EnableGlobalAuthentication.class);
 			if (logger.isTraceEnabled()) {
@@ -326,11 +390,16 @@ public class AuthenticationConfiguration {
 		}
 
 		private PasswordEncoder getPasswordEncoder() {
+			// 不为空，说明已经初始化了
 			if (this.passwordEncoder != null) {
+				// 直接返回
 				return this.passwordEncoder;
 			}
+			// 从IOC容器中获取
 			PasswordEncoder passwordEncoder = getBeanOrNull(this.applicationContext, PasswordEncoder.class);
+			// 为空
 			if (passwordEncoder == null) {
+				// 获取不到就使用默认的
 				passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
 			}
 			this.passwordEncoder = passwordEncoder;

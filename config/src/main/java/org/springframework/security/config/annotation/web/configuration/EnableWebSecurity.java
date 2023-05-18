@@ -95,11 +95,17 @@ import org.springframework.security.web.SecurityFilterChain;
  * */
 @Import({ WebSecurityConfiguration.class, SpringWebMvcImportSelector.class, OAuth2ImportSelector.class,
 		HttpSecurityConfiguration.class })
+/**
+ * 会注册这两个类型的bean ObjectPostProcessor、AuthenticationConfiguration
+ * */
 @EnableGlobalAuthentication
 @Configuration
 public @interface EnableWebSecurity {
 
 	/**
+	 * 为 true 会使用 DebugFilter 代理最终的 SecurityFilter，DebugFilter 的作用是
+	 * doFilter 之前输出命中的 Filter 信息
+	 *
 	 * Controls debugging support for Spring Security. Default is false.
 	 * @return if true, enables debug support with Spring Security
 	 */
