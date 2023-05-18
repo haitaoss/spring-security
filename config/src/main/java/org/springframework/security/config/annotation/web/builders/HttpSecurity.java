@@ -178,7 +178,7 @@ public final class HttpSecurity extends AbstractConfiguredSecurityBuilder<Defaul
 			AuthenticationManagerBuilder authenticationBuilder, Map<Class<?>, Object> sharedObjects) {
 		super(objectPostProcessor);
 		Assert.notNull(authenticationBuilder, "authenticationBuilder cannot be null");
-		// 设置到 共享遍历中
+		// 设置到 共享域中
 		setSharedObject(AuthenticationManagerBuilder.class, authenticationBuilder);
 		for (Map.Entry<Class<?>, Object> entry : sharedObjects.entrySet()) {
 			setSharedObject((Class<Object>) entry.getKey(), entry.getValue());

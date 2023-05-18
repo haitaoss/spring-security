@@ -111,18 +111,19 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 		// 都有就报错
 		Assert.state(!(hasConfigurers && hasFilterChain),
 				"Found WebSecurityConfigurerAdapter as well as SecurityFilterChain. Please select just one.");
-		// 没有配置类 && 没有 FilterChain
+		// 没有配置类 && 没有 FilterChain。
 		if (!hasConfigurers && !hasFilterChain) {
 			// （是依赖注入得到的）
 			WebSecurityConfigurerAdapter adapter = this.objectObjectPostProcessor
 					// 使用 objectObjectPostProcessor 加工 adapter
 					.postProcess(new WebSecurityConfigurerAdapter() { });
 			/**
-			 * 注册 WebSecurityConfigurerAdapter 这个 configurer。
+			 * 注册 WebSecurityConfigurerAdapter 这个 configurer。这是用来注册默认的 SecurityFilterChain，
+			 * 默认是拦截所有请求。
 			 * 		{@link WebSecurityConfigurerAdapter#init(WebSecurity)}
 			 * 		{@link WebSecurityConfigurerAdapter#configure(HttpSecurity)}
 			 *
-			 * TODOHAITAO: 2023/5/18 补一下
+			 * 而认证逻辑 需要IOC容器中有且仅有一个 [ UserDetailsService | AuthenticationProvider] 类型的bean 才行。
 			 * */
 			this.webSecurity.apply(adapter);
 		}

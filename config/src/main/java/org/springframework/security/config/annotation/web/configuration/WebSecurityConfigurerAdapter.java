@@ -217,24 +217,50 @@ public abstract class WebSecurityConfigurerAdapter implements WebSecurityConfigu
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	protected final HttpSecurity getHttp() throws Exception {
+		// 有值
 		if (this.http != null) {
+			// 直接返回
 			return this.http;
 		}
+		// 若IOC容器中有且只设置了一个 AuthenticationEventPublisher 就使用，否则使用默认的 DefaultAuthenticationEventPublisher
 		AuthenticationEventPublisher eventPublisher = getAuthenticationEventPublisher();
+		/**
+		 * localConfigureAuthenticationBldr 是在这个方法设置的 {@link #setApplicationContext}
+		 * */
 		this.localConfigureAuthenticationBldr.authenticationEventPublisher(eventPublisher);
+		// 是用来完成认证逻辑的
 		AuthenticationManager authenticationManager = authenticationManager();
+		/**
+		 * 设置 parent
+		 *
+		 * authenticationBuilder 是在这个方法设置的 {@link #setApplicationContext}
+		 * 设置的是 DefaultPasswordEncoderAuthenticationManagerBuilder
+		 * */
 		this.authenticationBuilder.parentAuthenticationManager(authenticationManager);
+		// 设置默认的共享对象
 		Map<Class<?>, Object> sharedObjects = createSharedObjects();
+		/**
+		 * 实例化 HttpSecurity
+		 * */
 		this.http = new HttpSecurity(this.objectPostProcessor, this.authenticationBuilder, sharedObjects);
+		// 默认是false
 		if (!this.disableDefaults) {
+			// 应用默认 configurer
 			applyDefaultConfiguration(this.http);
 			ClassLoader classLoader = this.context.getClassLoader();
+
+			// 读取 META-INF/spring.factories 文件 key是 `AbstractHttpConfigurer.class.getName()` 添加到 http 中
 			List<AbstractHttpConfigurer> defaultHttpConfigurers = SpringFactoriesLoader
 					.loadFactories(AbstractHttpConfigurer.class, classLoader);
 			for (AbstractHttpConfigurer configurer : defaultHttpConfigurers) {
+				// 添加 configurer
 				this.http.apply(configurer);
 			}
 		}
+		/**
+		 * 模板方法。主要是设置了
+		 * 		http.authorizeRequests((requests) -> requests.anyRequest().authenticated()); // 所有请求都需要认证(即登录才可访问)
+		 * */
 		configure(this.http);
 		return this.http;
 	}
@@ -281,14 +307,19 @@ public abstract class WebSecurityConfigurerAdapter implements WebSecurityConfigu
 	 * @throws Exception
 	 */
 	protected AuthenticationManager authenticationManager() throws Exception {
+		// 未初始化
 		if (!this.authenticationManagerInitialized) {
+			// 模板方法
 			configure(this.localConfigureAuthenticationBldr);
+			// 默认是 true
 			if (this.disableLocalConfigureAuthenticationBldr) {
+				// authenticationConfiguration 是通过依赖注入的到的
 				this.authenticationManager = this.authenticationConfiguration.getAuthenticationManager();
 			}
 			else {
 				this.authenticationManager = this.localConfigureAuthenticationBldr.build();
 			}
+			// 初始化了
 			this.authenticationManagerInitialized = true;
 		}
 		return this.authenticationManager;
@@ -333,7 +364,7 @@ public abstract class WebSecurityConfigurerAdapter implements WebSecurityConfigu
 
 	@Override
 	public void init(WebSecurity web) throws Exception {
-		// 获取默认的
+		// 构造一个 HttpSecurity
 		HttpSecurity http = getHttp();
 		// 添加一个 SecurityFilterChainBuilder 并设置 postBuildAction
 		web.addSecurityFilterChainBuilder(http).postBuildAction(() -> {
@@ -393,8 +424,10 @@ public abstract class WebSecurityConfigurerAdapter implements WebSecurityConfigu
 	@Autowired
 	public void setApplicationContext(ApplicationContext context) {
 		this.context = context;
+		// 从IOC容器中获取
 		ObjectPostProcessor<Object> objectPostProcessor = context.getBean(ObjectPostProcessor.class);
 		LazyPasswordEncoder passwordEncoder = new LazyPasswordEncoder(context);
+		// 用来生成 AuthenticationManager, 而 AuthenticationManager 是用来完成认证逻辑的
 		this.authenticationBuilder = new DefaultPasswordEncoderAuthenticationManagerBuilder(objectPostProcessor,
 				passwordEncoder);
 		this.localConfigureAuthenticationBldr = new DefaultPasswordEncoderAuthenticationManagerBuilder(
@@ -433,13 +466,17 @@ public abstract class WebSecurityConfigurerAdapter implements WebSecurityConfigu
 
 	@Autowired
 	public void setAuthenticationConfiguration(AuthenticationConfiguration authenticationConfiguration) {
+		// 依赖注入
 		this.authenticationConfiguration = authenticationConfiguration;
 	}
 
 	private AuthenticationEventPublisher getAuthenticationEventPublisher() {
+		// IOC容器中只有一个
 		if (this.context.getBeanNamesForType(AuthenticationEventPublisher.class).length > 0) {
+			// 返回容器中的bean
 			return this.context.getBean(AuthenticationEventPublisher.class);
 		}
+		// 使用默认的
 		return this.objectPostProcessor.postProcess(new DefaultAuthenticationEventPublisher());
 	}
 

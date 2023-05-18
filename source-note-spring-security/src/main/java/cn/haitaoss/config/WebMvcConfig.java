@@ -1,13 +1,7 @@
 package cn.haitaoss.config;
 
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.http.MediaType;
-import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
-import org.springframework.web.servlet.config.annotation.EnableWebMvc;
-import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistration;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.config.annotation.*;
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
 
 /**
@@ -29,16 +23,12 @@ public class WebMvcConfig extends AbstractAnnotationConfigDispatcherServletIniti
 	@Override
 	public void configurePathMatch(PathMatchConfigurer configurer) {
 		/**
-		 * 过时了，可以改成这种写法，规定支持的后缀
-		 * {@link #configureContentNegotiation}
+		 * 开启后缀通配符匹配
+		 * 比如，访问 /index /index.html /index.xx 都是符合 @RequestMapping("/index") 的
 		 * */
 		configurer.setUseSuffixPatternMatch(true);
 	}
 
-	@Override
-	public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
-		configurer.mediaType("html", MediaType.TEXT_HTML);
-	}
 
 	@Override
 	protected Class<?>[] getRootConfigClasses() {

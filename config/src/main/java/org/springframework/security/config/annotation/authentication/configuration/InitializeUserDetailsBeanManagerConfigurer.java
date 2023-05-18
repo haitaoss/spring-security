@@ -57,7 +57,7 @@ class InitializeUserDetailsBeanManagerConfigurer extends GlobalAuthenticationCon
 
 		@Override
 		public void configure(AuthenticationManagerBuilder auth) throws Exception {
-			// 已经配置完了
+			// authenticationProviders 不是空 || parentAuthenticationManager 不是空
 			if (auth.isConfigured()) {
 				// 直接return
 				return;

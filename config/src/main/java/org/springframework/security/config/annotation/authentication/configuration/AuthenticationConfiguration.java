@@ -40,6 +40,7 @@ import org.springframework.core.log.LogMessage;
 import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
+import org.springframework.security.config.annotation.AbstractConfiguredSecurityBuilder;
 import org.springframework.security.config.annotation.ObjectPostProcessor;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configurers.provisioning.InMemoryUserDetailsManagerConfigurer;
@@ -66,7 +67,6 @@ import org.springframework.util.Assert;
  * */
 @Import(ObjectPostProcessorConfiguration.class)
 public class AuthenticationConfiguration {
-
 	private AtomicBoolean buildingAuthenticationManager = new AtomicBoolean();
 
 	private ApplicationContext applicationContext;
@@ -164,17 +164,29 @@ public class AuthenticationConfiguration {
 		 * Tips：
 		 * 	1. globalAuthConfigurers 是通过依赖注入得到的
 		 * 	2. 本类的 {@link #enableGlobalAuthenticationAutowiredConfigurer}、
-		 * 		{@link #initializeUserDetailsBeanManagerConfigurer}、
-		 * 		{@link #initializeAuthenticationProviderBeanManagerConfigurer} 方法注册了
+		 * 		{@link #initializeAuthenticationProviderBeanManagerConfigurer}、
+		 * 		{@link #initializeUserDetailsBeanManagerConfigurer} 方法注册了。
+		 *
+		 * Tips：
+		 * 		initializeAuthenticationProviderBeanManagerConfigurer 先执行，会判断IOC容器中存在 AuthenticationProvider 就设置给 authBuilder ，
+		 * 		initializeUserDetailsBeanManagerConfigurer 会判断IOC容器中存在 UserDetailsService 就设置 DaoAuthenticationProvider 给 authBuilder。
+		 *		不会设置两个，因为设置之前会判断是否有 {@link AuthenticationManagerBuilder#authenticationProviders} ,所以可以理解成两者是互斥的
 		 * */
 		for (GlobalAuthenticationConfigurerAdapter config : this.globalAuthConfigurers) {
 			// 添加 config
 			authBuilder.apply(config);
 		}
-		// 生成实例
+		/**
+		 * 生成实例。最关键是回调注册的 config
+		 *
+		 * {@link AbstractConfiguredSecurityBuilder#doBuild()}
+		 * 		1. 回调 GlobalAuthenticationConfigurerAdapter#init
+		 * 		2. 回调 GlobalAuthenticationConfigurerAdapter#configure
+		 * 		3. 构造出实例对象
+		 * */
 		this.authenticationManager = authBuilder.build();
 		if (this.authenticationManager == null) {
-			// 会从容器中获取 AuthenticationManager 类型的bean
+			// 尝试从容器中获取 AuthenticationManager 类型的bean
 			this.authenticationManager = getAuthenticationManagerBean();
 		}
 		// 标记为 true
