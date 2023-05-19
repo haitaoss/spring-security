@@ -210,7 +210,9 @@ public class ProviderManager implements AuthenticationManager, MessageSourceAwar
 		if (result == null && this.parent != null) {
 			// Allow the parent to try.
 			try {
-				// 委托给 parent 进行认证
+				/**
+				 * 委托给 parent 进行认证。可以理解成递归，因为 parent 默认也是 ProviderManager 类型的
+				 * */
 				parentResult = this.parent.authenticate(authentication);
 				result = parentResult;
 			}

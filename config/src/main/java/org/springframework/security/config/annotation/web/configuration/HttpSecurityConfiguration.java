@@ -20,6 +20,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.springframework.security.config.Customizer.withDefaults;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -50,8 +52,6 @@ import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter;
 import org.springframework.web.accept.ContentNegotiationStrategy;
 import org.springframework.web.accept.HeaderContentNegotiationStrategy;
-
-import static org.springframework.security.config.Customizer.withDefaults;
 
 /**
  * {@link Configuration} that exposes the {@link HttpSecurity} bean.
@@ -153,7 +153,7 @@ class HttpSecurityConfiguration {
 			 * webAsyncManagerIntegrationFilter 作为默认的 filter
 			 *
 			 * 注：filter 的类型是有限定的，必须是内置的类型，否则会报错。
-			 * 	内置的Filter类型看这里 {@link FilterOrderRegistration#FilterOrderRegistration()}
+			 * 	内置的Filter类型看这里 {@link org.springframework.security.config.annotation.web.builders.FilterOrderRegistration#FilterOrderRegistration()}
 			 * */
 			.addFilter(webAsyncManagerIntegrationFilter)
 			/**
@@ -188,7 +188,8 @@ class HttpSecurityConfiguration {
 			 * 		{@link AnonymousConfigurer#init( HttpSecurityBuilder)}
 			 *		{@link AnonymousConfigurer#configure( HttpSecurityBuilder)}
 			 *
-			 * Tips: 这个很关键，这是用来作为默认的 AuthenticationProvider
+			 * Tips: 这个很关键，默认会设置 AnonymousAuthenticationProvider 是用来实现认证的，这是最简单的认证方式。
+			 * 		可以理解成没有认证，因为认证的信息是由 AnonymousAuthenticationFilter 生成的，肯定能认证通过。
 			 * */
 			.anonymous(withDefaults())
 			/**

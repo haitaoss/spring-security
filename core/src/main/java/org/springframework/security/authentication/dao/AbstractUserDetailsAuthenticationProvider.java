@@ -121,7 +121,10 @@ public abstract class AbstractUserDetailsAuthenticationProvider
 
 	@Override
 	public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-		// authentication 必须是 UsernamePasswordAuthenticationToken 类型的
+		/**
+		 * authentication 必须是 UsernamePasswordAuthenticationToken 类型的.
+		 * 比如: UsernamePasswordAuthenticationFilter 构造的 Authentication 就是 UsernamePasswordAuthenticationToken 类型的
+		 * */
 		Assert.isInstanceOf(UsernamePasswordAuthenticationToken.class, authentication,
 				() -> this.messages.getMessage("AbstractUserDetailsAuthenticationProvider.onlySupports",
 						"Only UsernamePasswordAuthenticationToken is supported"));
@@ -134,7 +137,10 @@ public abstract class AbstractUserDetailsAuthenticationProvider
 			// 标记没有缓存
 			cacheWasUsed = false;
 			try {
-				// 检索出 user
+				/**
+				 * 根据 username 检索出 user，这是真正的用户信息
+				 * 		{@link org.springframework.security.core.userdetails.UserDetailsService#loadUserByUsername(String)}
+				 * */
 				user = retrieveUser(username, (UsernamePasswordAuthenticationToken) authentication);
 			}
 			catch (UsernameNotFoundException ex) {
@@ -145,15 +151,21 @@ public abstract class AbstractUserDetailsAuthenticationProvider
 				throw new BadCredentialsException(this.messages
 						.getMessage("AbstractUserDetailsAuthenticationProvider.badCredentials", "Bad credentials"));
 			}
-			// 为空就报错
+			// 为空就报错。说明用户名根本就不对
 			Assert.notNull(user, "retrieveUser returned null - a violation of the interface contract");
 		}
 		try {
-			// 前置认证检查
+			/**
+			 * 前置认证检查。默认是检验 凭证不是过期的
+			 * 	{@link DefaultPostAuthenticationChecks#check(org.springframework.security.core.userdetails.UserDetails)}
+			 * */
 			this.preAuthenticationChecks.check(user);
 			/**
-			 * 进行附加检查。
-			 * 这是抽象方法看具体的子类是如何写的，一般就是验证 凭证是否正确
+			 * 进行附加检查。这是抽象方法看具体的子类是如何写的。
+			 *
+			 * 比如：{@link DaoAuthenticationProvider#additionalAuthenticationChecks(org.springframework.security.core.userdetails.UserDetails, org.springframework.security.authentication.UsernamePasswordAuthenticationToken)}
+			 * 			1.  authentication.getCredentials() 不能是空
+			 * 			2. 	使用 PasswordEncoder 校验 user.getPassword() 和 authentication.getCredentials() 是一致的
 			 * */
 			additionalAuthenticationChecks(user, (UsernamePasswordAuthenticationToken) authentication);
 		}
@@ -364,9 +376,11 @@ public abstract class AbstractUserDetailsAuthenticationProvider
 
 		@Override
 		public void check(UserDetails user) {
+			// 凭证过期了
 			if (!user.isCredentialsNonExpired()) {
 				AbstractUserDetailsAuthenticationProvider.this.logger
 						.debug("Failed to authenticate since user account credentials have expired");
+				// 抛出异常
 				throw new CredentialsExpiredException(AbstractUserDetailsAuthenticationProvider.this.messages
 						.getMessage("AbstractUserDetailsAuthenticationProvider.credentialsExpired",
 								"User credentials have expired"));

@@ -108,6 +108,7 @@ public class DaoAuthenticationProvider extends AbstractUserDetailsAuthentication
 			return loadedUser;
 		}
 		catch (UsernameNotFoundException ex) {
+			// 不知道匹配密码有啥用
 			mitigateAgainstTimingAttack(authentication);
 			throw ex;
 		}

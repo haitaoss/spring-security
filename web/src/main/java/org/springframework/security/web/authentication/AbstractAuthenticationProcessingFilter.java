@@ -223,25 +223,49 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 
 	private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
 			throws IOException, ServletException {
+		// 不是需要认证的（其实就是判断是否是 /login ）
 		if (!requiresAuthentication(request, response)) {
+			// 放行
 			chain.doFilter(request, response);
 			return;
 		}
 		try {
+			/**
+			 * 尝试认证
+			 * 		{@link org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter#attemptAuthentication(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)}
+			 *
+			 * 1. 从request参数中提取 username 和 password 构造出 UsernamePasswordAuthenticationToken
+			 * 2. 使用 AuthenticationManager 认证 UsernamePasswordAuthenticationToken
+			 * */
 			Authentication authenticationResult = attemptAuthentication(request, response);
 			if (authenticationResult == null) {
 				// return immediately as subclass has indicated that it hasn't completed
 				return;
 			}
+			// 回调 sessionStrategy
 			this.sessionStrategy.onAuthentication(authenticationResult, request, response);
+			// 默认是false
 			// Authentication success
 			if (this.continueChainBeforeSuccessfulAuthentication) {
+				// 放行
 				chain.doFilter(request, response);
 			}
+			/**
+			 * 1. 保存 SecurityContext
+			 * 2. 回调 RememberMeService#loginSuccess
+			 * 3. 发布事件 InteractiveAuthenticationSuccessEvent
+			 * 4. 回调 SuccessHandler#onAuthenticationSuccess
+			 * 		默认是注册了
+			 * */
 			successfulAuthentication(request, response, chain, authenticationResult);
 		}
 		catch (InternalAuthenticationServiceException failed) {
 			this.logger.error("An internal error occurred while trying to authenticate the user.", failed);
+			/**
+			 * 1. 清除 SecurityContext
+			 * 2. 回调 RememberMeService#loginFail
+			 * 3. 回调 AuthenticationFailureHandler#onAuthenticationFailure
+			 * */
 			unsuccessfulAuthentication(request, response, failed);
 		}
 		catch (AuthenticationException ex) {
@@ -263,6 +287,7 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 	 * <code>false</code> otherwise.
 	 */
 	protected boolean requiresAuthentication(HttpServletRequest request, HttpServletResponse response) {
+		// 匹配。
 		if (this.requiresAuthenticationRequestMatcher.matches(request)) {
 			return true;
 		}
@@ -319,17 +344,26 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 	 */
 	protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
 			Authentication authResult) throws IOException, ServletException {
+		// 构造出 SecurityContext
 		SecurityContext context = this.securityContextHolderStrategy.createEmptyContext();
 		context.setAuthentication(authResult);
+		// 设置
 		this.securityContextHolderStrategy.setContext(context);
+		// 保存
 		this.securityContextRepository.saveContext(context, request, response);
 		if (this.logger.isDebugEnabled()) {
 			this.logger.debug(LogMessage.format("Set SecurityContextHolder to %s", authResult));
 		}
+		/**
+		 * 回调 rememberMeServices。
+		 * 大致逻辑：有 remember-me 参数，就将认证信息加密设置到 cookie 中
+		 * */
 		this.rememberMeServices.loginSuccess(request, response, authResult);
 		if (this.eventPublisher != null) {
+			// 发布事件
 			this.eventPublisher.publishEvent(new InteractiveAuthenticationSuccessEvent(authResult, this.getClass()));
 		}
+		// 回调 successHandler
 		this.successHandler.onAuthenticationSuccess(request, response, authResult);
 	}
 
@@ -346,10 +380,12 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 	 */
 	protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response,
 			AuthenticationException failed) throws IOException, ServletException {
+		// 清除 SecurityContext
 		this.securityContextHolderStrategy.clearContext();
 		this.logger.trace("Failed to process authentication request", failed);
 		this.logger.trace("Cleared SecurityContextHolder");
 		this.logger.trace("Handling authentication failure");
+		// 回调
 		this.rememberMeServices.loginFail(request, response);
 		this.failureHandler.onAuthenticationFailure(request, response, failed);
 	}

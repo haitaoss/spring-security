@@ -71,17 +71,28 @@ public class UsernamePasswordAuthenticationFilter extends AbstractAuthentication
 	@Override
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws AuthenticationException {
+		// 设置了postOnly 但不是POST 请求
 		if (this.postOnly && !request.getMethod().equals("POST")) {
+			// 抛出异常
 			throw new AuthenticationServiceException("Authentication method not supported: " + request.getMethod());
 		}
+		// 从request的参数中拿到 username
 		String username = obtainUsername(request);
+		// 去除空格
 		username = (username != null) ? username.trim() : "";
+		// 从request的参数中拿到 password
 		String password = obtainPassword(request);
 		password = (password != null) ? password : "";
+		// 构造出 UsernamePasswordAuthenticationToken
 		UsernamePasswordAuthenticationToken authRequest = UsernamePasswordAuthenticationToken.unauthenticated(username,
 				password);
+		// 模板方法。默认是将 request 暴露给 UsernamePasswordAuthenticationToken
 		// Allow subclasses to set the "details" property
 		setDetails(request, authRequest);
+		/**
+		 * 使用 AuthenticationManager 进行认证。具体如何认证看 AuthenticationProvider
+		 * {@link org.springframework.security.authentication.ProviderManager#authenticate(org.springframework.security.core.Authentication)}
+		 * */
 		return this.getAuthenticationManager().authenticate(authRequest);
 	}
 

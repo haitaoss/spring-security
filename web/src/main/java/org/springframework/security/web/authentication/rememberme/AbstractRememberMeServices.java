@@ -275,10 +275,12 @@ public abstract class AbstractRememberMeServices
 	@Override
 	public final void loginSuccess(HttpServletRequest request, HttpServletResponse response,
 			Authentication successfulAuthentication) {
+		// 不是 rememberMe 请求（主要是根据request的参数确定是不是）
 		if (!rememberMeRequested(request, this.parameter)) {
 			this.logger.debug("Remember-me login not requested.");
 			return;
 		}
+		// 大致逻辑就是设置 cookie
 		onLoginSuccess(request, response, successfulAuthentication);
 	}
 

@@ -143,6 +143,7 @@ public abstract class AbstractAuthenticationFilterConfigurer<B extends HttpSecur
 	 */
 	public T loginProcessingUrl(String loginProcessingUrl) {
 		this.loginProcessingUrl = loginProcessingUrl;
+		// 用来匹配request的，匹配为true 才执行具体的逻辑
 		this.authFilter.setRequiresAuthenticationRequestMatcher(createLoginProcessingUrlMatcher(loginProcessingUrl));
 		return getSelf();
 	}
@@ -274,11 +275,22 @@ public abstract class AbstractAuthenticationFilterConfigurer<B extends HttpSecur
 		if (portMapper != null) {
 			this.authenticationEntryPoint.setPortMapper(portMapper);
 		}
+		// 这是用来记录原始request对象的
 		RequestCache requestCache = http.getSharedObject(RequestCache.class);
 		if (requestCache != null) {
 			this.defaultSuccessHandler.setRequestCache(requestCache);
 		}
+		// 用来实现 认证
 		this.authFilter.setAuthenticationManager(http.getSharedObject(AuthenticationManager.class));
+		/**
+		 * 默认是 SavedRequestAwareAuthenticationSuccessHandler。
+		 *
+		 * 认证通过会回调 AuthenticationSuccessHandler#onAuthenticationSuccess
+		 * 看 {@link AbstractAuthenticationProcessingFilter#successfulAuthentication(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, javax.servlet.FilterChain, org.springframework.security.core.Authentication)}
+		 *
+		 * 而 SavedRequestAwareAuthenticationSuccessHandler
+		 * 		{@link SavedRequestAwareAuthenticationSuccessHandler#onAuthenticationSuccess(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, org.springframework.security.core.Authentication)}
+		 * */
 		this.authFilter.setAuthenticationSuccessHandler(this.successHandler);
 		this.authFilter.setAuthenticationFailureHandler(this.failureHandler);
 		if (this.authenticationDetailsSource != null) {
@@ -300,7 +312,9 @@ public abstract class AbstractAuthenticationFilterConfigurer<B extends HttpSecur
 			this.authFilter.setSecurityContextRepository(securityContextRepository);
 		}
 		this.authFilter.setSecurityContextHolderStrategy(getSecurityContextHolderStrategy());
+		// 加工
 		F filter = postProcess(this.authFilter);
+		// 添加Filter
 		http.addFilter(filter);
 	}
 

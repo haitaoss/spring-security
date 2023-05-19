@@ -60,6 +60,7 @@ public class SimpleUrlAuthenticationSuccessHandler extends AbstractAuthenticatio
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
 			Authentication authentication) throws IOException, ServletException {
 		handle(request, response, authentication);
+		// 移除认证信息
 		clearAuthenticationAttributes(request);
 	}
 

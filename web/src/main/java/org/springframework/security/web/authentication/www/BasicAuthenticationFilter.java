@@ -200,8 +200,9 @@ public class BasicAuthenticationFilter extends OncePerRequestFilter {
 			// 清除
 			this.securityContextHolderStrategy.clearContext();
 			this.logger.debug("Failed to process authentication request", ex);
-			// rememberMe 的回调
+			// rememberMeServices 的回调
 			this.rememberMeServices.loginFail(request, response);
+			// 模板方法
 			onUnsuccessfulAuthentication(request, response, ex);
 			// 忽略失败
 			if (this.ignoreFailure) {

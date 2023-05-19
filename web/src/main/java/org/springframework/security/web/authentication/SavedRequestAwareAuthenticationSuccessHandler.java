@@ -73,21 +73,32 @@ public class SavedRequestAwareAuthenticationSuccessHandler extends SimpleUrlAuth
 	@Override
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
 			Authentication authentication) throws ServletException, IOException {
+		// 获取留存的 SavedRequest
 		SavedRequest savedRequest = this.requestCache.getRequest(request, response);
 		if (savedRequest == null) {
+			/**
+			 * 1. 根据设置的参数名 从request中提取url 设置为重定向的地址
+			 * 2. 移除 认证异常 标记
+			 * */
 			super.onAuthenticationSuccess(request, response, authentication);
 			return;
 		}
+		// 设置了这个参数，默认是 空的
 		String targetUrlParameter = getTargetUrlParameter();
+		// 使用默认url 或者 request中有targetUrlParameter参数
 		if (isAlwaysUseDefaultTargetUrl()
 				|| (targetUrlParameter != null && StringUtils.hasText(request.getParameter(targetUrlParameter)))) {
+			// 移除原始 request
 			this.requestCache.removeRequest(request, response);
 			super.onAuthenticationSuccess(request, response, authentication);
 			return;
 		}
+		// 移除 认证异常 标记
 		clearAuthenticationAttributes(request);
+		// 获取原来的 url
 		// Use the DefaultSavedRequest URL
 		String targetUrl = savedRequest.getRedirectUrl();
+		// 设置重定向信息
 		getRedirectStrategy().sendRedirect(request, response, targetUrl);
 	}
 

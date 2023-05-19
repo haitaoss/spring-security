@@ -1,7 +1,13 @@
 package cn.haitaoss.config;
 
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.web.servlet.config.annotation.*;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistration;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
 
 /**
@@ -12,6 +18,7 @@ import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatche
  */
 @EnableWebMvc
 @ComponentScan
+@Slf4j
 public class WebMvcConfig extends AbstractAnnotationConfigDispatcherServletInitializer implements WebMvcConfigurer {
 
 	@Override
@@ -28,7 +35,6 @@ public class WebMvcConfig extends AbstractAnnotationConfigDispatcherServletIniti
 		 * */
 		configurer.setUseSuffixPatternMatch(true);
 	}
-
 
 	@Override
 	protected Class<?>[] getRootConfigClasses() {

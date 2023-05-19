@@ -134,7 +134,8 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 			for (Filter filter : securityFilterChain.getFilters()) {
 				if (filter instanceof FilterSecurityInterceptor) {
 					/**
-					 * 设置 FilterSecurityInterceptor。
+					 * 设置 FilterSecurityInterceptor。FilterSecurityInterceptor 是用来实现鉴权的，暴露出来作为一个鉴权的工具
+					 * 		看 {@link #privilegeEvaluator}
 					 *
 					 * 注：这不是一个集合属性，所以后设置的 FilterSecurityInterceptor 会覆盖前面的
 					 * */
@@ -223,6 +224,10 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 
 	@Autowired(required = false)
 	void setFilterChains(List<SecurityFilterChain> securityFilterChains) {
+		/**
+		 * 依赖注入，注入的集合是已经排序过得了
+		 * 源码在这里 {@link org.springframework.beans.factory.support.DefaultListableBeanFactory#resolveMultipleBeans(org.springframework.beans.factory.config.DependencyDescriptor, String, java.util.Set, org.springframework.beans.TypeConverter)}
+		 * */
 		this.securityFilterChains = securityFilterChains;
 	}
 

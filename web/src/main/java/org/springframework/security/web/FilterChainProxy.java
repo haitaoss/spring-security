@@ -220,7 +220,10 @@ public class FilterChainProxy extends GenericFilterBean {
 			throws IOException, ServletException {
 		FirewalledRequest firewallRequest = this.firewall.getFirewalledRequest((HttpServletRequest) request);
 		HttpServletResponse firewallResponse = this.firewall.getFirewalledResponse((HttpServletResponse) response);
-		// 遍历 SecurityFilterChain ，根据 firewallRequest 找到匹配的直接返回
+		/**
+		 * 遍历 SecurityFilterChain , 找到匹配 firewallRequest 的直接返回.
+		 * 所以说 List<SecurityFilterChain> 的先后顺序很重要。
+		 * */
 		List<Filter> filters = getFilters(firewallRequest);
 		// 没有找到
 		if (filters == null || filters.size() == 0) {

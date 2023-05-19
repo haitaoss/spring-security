@@ -84,11 +84,13 @@ public abstract class AbstractAuthenticationTargetUrlRequestHandler {
 	 */
 	protected void handle(HttpServletRequest request, HttpServletResponse response, Authentication authentication)
 			throws IOException, ServletException {
+		// 根据设置的参数名 从request中提取 url
 		String targetUrl = determineTargetUrl(request, response, authentication);
 		if (response.isCommitted()) {
 			this.logger.debug(LogMessage.format("Did not redirect to %s since response already committed.", targetUrl));
 			return;
 		}
+		// 设置重定向信息
 		this.redirectStrategy.sendRedirect(request, response, targetUrl);
 	}
 
