@@ -39,6 +39,7 @@ import org.springframework.security.access.event.AuthenticationCredentialsNotFou
 import org.springframework.security.access.event.AuthorizationFailureEvent;
 import org.springframework.security.access.event.AuthorizedEvent;
 import org.springframework.security.access.event.PublicInvocationEvent;
+import org.springframework.security.access.vote.AffirmativeBased;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationServiceException;
@@ -208,7 +209,10 @@ public abstract class AbstractSecurityInterceptor
 					+ " but AbstractSecurityInterceptor only configured to support secure objects of type: "
 					+ getSecureObjectClass());
 		}
-		// 获取 attributes，这里面记录了权限信息
+		/**
+		 * 获取 attributes，这里面记录了权限信息
+		 * {@link org.springframework.security.web.access.intercept.DefaultFilterInvocationSecurityMetadataSource#getAttributes(Object)}
+		 * */
 		Collection<ConfigAttribute> attributes = this.obtainSecurityMetadataSource().getAttributes(object);
 		if (CollectionUtils.isEmpty(attributes)) {
 			// 必须是true
@@ -236,7 +240,7 @@ public abstract class AbstractSecurityInterceptor
 			this.logger.trace(LogMessage.format("Authorizing %s with attributes %s", object, attributes));
 		}
 		/**
-		 * 尝试授权
+		 * 尝试鉴权
 		 * TODOHAITAO: 2023/5/16
 		 * */
 		// Attempt authorization
@@ -272,6 +276,9 @@ public abstract class AbstractSecurityInterceptor
 	private void attemptAuthorization(Object object, Collection<ConfigAttribute> attributes,
 			Authentication authenticated) {
 		try {
+			/**
+			 * {@link AffirmativeBased#decide(Authentication, Object, Collection)}
+			 * */
 			this.accessDecisionManager.decide(authenticated, object, attributes);
 		}
 		catch (AccessDeniedException ex) {

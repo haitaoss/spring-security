@@ -97,7 +97,11 @@ public class AuthorizationFilter extends GenericFilterBean {
 		// 设置标记
 		request.setAttribute(alreadyFilteredAttributeName, Boolean.TRUE);
 		try {
-			// TODOHAITAO: 2023/5/16
+			/**
+			 * TODOHAITAO: 2023/5/16
+			 * 使用 authorizationManager 检查权限
+			 * {@link RequestMatcherDelegatingAuthorizationManager#check(Supplier, HttpServletRequest)}
+			 * */
 			AuthorizationDecision decision = this.authorizationManager.check(this::getAuthentication, request);
 			// 发布事件
 			this.eventPublisher.publishAuthorizationEvent(this::getAuthentication, request, decision);

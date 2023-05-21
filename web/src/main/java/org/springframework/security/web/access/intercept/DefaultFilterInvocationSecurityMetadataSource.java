@@ -80,8 +80,13 @@ public class DefaultFilterInvocationSecurityMetadataSource implements FilterInvo
 	public Collection<ConfigAttribute> getAttributes(Object object) {
 		final HttpServletRequest request = ((FilterInvocation) object).getRequest();
 		int count = 0;
+		// 遍历
 		for (Map.Entry<RequestMatcher, Collection<ConfigAttribute>> entry : this.requestMap.entrySet()) {
+			/**
+			 * 匹配
+			 * */
 			if (entry.getKey().matches(request)) {
+				// 返回
 				return entry.getValue();
 			}
 			else {

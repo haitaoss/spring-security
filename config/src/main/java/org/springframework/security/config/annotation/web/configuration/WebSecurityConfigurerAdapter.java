@@ -258,8 +258,17 @@ public abstract class WebSecurityConfigurerAdapter implements WebSecurityConfigu
 			}
 		}
 		/**
-		 * 模板方法。主要是设置了
-		 * 		http.authorizeRequests((requests) -> requests.anyRequest().authenticated()); // 所有请求都需要认证(即登录才可访问)
+		 * 模板方法。默认是配置这些东西
+		 * 		http
+		 * 			 所有请求都需要认证(即登录才可访问)
+		 * 			.authorizeRequests((requests) -> requests.anyRequest().authenticated())
+		 *
+		 * 			构造的是 UsernamePasswordAuthenticationToken，这个类型的Token默认是由 DaoAuthenticationProvider 进行认证的，
+		 * 			而要想默认注入 DaoAuthenticationProvider 需要容器中有 UserDetailsService 类型的bean才可以。看这个配置就明白了 {@link AuthenticationConfiguration#initializeUserDetailsBeanManagerConfigurer}
+		 * 			.formLogin().and()
+		 *
+		 * 			 构造的是 UsernamePasswordAuthenticationToken，同上
+		 * 			.httpBasic();
 		 * */
 		configure(this.http);
 		return this.http;

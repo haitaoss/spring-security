@@ -201,6 +201,7 @@ public final class HttpBasicConfigurer<B extends HttpSecurityBuilder<B>>
 		}
 		basicAuthenticationFilter.setSecurityContextHolderStrategy(getSecurityContextHolderStrategy());
 		basicAuthenticationFilter = postProcess(basicAuthenticationFilter);
+		// 注册
 		http.addFilter(basicAuthenticationFilter);
 	}
 

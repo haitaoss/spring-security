@@ -21,6 +21,7 @@ import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.HashSet;
 
+import java.util.function.Supplier;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -35,6 +36,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.codec.Utf8;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.AccessDeniedHandlerImpl;
+import org.springframework.security.web.authentication.ui.DefaultLoginPageGeneratingFilter;
 import org.springframework.security.web.util.UrlUtils;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.util.Assert;
@@ -107,12 +109,23 @@ public final class CsrfFilter extends OncePerRequestFilter {
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
+		// 生成 或者 从cookie、session... 中拿到 csrfToken
 		DeferredCsrfToken deferredCsrfToken = this.tokenRepository.loadDeferredToken(request, response);
-		// 设置到 request 中
+		/**
+		 * 设置到 request 中。
+		 * 比如 {@link DefaultLoginPageGeneratingFilter#generateLoginPageHtml(HttpServletRequest, boolean, boolean)} 会使用这个属性，拼接出 登录页面，
+		 * 从而保证能通过 {@link this#doFilterInternal} 的验证
+		 * */
 		request.setAttribute(DeferredCsrfToken.class.getName(), deferredCsrfToken);
-		// 执行 requestHandler
+		/**
+		 *  执行 requestHandler。一般就是设置属性而已，看具体的实现
+		 * {@link CsrfTokenRequestAttributeHandler#handle(HttpServletRequest, HttpServletResponse, Supplier)}
+		 * */
 		this.requestHandler.handle(request, response, deferredCsrfToken::get);
-		// request 不满足规则
+		/**
+		 * request 不满足规则，默认就是校验 requestMethod 是 {"GET", "HEAD", "TRACE", "OPTIONS"} 就放行
+		 * {@link DefaultRequiresCsrfMatcher#matches(HttpServletRequest)}
+		 * */
 		if (!this.requireCsrfProtectionMatcher.matches(request)) {
 			if (this.logger.isTraceEnabled()) {
 				this.logger.trace("Did not protect against CSRF since request did not match "
@@ -123,7 +136,10 @@ public final class CsrfFilter extends OncePerRequestFilter {
 			return;
 		}
 		CsrfToken csrfToken = deferredCsrfToken.get();
-		// 拿到 token
+		/**
+		 * 拿到 token 。根据那么从请求头或者请求参数中
+		 * {@link CsrfTokenRequestHandler#resolveCsrfTokenValue(HttpServletRequest, CsrfToken)}
+		 * */
 		String actualToken = this.requestHandler.resolveCsrfTokenValue(request, csrfToken);
 		// token 不一致
 		if (!equalsConstantTime(csrfToken.getToken(), actualToken)) {

@@ -139,7 +139,8 @@ public abstract class AbstractUserDetailsAuthenticationProvider
 			try {
 				/**
 				 * 根据 username 检索出 user，这是真正的用户信息
-				 * 		{@link org.springframework.security.core.userdetails.UserDetailsService#loadUserByUsername(String)}
+				 * 		{@link DaoAuthenticationProvider#retrieveUser(String, UsernamePasswordAuthenticationToken)}
+				 * 		{@link UserDetailsService#loadUserByUsername(String)}
 				 * */
 				user = retrieveUser(username, (UsernamePasswordAuthenticationToken) authentication);
 			}

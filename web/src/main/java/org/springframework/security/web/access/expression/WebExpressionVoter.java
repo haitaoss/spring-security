@@ -50,24 +50,35 @@ public class WebExpressionVoter implements AccessDecisionVoter<FilterInvocation>
 		Assert.notNull(authentication, "authentication must not be null");
 		Assert.notNull(filterInvocation, "filterInvocation must not be null");
 		Assert.notNull(attributes, "attributes must not be null");
+		/**
+		 * 获取配置的属性。
+		 * 迭代 attributes 找到是 WebExpressionConfigAttribute 类型的就返回，也就是只会检验一个 ConfigAttribute
+		 * */
 		WebExpressionConfigAttribute webExpressionConfigAttribute = findConfigAttribute(attributes);
+		// 为空，说明没设置权限信息
 		if (webExpressionConfigAttribute == null) {
 			this.logger
 					.trace("Abstained since did not find a config attribute of instance WebExpressionConfigAttribute");
+			// 弃权
 			return ACCESS_ABSTAIN;
 		}
+		// 构造 EvaluationContext。
 		EvaluationContext ctx = webExpressionConfigAttribute.postProcess(
 				this.expressionHandler.createEvaluationContext(authentication, filterInvocation), filterInvocation);
+		// 计算表达式
 		boolean granted = ExpressionUtils.evaluateAsBoolean(webExpressionConfigAttribute.getAuthorizeExpression(), ctx);
 		if (granted) {
+			// 授权
 			return ACCESS_GRANTED;
 		}
 		this.logger.trace("Voted to deny authorization");
+		// 拒绝
 		return ACCESS_DENIED;
 	}
 
 	private WebExpressionConfigAttribute findConfigAttribute(Collection<ConfigAttribute> attributes) {
 		for (ConfigAttribute attribute : attributes) {
+			// 适配类型直接 return，说明只会校验一个而已
 			if (attribute instanceof WebExpressionConfigAttribute) {
 				return (WebExpressionConfigAttribute) attribute;
 			}

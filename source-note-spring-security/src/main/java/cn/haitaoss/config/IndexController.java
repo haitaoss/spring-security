@@ -18,13 +18,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @Slf4j
 public class IndexController {
-	@Autowired
-	private ApplicationContext applicationContext;
+    @Autowired
+    private ApplicationContext applicationContext;
 
-	@RequestMapping("index")
-	public Object index() {
-		SecurityContext context = SecurityContextHolder.getContext();
-		log.info("当前认证的用户信息：{}", context);
-		return "ok...";
-	}
+    @RequestMapping("index")
+    public Object index() {
+        SecurityContext context = SecurityContextHolder.getContext();
+        log.info("当前认证的用户信息：{}", context);
+        return "ok...";
+    }
 }

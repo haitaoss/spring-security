@@ -87,17 +87,27 @@ public class SessionManagementFilter extends GenericFilterBean {
 
 	private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
 			throws IOException, ServletException {
+		// 存在标记
 		if (request.getAttribute(FILTER_APPLIED) != null) {
+			// 放行
 			chain.doFilter(request, response);
 			return;
 		}
+		// 设置标记
 		request.setAttribute(FILTER_APPLIED, Boolean.TRUE);
+		// 不存在
 		if (!this.securityContextRepository.containsContext(request)) {
+			// 获取认证信息
 			Authentication authentication = this.securityContextHolderStrategy.getContext().getAuthentication();
+			/**
+			 * 认证信息不为空 且 不是匿名用户认证信息。
+			 * 说明是认证通过了
+			 * */
 			if (authentication != null && !this.trustResolver.isAnonymous(authentication)) {
 				// The user has been authenticated during the current request, so call the
 				// session strategy
 				try {
+					// 回调 sessionAuthenticationStrategy
 					this.sessionAuthenticationStrategy.onAuthentication(authentication, request, response);
 				}
 				catch (SessionAuthenticationException ex) {
@@ -107,6 +117,7 @@ public class SessionManagementFilter extends GenericFilterBean {
 					this.failureHandler.onAuthenticationFailure(request, response, ex);
 					return;
 				}
+				// 持久化 认证信息
 				// Eagerly save the security context to make it available for any possible
 				// re-entrant requests which may occur before the current request
 				// completes. SEC-1396.
@@ -114,6 +125,7 @@ public class SessionManagementFilter extends GenericFilterBean {
 						response);
 			}
 			else {
+				// 无效的 RequestedSessionId
 				// No security context or authentication present. Check for a session
 				// timeout
 				if (request.getRequestedSessionId() != null && !request.isRequestedSessionIdValid()) {
@@ -122,12 +134,15 @@ public class SessionManagementFilter extends GenericFilterBean {
 								request.getRequestedSessionId()));
 					}
 					if (this.invalidSessionStrategy != null) {
+						// 回调
 						this.invalidSessionStrategy.onInvalidSessionDetected(request, response);
+						// return，不在执行后续的filter
 						return;
 					}
 				}
 			}
 		}
+		// 放行
 		chain.doFilter(request, response);
 	}
 

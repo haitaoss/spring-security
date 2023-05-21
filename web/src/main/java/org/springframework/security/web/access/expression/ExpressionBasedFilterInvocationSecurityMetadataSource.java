@@ -53,6 +53,7 @@ public final class ExpressionBasedFilterInvocationSecurityMetadataSource
 	public ExpressionBasedFilterInvocationSecurityMetadataSource(
 			LinkedHashMap<RequestMatcher, Collection<ConfigAttribute>> requestMap,
 			SecurityExpressionHandler<FilterInvocation> expressionHandler) {
+		// 处理 requestMap
 		super(processMap(requestMap, expressionHandler.getExpressionParser()));
 		Assert.notNull(expressionHandler, "A non-null SecurityExpressionHandler is required");
 	}
@@ -67,6 +68,7 @@ public final class ExpressionBasedFilterInvocationSecurityMetadataSource
 
 	private static void process(ExpressionParser parser, RequestMatcher request, Collection<ConfigAttribute> value,
 			BiConsumer<RequestMatcher, Collection<ConfigAttribute>> consumer) {
+		// 获取表达式
 		String expression = getExpression(request, value);
 		if (logger.isDebugEnabled()) {
 			logger.debug(LogMessage.format("Adding web access control expression [%s] for %s", expression, request));
@@ -74,6 +76,7 @@ public final class ExpressionBasedFilterInvocationSecurityMetadataSource
 		AbstractVariableEvaluationContextPostProcessor postProcessor = createPostProcessor(request);
 		ArrayList<ConfigAttribute> processed = new ArrayList<>(1);
 		try {
+			// 构造成 WebExpressionConfigAttribute
 			processed.add(new WebExpressionConfigAttribute(parser.parseExpression(expression), postProcessor));
 		}
 		catch (ParseException ex) {

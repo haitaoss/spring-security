@@ -248,7 +248,9 @@ public class ExceptionTranslationFilter extends GenericFilterBean implements Mes
 		SecurityContext context = this.securityContextHolderStrategy.createEmptyContext();
 		// 设置到上下文中(一般是ThreadLocal)
 		this.securityContextHolderStrategy.setContext(context);
-		// 缓存原始的request信息
+		/**
+		 * 缓存原始的request信息，用于后面认证通过后可以恢复现场
+		 * */
 		this.requestCache.saveRequest(request, response);
 		/**
 		 * 开始认证。根据配置的参数决定是 重定向还是转发的方式 访问登录页面

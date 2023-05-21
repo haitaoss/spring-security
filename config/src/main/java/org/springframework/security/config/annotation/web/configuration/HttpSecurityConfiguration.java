@@ -123,13 +123,13 @@ class HttpSecurityConfiguration {
 		AuthenticationManagerBuilder authenticationBuilder = new WebSecurityConfigurerAdapter.DefaultPasswordEncoderAuthenticationManagerBuilder(
 				this.objectPostProcessor, passwordEncoder);
 		/**
-		 * 设置 parentAuthenticationManager
-		 * 默认会通过 authenticationConfiguration.getAuthenticationManager() 得到
+		 * 设置 parentAuthenticationManager 其目的是指定兜底的认证方式。
+		 *
+		 * 默认会通过 authenticationConfiguration.getAuthenticationManager() 得到，特点是根据容器中存在 UserDetailsService 或者 AuthenticationProvider 类型的bean就设置默认的 AuthenticationProvider
 		 * 		{@link AuthenticationConfiguration#getAuthenticationManager()}
 		 * */
 		authenticationBuilder.parentAuthenticationManager(authenticationManager());
 		/**
-		 *
 		 * 从IOC容器中获取 AuthenticationEventPublisher 没有就默认用 AuthenticationEventPublisher
 		 * */
 		authenticationBuilder.authenticationEventPublisher(getAuthenticationEventPublisher());

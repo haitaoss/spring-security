@@ -235,8 +235,11 @@ public abstract class AbstractAuthenticationFilterConfigurer<B extends HttpSecur
 
 	@Override
 	public void init(B http) throws Exception {
+		// 更新认证的默认信息，比如设置 登录路径、登录路径 这些
 		updateAuthenticationDefaults();
+		// 设置访问权限，默认是为 loginPage、loginProcessingUrl、failureUrl 设置不需要鉴权
 		updateAccessDefaults(http);
+		// 获取 ExceptionHandlingConfigurer 为其注册 LoginUrlAuthenticationEntryPoint
 		registerDefaultAuthenticationEntryPoint(http);
 	}
 

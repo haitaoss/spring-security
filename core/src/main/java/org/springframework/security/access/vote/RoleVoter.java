@@ -92,13 +92,24 @@ public class RoleVoter implements AccessDecisionVoter<Object> {
 			return ACCESS_DENIED;
 		}
 		int result = ACCESS_ABSTAIN;
+		// 拿到 authentication 具备的权限
 		Collection<? extends GrantedAuthority> authorities = extractAuthorities(authentication);
+		// 遍历配置的权限属性
 		for (ConfigAttribute attribute : attributes) {
+			// Voter(投票人) 支持 attribute
 			if (this.supports(attribute)) {
+				// 默认值是决绝
 				result = ACCESS_DENIED;
+				// 迭代 具备的权限
 				// Attempt to find a matching granted authority
 				for (GrantedAuthority authority : authorities) {
+					// 配置的权限 等于 具备的权限
 					if (attribute.getAttribute().equals(authority.getAuthority())) {
+						/**
+						 * return 同意
+						 *
+						 * 注：也就是说只要具备其中一条权限就能通过
+						 * */
 						return ACCESS_GRANTED;
 					}
 				}

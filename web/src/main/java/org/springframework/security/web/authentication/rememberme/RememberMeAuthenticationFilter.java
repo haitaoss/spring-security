@@ -103,32 +103,47 @@ public class RememberMeAuthenticationFilter extends GenericFilterBean implements
 
 	private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
 			throws IOException, ServletException {
+		// 有值说明认证过了
 		if (this.securityContextHolderStrategy.getContext().getAuthentication() != null) {
 			this.logger.debug(LogMessage
 					.of(() -> "SecurityContextHolder not populated with remember-me token, as it already contained: '"
 							+ this.securityContextHolderStrategy.getContext().getAuthentication() + "'"));
+			// 放行
 			chain.doFilter(request, response);
 			return;
 		}
+		/**
+		 * 自动登录。其实就是获取叫 remember-me 的 cookie，对cookie解析装饰成 Authentication
+		 * */
 		Authentication rememberMeAuth = this.rememberMeServices.autoLogin(request, response);
 		if (rememberMeAuth != null) {
 			// Attempt authenticaton via AuthenticationManager
 			try {
+				// 进行认证
 				rememberMeAuth = this.authenticationManager.authenticate(rememberMeAuth);
 				// Store to SecurityContextHolder
 				SecurityContext context = this.securityContextHolderStrategy.createEmptyContext();
 				context.setAuthentication(rememberMeAuth);
+				// 设置 context 表示认证过了
 				this.securityContextHolderStrategy.setContext(context);
+				// 模板方法
 				onSuccessfulAuthentication(request, response, rememberMeAuth);
 				this.logger.debug(LogMessage.of(() -> "SecurityContextHolder populated with remember-me token: '"
 						+ this.securityContextHolderStrategy.getContext().getAuthentication() + "'"));
+				// 持久化 context
 				this.securityContextRepository.saveContext(context, request, response);
 				if (this.eventPublisher != null) {
+					// 发布事件
 					this.eventPublisher.publishEvent(new InteractiveAuthenticationSuccessEvent(
 							this.securityContextHolderStrategy.getContext().getAuthentication(), this.getClass()));
 				}
 				if (this.successHandler != null) {
+					/**
+					 * 回调。
+					 * 默认就是设置 重定向地址
+					 * */
 					this.successHandler.onAuthenticationSuccess(request, response, rememberMeAuth);
+					// 直接 return 不要执行后续的Filter了
 					return;
 				}
 			}
@@ -138,10 +153,16 @@ public class RememberMeAuthenticationFilter extends GenericFilterBean implements
 								+ "rejected Authentication returned by RememberMeServices: '%s'; "
 								+ "invalidating remember-me token", rememberMeAuth),
 						ex);
+				/**
+				 * 登录失败。一般就是清空cookie，因为这个cookie记录的信息不对
+				 * 1. 删除cookie
+				 * */
 				this.rememberMeServices.loginFail(request, response);
+				// 模板方法
 				onUnsuccessfulAuthentication(request, response, ex);
 			}
 		}
+		// 放行
 		chain.doFilter(request, response);
 	}
 

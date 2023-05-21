@@ -66,15 +66,28 @@ public class UnanimousBased extends AbstractAccessDecisionManager {
 		int grant = 0;
 		List<ConfigAttribute> singleAttributeList = new ArrayList<>(1);
 		singleAttributeList.add(null);
+		/**
+		 * 遍历 ConfigAttribute，投票结果都不能是拒绝。
+		 *
+		 * 因为大部分的 vote 逻辑，都是只要 authentication具备的权限 包含了 attributes 中的一个就算同意，并不是匹配具备所有 attribute 才算同意
+		 * 比如：
+		 * 		{@link RoleVoter#vote(Authentication, Object, Collection)}
+		 *		{@link org.springframework.security.web.access.expression.WebExpressionVoter#vote}
+		 * */
 		for (ConfigAttribute attribute : attributes) {
 			singleAttributeList.set(0, attribute);
 			for (AccessDecisionVoter voter : getDecisionVoters()) {
+				/**
+				 * 投票结果
+				 * {@link org.springframework.security.web.access.expression.WebExpressionVoter#vote}
+				 * */
 				int result = voter.vote(authentication, object, singleAttributeList);
 				switch (result) {
 				case AccessDecisionVoter.ACCESS_GRANTED:
 					grant++;
 					break;
 				case AccessDecisionVoter.ACCESS_DENIED:
+					// 有否定的直接抛出异常，说明 必须全部 voter 的投票结果不能是拒绝
 					throw new AccessDeniedException(
 							this.messages.getMessage("AbstractAccessDecisionManager.accessDenied", "Access is denied"));
 				default:

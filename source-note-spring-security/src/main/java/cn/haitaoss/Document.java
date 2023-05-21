@@ -1,22 +1,11 @@
 
 package cn.haitaoss;
 
-import java.io.File;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.security.acl.Permission;
 import java.util.List;
-
-import org.apache.catalina.WebResourceRoot;
-import org.apache.catalina.connector.Connector;
-import org.apache.catalina.core.StandardContext;
-import org.apache.catalina.startup.Tomcat;
-import org.apache.catalina.webresources.DirResourceSet;
-import org.apache.catalina.webresources.StandardRoot;
-import org.apache.coyote.http11.Http11NioProtocol;
-
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -31,9 +20,8 @@ import org.springframework.security.web.authentication.logout.HeaderWriterLogout
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.header.writers.ClearSiteDataHeaderWriter;
-import org.springframework.security.web.session.HttpSessionEventPublisher;
-
 import static org.springframework.security.web.header.writers.ClearSiteDataHeaderWriter.Directive.COOKIES;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 /**
  * @author haitao.chen
@@ -308,89 +296,6 @@ public class Document {
 	 * AbstractAuthenticationProcessingFilter
 	 *		AbstractAuthenticationProcessingFilter 用作验证用户凭据的基础 Filter 。在可以验证凭据之前，Spring Security 通常使用 AuthenticationEntryPoint 请求凭据。
 	 *		接下来， AbstractAuthenticationProcessingFilter 可以对提交给它的任何身份验证请求进行身份验证。
-	 * */
-	/**
-	 * Username/Password Authentication 用户名/密码认证
-	 * 		验证用户身份的最常见方法之一是验证用户名和密码。因此，Spring Security 为使用用户名和密码进行身份验证提供了全面的支持。
-	 *		Reading the Username & Password 读取用户名和密码
-	 *			Spring Security 提供了以下内置机制，用于从 HttpServletRequest 读取用户名和密码：From、Basic、Digest
-	 *
-	 *			From 表单登录
-	 *			Spring Security 支持通过 html 表单提供的用户名和密码。本节提供有关基于表单的身份验证如何在 Spring Security 中工作的详细信息。
-	 *			默认启用 Spring Security 表单登录。但是，一旦提供了任何基于 servlet 的配置，就必须明确提供基于表单的登录。可以在下面找到最小的显式 Java 配置：
-	 *				public SecurityFilterChain filterChain(HttpSecurity http) {
-	 * 					http
-	 * 						.formLogin(withDefaults());
-	 * 					// ...
-	 *                }
-	 * 				在此配置中，Spring Security 将呈现默认登录页面。大多数生产应用程序都需要自定义登录表单。
-	 * 				public SecurityFilterChain filterChain(HttpSecurity http) {
-	 * 					http
-	 * 						.formLogin(form -> form
-	 * 							.loginPage("/login")
-	 * 							.permitAll()
-	 * 						);
-	 * 					// ...
-	 *                }
-	 *
-	 *			Basic Authentication 基本认证
-	 *				本节提供有关 Spring Security 如何为基于 servlet 的应用程序提供基本 HTTP 身份验证支持的详细信息。
-	 *				默认情况下启用 Spring Security 的 HTTP 基本身份验证支持。但是，一旦提供了任何基于 servlet 的配置，就必须显式提供 HTTP Basic。
-	 *                                @Bean
-	 *                            public SecurityFilterChain filterChain(HttpSecurity http) {
-	 * 								http
-	 * 									// ...
-	 * 									.httpBasic(withDefaults());
-	 * 								return http.build();
-	 *                            }
-	 *			Digest 过时了，也是一种认证方式
-	 *
-	 *		Password Storage 密码存储
-	 *			- Simple Storage with In-Memory Authentication
-	 *				Spring Security 的 InMemoryUserDetailsManager 实现了 UserDetailsS​​ervice 以提供对存储在内存中的基于用户名/密码的身份验证的支持。 InMemoryUserDetailsManager 通过实现 UserDetailsManager 接口来提供对 UserDetails 的管理。当配置为接受用户名/密码进行身份验证时，Spring Security 使用基于 UserDetails 的身份验证。
-	 *                                @Bean
-	 *                                    public UserDetailsService users() {
-	 * 										// The builder will ensure the passwords are encoded before saving in memory
-	 * 										UserBuilder users = User.withDefaultPasswordEncoder();
-	 * 										UserDetails user = users
-	 * 											.username("user")
-	 * 											.password("password")
-	 * 											.roles("USER")
-	 * 											.build();
-	 * 										UserDetails admin = users
-	 * 											.username("admin")
-	 * 											.password("password")
-	 * 											.roles("USER", "ADMIN")
-	 * 											.build();
-	 * 										return new InMemoryUserDetailsManager(user, admin);
-	 *                                    }
-	 * 			- Relational Databases with JDBC Authentication（需要配置数据源，固定要查询的表明和字段名了）
-	 *                                @Bean
-	 *                                    UserDetailsManager users(DataSource dataSource) {
-	 * 										UserDetails user = User.builder()
-	 * 											.username("user")
-	 * 											.password("{bcrypt}$2a$10$GRLdNijSQMUvl/au9ofL.eDwmoohzzS7.rmNSJZ.0FxO/BTk76klW")
-	 * 											.roles("USER")
-	 * 											.build();
-	 * 										UserDetails admin = User.builder()
-	 * 											.username("admin")
-	 * 											.password("{bcrypt}$2a$10$GRLdNijSQMUvl/au9ofL.eDwmoohzzS7.rmNSJZ.0FxO/BTk76klW")
-	 * 											.roles("USER", "ADMIN")
-	 * 											.build();
-	 * 										JdbcUserDetailsManager users = new JdbcUserDetailsManager(dataSource);
-	 * 										users.createUser(user);
-	 * 										users.createUser(admin);
-	 * 										return users;
-	 *                                    }
-	 * 			- Custom data stores with UserDetailsService
-	 * 				UserDetailsService 由 DaoAuthenticationProvider 用于检索用户名、密码和其他属性，以使用用户名和密码进行身份验证。 Spring Security 提供 UserDetailsService 的内存和 JDBC 实现。
-	 * 				您可以通过将自定义 UserDetailsService 公开为 bean 来定义自定义身份验证。例如，以下将自定义身份验证，假设 CustomUserDetailsService 实现了 UserDetailsService ：
-	 *                                        @Bean
-	 *                                            CustomUserDetailsService customUserDetailsService() {
-	 * 												return new CustomUserDetailsService();
-	 *                                            }
-	 * 			- LDAP storage with LDAP Authentication
-	 *				是一种认证方式，不了解，不细看了
 	 * */
 	/**
 	 * UserDetails

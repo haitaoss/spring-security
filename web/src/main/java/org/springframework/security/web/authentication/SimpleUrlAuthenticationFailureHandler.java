@@ -89,9 +89,11 @@ public class SimpleUrlAuthenticationFailureHandler implements AuthenticationFail
 		saveException(request, exception);
 		if (this.forwardToDestination) {
 			this.logger.debug("Forwarding to " + this.defaultFailureUrl);
+			// 设置转发信息
 			request.getRequestDispatcher(this.defaultFailureUrl).forward(request, response);
 		}
 		else {
+			// 设置重定向信息
 			this.redirectStrategy.sendRedirect(request, response, this.defaultFailureUrl);
 		}
 	}
@@ -111,6 +113,7 @@ public class SimpleUrlAuthenticationFailureHandler implements AuthenticationFail
 		}
 		HttpSession session = request.getSession(false);
 		if (session != null || this.allowSessionCreation) {
+			// 设置异常信息
 			request.getSession().setAttribute(WebAttributes.AUTHENTICATION_EXCEPTION, exception);
 		}
 	}

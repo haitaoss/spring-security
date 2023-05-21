@@ -223,7 +223,7 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 
 	private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
 			throws IOException, ServletException {
-		// 不是需要认证的（其实就是判断是否是 /login ）
+		// 不是需要认证的（其实就是判断不是 /login ）
 		if (!requiresAuthentication(request, response)) {
 			// 放行
 			chain.doFilter(request, response);
@@ -255,7 +255,8 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 			 * 2. 回调 RememberMeService#loginSuccess
 			 * 3. 发布事件 InteractiveAuthenticationSuccessEvent
 			 * 4. 回调 SuccessHandler#onAuthenticationSuccess
-			 * 		默认是注册了
+			 * 		默认是注册了 SavedRequestAwareAuthenticationSuccessHandler，这是用来设置 重定向到之前访问的路径
+			 * 		比如：未登录 -> 需要认证的页面 -> 重定向到登录页面 -> 认证通过 -> 重定向到之前的页面
 			 * */
 			successfulAuthentication(request, response, chain, authenticationResult);
 		}

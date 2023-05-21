@@ -3246,7 +3246,9 @@ public final class HttpSecurity extends AbstractConfiguredSecurityBuilder<Defaul
 		// expressionConfigurer 和 httpConfigurer 都设置了 就报错
 		Assert.state((expressionConfigurer == null && httpConfigurer == null) || oneConfigurerPresent,
 				"authorizeHttpRequests cannot be used in conjunction with authorizeRequests. Please select just one.");
-		// 排序
+		/**
+		 * 排序。这一点很关键
+		 * */
 		this.filters.sort(OrderComparator.INSTANCE);
 		List<Filter> sortedFilters = new ArrayList<>(this.filters.size());
 		for (Filter filter : this.filters) {

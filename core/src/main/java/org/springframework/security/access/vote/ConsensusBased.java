@@ -69,26 +69,37 @@ public class ConsensusBased extends AbstractAccessDecisionManager {
 		int grant = 0;
 		int deny = 0;
 		for (AccessDecisionVoter voter : getDecisionVoters()) {
+			/**
+			 * 投票结果
+			 * 		{@link org.springframework.security.web.access.expression.WebExpressionVoter#vote(Authentication, org.springframework.security.web.FilterInvocation, Collection)}
+			 * */
 			int result = voter.vote(authentication, object, configAttributes);
 			switch (result) {
 			case AccessDecisionVoter.ACCESS_GRANTED:
+				// 同意数加一
 				grant++;
 				break;
 			case AccessDecisionVoter.ACCESS_DENIED:
+				// 拒绝数加一
 				deny++;
 				break;
 			default:
 				break;
 			}
 		}
+		// 同意数 大于 拒绝数
 		if (grant > deny) {
 			return;
 		}
+		// 拒绝数 大于 同意数
 		if (deny > grant) {
+			// 抛出异常
 			throw new AccessDeniedException(
 					this.messages.getMessage("AbstractAccessDecisionManager.accessDenied", "Access is denied"));
 		}
+		// 持平
 		if ((grant == deny) && (grant != 0)) {
+			// 默认是 true
 			if (this.allowIfEqualGrantedDeniedDecisions) {
 				return;
 			}

@@ -76,6 +76,7 @@ public final class DefaultLoginPageConfigurer<H extends HttpSecurityBuilder<H>>
 
 	@Override
 	public void init(H http) {
+		// hiddenInputs 的目的是生成 html 页面拼接上 csrfToken
 		this.loginPageGeneratingFilter.setResolveHiddenInputs(DefaultLoginPageConfigurer.this::hiddenInputs);
 		this.logoutPageGeneratingFilter.setResolveHiddenInputs(DefaultLoginPageConfigurer.this::hiddenInputs);
 		// 设置为共享对象
@@ -83,7 +84,9 @@ public final class DefaultLoginPageConfigurer<H extends HttpSecurityBuilder<H>>
 	}
 
 	private Map<String, String> hiddenInputs(HttpServletRequest request) {
+		// 从 request 中获取 csrfToken
 		CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+		// 构造一个map
 		return (token != null) ? Collections.singletonMap(token.getParameterName(), token.getToken())
 				: Collections.emptyMap();
 	}

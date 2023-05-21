@@ -284,6 +284,9 @@ public class DefaultLoginPageGeneratingFilter extends GenericFilterBean {
 			sb.append("          <input type=\"password\" id=\"password\" name=\"" + this.passwordParameter
 					+ "\" class=\"form-control\" placeholder=\"Password\" required>\n");
 			sb.append("        </p>\n");
+			/**
+			 * 默认的 renderHiddenInputs 会设置 csrfToken
+			 * */
 			sb.append(createRememberMe(this.rememberMeParameter) + renderHiddenInputs(request));
 			sb.append("        <button class=\"btn btn-lg btn-primary btn-block\" type=\"submit\">Sign in</button>\n");
 			sb.append("      </form>\n");
@@ -342,6 +345,9 @@ public class DefaultLoginPageGeneratingFilter extends GenericFilterBean {
 
 	private String renderHiddenInputs(HttpServletRequest request) {
 		StringBuilder sb = new StringBuilder();
+		/**
+		 * {@link org.springframework.security.config.annotation.web.configurers.DefaultLoginPageConfigurer#init}
+		 * */
 		for (Map.Entry<String, String> input : this.resolveHiddenInputs.apply(request).entrySet()) {
 			sb.append("<input name=\"");
 			sb.append(input.getKey());

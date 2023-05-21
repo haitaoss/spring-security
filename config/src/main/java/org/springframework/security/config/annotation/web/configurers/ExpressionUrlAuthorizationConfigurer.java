@@ -148,6 +148,9 @@ public final class ExpressionUrlAuthorizationConfigurer<H extends HttpSecurityBu
 	@SuppressWarnings("rawtypes")
 	List<AccessDecisionVoter<?>> getDecisionVoters(H http) {
 		List<AccessDecisionVoter<?>> decisionVoters = new ArrayList<>();
+		/**
+		 * 使用 WebExpressionVoter ， 它只会解析 WebExpressionConfigAttribute
+		 * */
 		WebExpressionVoter expressionVoter = new WebExpressionVoter();
 		expressionVoter.setExpressionHandler(getExpressionHandler(http));
 		decisionVoters.add(expressionVoter);
@@ -160,6 +163,9 @@ public final class ExpressionUrlAuthorizationConfigurer<H extends HttpSecurityBu
 		LinkedHashMap<RequestMatcher, Collection<ConfigAttribute>> requestMap = this.REGISTRY.createRequestMap();
 		Assert.state(!requestMap.isEmpty(),
 				"At least one mapping is required (i.e. authorizeRequests().anyRequest().authenticated())");
+		/**
+		 * 很关键，会将 ConfigAttribute 处理成 WebExpressionConfigAttribute
+		 * */
 		return new ExpressionBasedFilterInvocationSecurityMetadataSource(requestMap, getExpressionHandler(http));
 	}
 

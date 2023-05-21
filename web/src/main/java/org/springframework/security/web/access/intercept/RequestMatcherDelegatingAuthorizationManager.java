@@ -27,6 +27,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.core.log.LogMessage;
+import org.springframework.security.authorization.AuthenticatedAuthorizationManager;
+import org.springframework.security.authorization.AuthorityAuthorizationManager;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.core.Authentication;
@@ -69,15 +71,24 @@ public final class RequestMatcherDelegatingAuthorizationManager implements Autho
 		if (this.logger.isTraceEnabled()) {
 			this.logger.trace(LogMessage.format("Authorizing %s", request));
 		}
+		// 遍历注册的权限数据
 		for (RequestMatcherEntry<AuthorizationManager<RequestAuthorizationContext>> mapping : this.mappings) {
-
 			RequestMatcher matcher = mapping.getRequestMatcher();
 			MatchResult matchResult = matcher.matcher(request);
+			// request 满足 matcher，说明 request 配置了权限规则
 			if (matchResult.isMatch()) {
+				// 获取配置的 AuthorizationManager
 				AuthorizationManager<RequestAuthorizationContext> manager = mapping.getEntry();
 				if (this.logger.isTraceEnabled()) {
 					this.logger.trace(LogMessage.format("Checking authorization on %s using %s", request, manager));
 				}
+				/**
+				 * {@link AuthenticatedAuthorizationManager#check(Supplier, Object)}
+				 * 		鉴权：校验是否认证过(细分成 匿名认证、RememberMe认证、其他认证)
+				 *
+				 * {@link AuthorityAuthorizationManager#check(Supplier, Object)}
+				 * 		鉴权：认证过 且 认证信息包含权限
+				 * */
 				return manager.check(authentication,
 						new RequestAuthorizationContext(request, matchResult.getVariables()));
 			}

@@ -124,6 +124,7 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
 		}
 		catch (OAuth2AuthenticationException invalid) {
 			this.logger.trace("Sending to authentication entry point since failed to resolve bearer token", invalid);
+			// 使用 authenticationEntryPoint 进入认证
 			this.authenticationEntryPoint.commence(request, response, invalid);
 			return;
 		}

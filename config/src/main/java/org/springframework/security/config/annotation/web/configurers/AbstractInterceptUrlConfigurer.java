@@ -77,6 +77,8 @@ public abstract class AbstractInterceptUrlConfigurer<C extends AbstractIntercept
 	public void configure(H http) throws Exception {
 		/**
 		 * metadataSource 是用来描述 资源对应的权限数据
+		 *
+		 * {@link ExpressionUrlAuthorizationConfigurer#createMetadataSource(HttpSecurityBuilder)}
 		 * */
 		FilterInvocationSecurityMetadataSource metadataSource = createMetadataSource(http);
 		if (metadataSource == null) {

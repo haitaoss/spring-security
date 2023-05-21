@@ -59,23 +59,33 @@ public class AffirmativeBased extends AbstractAccessDecisionManager {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void decide(Authentication authentication, Object object, Collection<ConfigAttribute> configAttributes)
 			throws AccessDeniedException {
+		// 拒绝
 		int deny = 0;
+		// 遍历 决策选民
 		for (AccessDecisionVoter voter : getDecisionVoters()) {
+			/**
+			 * 投票结果
+			 * {@link org.springframework.security.web.access.expression.WebExpressionVoter#vote}
+			 * */
 			int result = voter.vote(authentication, object, configAttributes);
 			switch (result) {
 			case AccessDecisionVoter.ACCESS_GRANTED:
 				return;
 			case AccessDecisionVoter.ACCESS_DENIED:
+				// 加一
 				deny++;
 				break;
 			default:
 				break;
 			}
 		}
+		// 拒绝计数大于0
 		if (deny > 0) {
+			// 抛出异常
 			throw new AccessDeniedException(
 					this.messages.getMessage("AbstractAccessDecisionManager.accessDenied", "Access is denied"));
 		}
+		// 模板方法
 		// To get this far, every AccessDecisionVoter abstained
 		checkAllowIfAllAbstainDecisions();
 	}
