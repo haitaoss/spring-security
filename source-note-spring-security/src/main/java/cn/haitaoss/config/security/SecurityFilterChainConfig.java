@@ -1,13 +1,10 @@
 package cn.haitaoss.config.security;
 
-import java.util.Optional;
-import javax.servlet.http.HttpServletRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authorization.AuthorityAuthorizationManager;
 import org.springframework.security.authorization.AuthorizationManagers;
-import static org.springframework.security.config.Customizer.withDefaults;
 import org.springframework.security.config.annotation.ObjectPostProcessor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.Authentication;
@@ -18,10 +15,15 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.FilterSecurityInterceptor;
 import org.springframework.security.web.authentication.www.DigestAuthenticationFilter;
-import static org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher;
-import static org.springframework.security.web.util.matcher.RegexRequestMatcher.regexMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.stereotype.Component;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.Optional;
+
+import static org.springframework.security.config.Customizer.withDefaults;
+import static org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher;
+import static org.springframework.security.web.util.matcher.RegexRequestMatcher.regexMatcher;
 
 @Component
 public class SecurityFilterChainConfig {
@@ -39,7 +41,7 @@ public class SecurityFilterChainConfig {
          * */
         return http
                 /**
-                 * 设置 requestMatcher 属性，这是用来匹配request的，为true才会执行这个 SecurityFilterChain
+                 * 设置 requestMatcher 属性，这是用来匹配request的，为true才会执行这个 SecurityFilterChain, 默认是匹配所有request
                  *
                  * Tips：SecurityFilterChain 的匹配是有优先级的，为true就直接使用。看
                  *        {@link org.springframework.security.web.FilterChainProxy#doFilterInternal}
@@ -65,6 +67,7 @@ public class SecurityFilterChainConfig {
                         return null;
                     }
                 })
+
                 // 没啥屌用，都没提供快速配置的configurer 说明不常用
                 .addFilter(new DigestAuthenticationFilter())
                 .build();
@@ -75,12 +78,61 @@ public class SecurityFilterChainConfig {
     public SecurityFilterChain filterChain2(HttpSecurity http) throws Exception {
         http
                 /**
+                 * 设置 requestMatcher 属性，该属性是用来匹配request的，匹配了才执行这个Filter
+                 * */.antMatcher("/api/**")
+                .securityMatcher(antMatcher("/api/**"))
+                .securityMatcher(regexMatcher("/admin/.*"))
+                .securityMatcher(new RequestMatcher() {
+                    @Override
+                    public boolean matches(HttpServletRequest request) {
+                        return true;
+                    }
+                })
+                .securityMatcher("/admin/.*")
+                .authenticationProvider(new AuthenticationProvider() {
+                    @Override
+                    public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+                        return null;
+                    }
+
+                    @Override
+                    public boolean supports(Class<?> authentication) {
+                        return false;
+                    }
+                })
+                /**
                  * 设置鉴权逻辑。
                  * 会注册 AuthorizationFilter
-                 * */.authorizeHttpRequests(authorization -> authorization.requestMatchers("/a/**")
-                .hasAuthority("xx")
-                .anyRequest()
-                .permitAll());
+                 * */
+                // 设置 鉴权信息
+                .authorizeHttpRequests(authorize -> authorize.requestMatchers("/user/**")
+                        .hasRole("USER")
+                        .requestMatchers("/x")
+                        .authenticated() // 任何其他不符合上述规则的请求都需要身份验证
+                        .requestMatchers("/x")
+                        .permitAll() // 放行
+                        .requestMatchers("/x")
+                        .denyAll() // 任何尚未匹配的 URL 都将被拒绝访问。如果您不想意外忘记更新您的授权规则，这是一个很好的策略。
+                        .requestMatchers("/x")
+                        .fullyAuthenticated()
+                        .requestMatchers("/db/**")
+                        .access(AuthorizationManagers.allOf(
+                                AuthorityAuthorizationManager.hasRole("ADMIN"),
+                                AuthorityAuthorizationManager.hasRole("DBA")
+                        ))
+                        .anyRequest()
+                        .rememberMe()
+
+                        // 添加 ObjectPostProcessor
+                        .withObjectPostProcessor(new ObjectPostProcessor<FilterSecurityInterceptor>() {
+                            public <O extends FilterSecurityInterceptor> O postProcess(O fsi) {
+                                fsi.setPublishAuthorizationSuccess(true);
+                                return fsi;
+                            }
+                        }))
+                // 添加认证方式
+                .httpBasic(withDefaults())
+                .formLogin(withDefaults());
         return http.build();
     }
 
@@ -93,16 +145,15 @@ public class SecurityFilterChainConfig {
                  * 会注册 FilterSecurityInterceptor
                  *
                  * 会拼接成 SpEL 表达式，然后使用的 RootObject 是 SecurityExpressionRoot 类型的，所以才可以写 "hasRole('ADMIN') and hasRole('DBA')"
-                 * */.authorizeRequests(authorize -> authorize
-                        // 确保对我们应用程序的任何请求都需要对用户进行身份验证
-                        .anyRequest()
-                        .authenticated()
-                        .requestMatchers("/**")
+                 * */.authorizeRequests(authorize -> authorize.requestMatchers("/**")
                         .hasRole("xx")
                         .requestMatchers("/xx")
                         .authenticated()
                         .requestMatchers("/xx2")
                         .access("hasRole('ADMIN') and hasRole('DBA')")
+                        // 确保对我们应用程序的任何请求都需要对用户进行身份验证
+                        .anyRequest()
+                        .authenticated()
 
 
                 )
@@ -131,64 +182,5 @@ public class SecurityFilterChainConfig {
                  * {@link org.springframework.security.web.authentication.www.BasicAuthenticationFilter#doFilterInternal(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, javax.servlet.FilterChain)}
                  * */.httpBasic(withDefaults());
         return http.build();
-    }
-
-
-    @Order(4)
-    @Bean
-    public SecurityFilterChain apiFilterChain4(HttpSecurity http) throws Exception {
-        http
-                /**
-                 * 设置 requestMatcher 属性，该属性是用来匹配request的，匹配了才执行这个Filter
-                 * */.antMatcher("/api/**")
-                .securityMatcher(antMatcher("/api/**"))
-                .securityMatcher(regexMatcher("/admin/.*"))
-                .securityMatcher(new MyCustomRequestMatcher())
-                .securityMatcher("/admin/.*")
-                .authenticationProvider(null)
-                // 设置 鉴权信息
-                .authorizeHttpRequests(authorize -> authorize.requestMatchers("/user/**")
-                        .hasRole("USER")
-                        .anyRequest()
-                        .authenticated() // 任何其他不符合上述规则的请求都需要身份验证
-                        .anyRequest()
-                        .permitAll() // 放行
-                        .anyRequest()
-                        .denyAll() // 任何尚未匹配的 URL 都将被拒绝访问。如果您不想意外忘记更新您的授权规则，这是一个很好的策略。
-                        .anyRequest()
-                        .fullyAuthenticated()
-                        .anyRequest()
-                        .rememberMe()
-                        .requestMatchers("/db/**")
-                        .access(AuthorizationManagers.allOf(
-                                AuthorityAuthorizationManager.hasRole("ADMIN"),
-                                AuthorityAuthorizationManager.hasRole("DBA")
-                        ))
-
-                        // 添加 ObjectPostProcessor
-                        .withObjectPostProcessor(new ObjectPostProcessor<FilterSecurityInterceptor>() {
-                            public <O extends FilterSecurityInterceptor> O postProcess(O fsi) {
-                                fsi.setPublishAuthorizationSuccess(true);
-                                return fsi;
-                            }
-                        }))
-                // 添加认证方式
-                .httpBasic(withDefaults())
-                .formLogin(withDefaults());
-        return http.build();
-    }
-
-
-    /**
-     * 虽然有充分的理由不直接公开每个属性，但用户可能仍需要更高级的配置选项。为了解决这个问题，Spring Security 引入了 ObjectPostProcessor 的概念，它可用于修改或替换由 Java 配置创建的许多对象实例。例如，如果您想在 FilterSecurityInterceptor 上配置 filterSecurityPublishAuthorizationSuccess 属性，您可以使用以下内容
-     * @return
-     * @throws Exception
-     */
-    public class MyCustomRequestMatcher implements RequestMatcher {
-
-        @Override
-        public boolean matches(HttpServletRequest request) {
-            return false;
-        }
     }
 }
