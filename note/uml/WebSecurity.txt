@@ -1,0 +1,93 @@
+@startuml
+
+!theme plain
+top to bottom direction
+skinparam linetype ortho
+
+class AbstractConfiguredSecurityBuilder<O, B> {
+  - objectPostProcessor: ObjectPostProcessor<Object>
+  - configurers: LinkedHashMap<Class<SecurityConfigurer<O, B>>, List<SecurityConfigurer<O, B>>>
+  - sharedObjects: Map<Class<?>, Object>
+  - init(): void
+  # performBuild(): O
+  # doBuild(): O
+}
+class AbstractSecurityBuilder<O> {
+  - object: O
+  - building: AtomicBoolean
+  + build(): O
+  # doBuild(): O
+  + getObject(): O
+}
+interface AuthenticationManager << interface >> {
+  + authenticate(Authentication): Authentication
+}
+class AuthenticationManagerBuilder {
+  - authenticationProviders: List<AuthenticationProvider>
+  - eventPublisher: AuthenticationEventPublisher
+  - defaultUserDetailsService: UserDetailsService
+  - parentAuthenticationManager: AuthenticationManager
+  # performBuild(): ProviderManager
+}
+interface AuthenticationProvider << interface >> {
+  + authenticate(Authentication): Authentication
+  + supports(Class<?>): boolean
+}
+class DelegatingFilterProxy {
+  - webApplicationContext: WebApplicationContext?
+  - delegate: Filter?
+  - targetFilterLifecycle: boolean
+  - delegateMonitor: Object
+  - contextAttribute: String?
+  - targetBeanName: String?
+  + destroy(): void
+  + setContextAttribute(String?): void
+  + setTargetBeanName(String?): void
+  + getContextAttribute(): String?
+  # initFilterBean(): void
+  # findWebApplicationContext(): WebApplicationContext?
+  # getTargetBeanName(): String?
+  + setTargetFilterLifecycle(boolean): void
+  # isTargetFilterLifecycle(): boolean
+  # invokeDelegate(Filter, ServletRequest, ServletResponse, FilterChain): void
+  + doFilter(ServletRequest, ServletResponse, FilterChain): void
+  # destroyDelegate(Filter): void
+  # initDelegate(WebApplicationContext): Filter
+}
+interface Filter << interface >> {
+  + destroy(): void
+  + doFilter(ServletRequest, ServletResponse, FilterChain): void
+  + init(FilterConfig): void
+}
+class FilterChainProxy {
+  - filterChains: List<SecurityFilterChain>
+  + doFilter(ServletRequest, ServletResponse, FilterChain): void
+}
+class HttpSecurity {
+  - requestMatcherConfigurer: RequestMatcherConfigurer
+  - filters: List<OrderedFilter>
+}
+interface SecurityBuilder<O> << interface >> {
+  + build(): O
+}
+interface SecurityFilterChain << interface >> {
+  + matches(HttpServletRequest): boolean
+  + getFilters(): List<Filter>
+}
+class WebSecurity {
+  - securityFilterChainBuilders: List<SecurityBuilder<SecurityFilterChain>>
+  # performBuild(): Filter
+ }
+
+AbstractConfiguredSecurityBuilder  -[#000082,plain]-^  AbstractSecurityBuilder
+AbstractConfiguredSecurityBuilder  -[#595959,dashed]->  SecurityBuilder
+AbstractSecurityBuilder            -[#008200,dashed]-^  SecurityBuilder
+AuthenticationManagerBuilder       -[#000082,plain]-^  AbstractConfiguredSecurityBuilder
+AuthenticationManagerBuilder       -[#008200,dashed]-^  SecurityBuilder
+DelegatingFilterProxy              -[#008200,dashed]-^  Filter
+FilterChainProxy                   -[#008200,dashed]-^  Filter
+HttpSecurity                       -[#000082,plain]-^  AbstractConfiguredSecurityBuilder
+HttpSecurity                       -[#008200,dashed]-^  SecurityBuilder
+WebSecurity                        -[#000082,plain]-^  AbstractConfiguredSecurityBuilder
+WebSecurity                        -[#008200,dashed]-^  SecurityBuilder
+@enduml

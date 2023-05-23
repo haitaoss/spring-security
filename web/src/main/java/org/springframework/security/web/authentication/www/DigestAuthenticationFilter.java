@@ -130,6 +130,7 @@ public class DigestAuthenticationFilter extends GenericFilterBean implements Mes
 			throws IOException, ServletException {
 		String header = request.getHeader("Authorization");
 		if (header == null || !header.startsWith("Digest ")) {
+			// 放行
 			chain.doFilter(request, response);
 			return;
 		}
@@ -201,6 +202,7 @@ public class DigestAuthenticationFilter extends GenericFilterBean implements Mes
 		context.setAuthentication(authentication);
 		this.securityContextHolderStrategy.setContext(context);
 		this.securityContextRepository.saveContext(context, request, response);
+		// 放行
 		chain.doFilter(request, response);
 	}
 

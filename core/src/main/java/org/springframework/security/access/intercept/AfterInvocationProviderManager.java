@@ -69,6 +69,9 @@ public class AfterInvocationProviderManager implements AfterInvocationManager, I
 			Object returnedObject) throws AccessDeniedException {
 		Object result = returnedObject;
 		for (AfterInvocationProvider provider : this.providers) {
+			/**
+			 * {@link org.springframework.security.access.prepost.PostInvocationAdviceProvider#decide}
+			 * */
 			result = provider.decide(authentication, object, config, result);
 		}
 		return result;

@@ -59,11 +59,13 @@ public abstract class AbstractHttpConfigurer<T extends AbstractHttpConfigurer<T,
 			return this.securityContextHolderStrategy;
 		}
 		ApplicationContext context = getBuilder().getSharedObject(ApplicationContext.class);
+		// 容器中存在这个bean就使用
 		String[] names = context.getBeanNamesForType(SecurityContextHolderStrategy.class);
 		if (names.length == 1) {
 			this.securityContextHolderStrategy = context.getBean(SecurityContextHolderStrategy.class);
 		}
 		else {
+			// 默认是这个
 			this.securityContextHolderStrategy = SecurityContextHolder.getContextHolderStrategy();
 		}
 		return this.securityContextHolderStrategy;

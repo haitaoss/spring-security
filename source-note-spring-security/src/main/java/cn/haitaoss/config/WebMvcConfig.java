@@ -25,7 +25,7 @@ public class WebMvcConfig extends AbstractAnnotationConfigDispatcherServletIniti
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry
                 // request 匹配 这个规则
-                .addResourceHandler("/**")
+                .addResourceHandler("/**/*.png")
                 /**
                  * 资源的前缀
                  * 注：因为IDEA运行 {@link Main#main} 时，将 out/production/resources 添加到 -classpath 参数了，所以放在 resources 目录下面的资源是可以找到的

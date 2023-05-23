@@ -1,0 +1,87 @@
+@startuml
+
+!theme plain
+top to bottom direction
+skinparam linetype ortho
+
+interface AuthenticationEntryPoint << interface >> {
+  + commence(HttpServletRequest, HttpServletResponse, AuthenticationException): void
+}
+class AuthenticationFilter {
+  - failureHandler: AuthenticationFailureHandler
+  - securityContextRepository: SecurityContextRepository
+  - authenticationManagerResolver: AuthenticationManagerResolver<HttpServletRequest>
+  - securityContextHolderStrategy: SecurityContextHolderStrategy
+  - authenticationConverter: AuthenticationConverter
+  - requestMatcher: RequestMatcher
+  - successHandler: AuthenticationSuccessHandler
+  + setSecurityContextRepository(SecurityContextRepository): void
+  - attemptAuthentication(HttpServletRequest, HttpServletResponse): Authentication?
+  + setAuthenticationManagerResolver(AuthenticationManagerResolver<HttpServletRequest>): void
+  + getRequestMatcher(): RequestMatcher
+  + getSuccessHandler(): AuthenticationSuccessHandler
+  # doFilterInternal(HttpServletRequest, HttpServletResponse, FilterChain): void
+  + getAuthenticationManagerResolver(): AuthenticationManagerResolver<HttpServletRequest>
+  - successfulAuthentication(HttpServletRequest, HttpServletResponse, FilterChain, Authentication): void
+  + setAuthenticationConverter(AuthenticationConverter): void
+  + setSuccessHandler(AuthenticationSuccessHandler): void
+  + getFailureHandler(): AuthenticationFailureHandler
+  + getAuthenticationConverter(): AuthenticationConverter
+  + setFailureHandler(AuthenticationFailureHandler): void
+  + setSecurityContextHolderStrategy(SecurityContextHolderStrategy): void
+  + setRequestMatcher(RequestMatcher): void
+  - unsuccessfulAuthentication(HttpServletRequest, HttpServletResponse, AuthenticationException): void
+}
+class DaoAuthenticationProvider {
+  - USER_NOT_FOUND_PASSWORD: String
+  - userDetailsService: UserDetailsService
+  - userNotFoundEncodedPassword: String
+  - passwordEncoder: PasswordEncoder
+  - userDetailsPasswordService: UserDetailsPasswordService
+  # doAfterPropertiesSet(): void
+  + setUserDetailsService(UserDetailsService): void
+  # retrieveUser(String, UsernamePasswordAuthenticationToken): UserDetails
+  - prepareTimingAttackProtection(): void
+  + setUserDetailsPasswordService(UserDetailsPasswordService): void
+  + setPasswordEncoder(PasswordEncoder): void
+  # createSuccessAuthentication(Object, Authentication, UserDetails): Authentication
+  # getUserDetailsService(): UserDetailsService
+  # additionalAuthenticationChecks(UserDetails, UsernamePasswordAuthenticationToken): void
+  - mitigateAgainstTimingAttack(UsernamePasswordAuthenticationToken): void
+  # getPasswordEncoder(): PasswordEncoder
+}
+class FilterSecurityInterceptor {
+  - FILTER_APPLIED: String
+  - securityMetadataSource: FilterInvocationSecurityMetadataSource
+  - observeOncePerRequest: boolean
+  + getSecurityMetadataSource(): FilterInvocationSecurityMetadataSource
+  + init(FilterConfig): void
+  + setSecurityMetadataSource(FilterInvocationSecurityMetadataSource): void
+  + invoke(FilterInvocation): void
+  + isObserveOncePerRequest(): boolean
+  - isApplied(FilterInvocation): boolean
+  + doFilter(ServletRequest, ServletResponse, FilterChain): void
+  + getSecureObjectClass(): Class<?>
+  + setObserveOncePerRequest(boolean): void
+  + destroy(): void
+  + obtainSecurityMetadataSource(): SecurityMetadataSource
+}
+class UsernamePasswordAuthenticationFilter {
+  + SPRING_SECURITY_FORM_PASSWORD_KEY: String
+  - postOnly: boolean
+  + SPRING_SECURITY_FORM_USERNAME_KEY: String
+  - usernameParameter: String
+  - DEFAULT_ANT_PATH_REQUEST_MATCHER: AntPathRequestMatcher
+  - passwordParameter: String
+  + setPasswordParameter(String): void
+  + setPostOnly(boolean): void
+  + getPasswordParameter(): String
+  # obtainPassword(HttpServletRequest): String?
+  # setDetails(HttpServletRequest, UsernamePasswordAuthenticationToken): void
+  # obtainUsername(HttpServletRequest): String?
+  + setUsernameParameter(String): void
+  + attemptAuthentication(HttpServletRequest, HttpServletResponse): Authentication
+  + getUsernameParameter(): String
+}
+
+@enduml

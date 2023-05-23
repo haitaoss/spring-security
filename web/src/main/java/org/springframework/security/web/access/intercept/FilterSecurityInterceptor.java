@@ -115,17 +115,30 @@ public class FilterSecurityInterceptor extends AbstractSecurityInterceptor imple
 			// 设置标记
 			filterInvocation.getRequest().setAttribute(FILTER_APPLIED, Boolean.TRUE);
 		}
-		// 执行前（会进行认证授权操作）
+		/**
+		 * 执行前（会进行认证和鉴权）
+		 * 1. 根据 request 获取为 request 配置的权限信息
+		 * 2. 未认证过就进行认证。	AuthenticationManager#authenticate
+		 * 2. 校验认证信息是否具备配置的权限	AccessDecisionManager#decide
+		 * */
 		InterceptorStatusToken token = super.beforeInvocation(filterInvocation);
 		try {
 			// 放行
 			filterInvocation.getChain().doFilter(filterInvocation.getRequest(), filterInvocation.getResponse());
 		}
 		finally {
-			// 执行完
+			/**
+			 * 执行完(完成调用)。
+			 * 根据 token.isContextHolderRefreshRequired() 决定是否更新 securityContextHolderStrategy 记录的 SecurityContext。
+			 *
+			 * 比如 {@link AbstractSecurityInterceptor#beforeInvocation(Object)} 会构造新的SecurityContext, 并将原来的SecurityContext
+			 * 记录到 token 中，finallyInvocation 就是判断是否构造了新的SecurityContext，若是新的执行完之后 应当在这一步恢复SecurityContext
+			 * */
 			super.finallyInvocation(token);
 		}
-		// 执行后
+		/**
+		 * 执行后
+		 * */
 		super.afterInvocation(token, null);
 	}
 

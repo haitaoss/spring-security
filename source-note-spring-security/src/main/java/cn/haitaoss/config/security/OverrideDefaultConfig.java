@@ -16,6 +16,8 @@ import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.core.GrantedAuthorityDefaults;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -126,5 +128,14 @@ public class OverrideDefaultConfig {
 				return delegate.postProcess(object);
 			}
 		};
+	}
+
+	/**
+	 * 记录 SecurityContext 的工具
+	 * @return
+	 */
+	@Bean
+	public SecurityContextHolderStrategy securityContextHolderStrategy() {
+		return SecurityContextHolder.getContextHolderStrategy();
 	}
 }

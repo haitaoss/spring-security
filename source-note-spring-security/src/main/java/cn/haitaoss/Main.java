@@ -98,19 +98,6 @@ public class Main {
 	 * authenticationEntryPoint 是在认证失败时用来 决定作何种行为
 	 * */
 	/**
-	 * 关键的类
-	 * DelegatingFilterProxy FilterChainProxy
-	 * WebSecurity
-	 * HttpSecurity
-	 * AuthenticationManagerBuilder
-	 * AuthenticationManager
-	 * 		ProviderManager
-	 * 		AuthenticationProvider
-	 * 		DaoAuthenticationProvider
-	 * FilterSecurityInterceptor 即将被替换成 AuthorizationFilter
-	 * AuthenticationEntryPoint
-	 * */
-	/**
 	 * AuthenticationManager 是用来实现认证逻辑的。根据request的信息构造出 Authentication 然后认证 Authentication 是否正确
 	 * {@link org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)}
 	 * {@link org.springframework.security.authentication.ProviderManager#authenticate(org.springframework.security.core.Authentication)}
@@ -160,13 +147,36 @@ public class Main {
 	 *        {@link org.springframework.security.config.annotation.web.configurers.AbstractAuthenticationFilterConfigurer#configure(org.springframework.security.config.annotation.web.HttpSecurityBuilder)}
 	 * */
 
+
 	/**
 	 * @EnableGlobalMethodSecurity 过时了，用 @EnableMethodSecurity
 	 * 1. @Secured Spring Security 的 @PreAuthorize 、 @PostAuthorize 、 @PreFilter 和 @PostFilter 附带了丰富的基于表达式的支持。
 	 * 2. 动态的更新 鉴权数据
 	 * */
 
+
+	/**
+	 * 关键的类
+	 * DelegatingFilterProxy FilterChainProxy
+	 * WebSecurity
+	 * HttpSecurity SecurityFilterChain
+	 * AuthenticationManagerBuilder
+	 * AuthenticationManager
+	 * 		ProviderManager
+	 * 		AuthenticationProvider
+	 * 		DaoAuthenticationProvider
+	 * FilterSecurityInterceptor 即将被替换成 AuthorizationFilter
+	 * AuthenticationEntryPoint
+	 * WebSecurityConfigurer
+	 * WebSecurityConfigurerAdapter
+	 * */
+
 	public static void main(String[] args) throws Exception {
+		startTomcat();
+//		test_spel();
+	}
+
+	private static void test_spel() {
 		StandardEvaluationContext standardEvaluationContext = new StandardEvaluationContext();
 
 		SecurityExpressionRoot root = new SecurityExpressionRoot(
@@ -190,7 +200,6 @@ public class Main {
 		//        consumer.accept("denyAll");
 		//        consumer.accept("authenticated");
 		//        consumer.accept("isAuthenticated");
-		startTomcat();
 	}
 
 	public static void startTomcat() throws Exception {

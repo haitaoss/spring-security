@@ -3916,6 +3916,7 @@ public final class HttpSecurity extends AbstractConfiguredSecurityBuilder<Defaul
 	public HttpSecurity securityMatcher(String... patterns) {
 		// ClassLoader 中有 HandlerMappingIntrospector 就是 true
 		if (mvcPresent) {
+			// 会基于 @RequestMapping 来判断是否匹配
 			this.requestMatcher = new OrRequestMatcher(createMvcMatchers(patterns));
 			return this;
 		}
