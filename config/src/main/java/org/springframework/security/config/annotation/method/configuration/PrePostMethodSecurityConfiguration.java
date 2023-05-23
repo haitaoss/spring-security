@@ -64,20 +64,33 @@ final class PrePostMethodSecurityConfiguration {
 
 	@Autowired
 	PrePostMethodSecurityConfiguration(ApplicationContext context) {
+		// 这些属性都是默认值，可以通过依赖注入 覆盖这些值
 		this.preAuthorizeAuthorizationManager.setExpressionHandler(this.expressionHandler);
+		// 是 PointcutAdvisor 类型。先鉴权在执行方法
 		this.preAuthorizeAuthorizationMethodInterceptor = AuthorizationManagerBeforeMethodInterceptor
 				.preAuthorize(this.preAuthorizeAuthorizationManager);
+
 		this.postAuthorizeAuthorizationManager.setExpressionHandler(this.expressionHandler);
+		// 是 PointcutAdvisor 类型。先执行方法在鉴权
 		this.postAuthorizeAuthorizaitonMethodInterceptor = AuthorizationManagerAfterMethodInterceptor
 				.postAuthorize(this.postAuthorizeAuthorizationManager);
+
+		// 是 PointcutAdvisor 类型。可实现的方法的参数列表做修改
 		this.preFilterAuthorizationMethodInterceptor.setExpressionHandler(this.expressionHandler);
+
+		// 是 PointcutAdvisor 类型。可实现对方法的返回值做修改
 		this.postFilterAuthorizationMethodInterceptor.setExpressionHandler(this.expressionHandler);
 		this.expressionHandler.setApplicationContext(context);
+
+		// 用来发布事件的，这是默认值
 		AuthorizationEventPublisher publisher = new SpringAuthorizationEventPublisher(context);
 		this.preAuthorizeAuthorizationMethodInterceptor.setAuthorizationEventPublisher(publisher);
 		this.postAuthorizeAuthorizaitonMethodInterceptor.setAuthorizationEventPublisher(publisher);
 	}
 
+	/**
+	 * 动态代理AOP会根据 Advisor 来决定那些bean需要创建代理对象
+	 * */
 	@Bean
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 	Advisor preFilterAuthorizationMethodInterceptor() {

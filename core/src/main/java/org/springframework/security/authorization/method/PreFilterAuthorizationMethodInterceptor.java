@@ -16,12 +16,9 @@
 
 package org.springframework.security.authorization.method;
 
-import java.util.function.Supplier;
-
 import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
-
 import org.springframework.aop.Pointcut;
 import org.springframework.aop.PointcutAdvisor;
 import org.springframework.aop.framework.AopInfrastructureBean;
@@ -35,6 +32,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+
+import java.util.function.Supplier;
 
 /**
  * A {@link MethodInterceptor} which filters a method argument by evaluating an expression
@@ -119,14 +118,21 @@ public final class PreFilterAuthorizationMethodInterceptor
 	 */
 	@Override
 	public Object invoke(MethodInvocation mi) throws Throwable {
+		// 根据 mi 拿到配置的权限数据
 		PreFilterExpressionAttributeRegistry.PreFilterExpressionAttribute attribute = this.registry.getAttribute(mi);
+		// 没对应权限数据，直接放行
 		if (attribute == PreFilterExpressionAttributeRegistry.PreFilterExpressionAttribute.NULL_ATTRIBUTE) {
 			return mi.proceed();
 		}
 		MethodSecurityExpressionHandler expressionHandler = this.registry.getExpressionHandler();
 		EvaluationContext ctx = expressionHandler.createEvaluationContext(this.authentication, mi);
+		// 从方法的参数列表得到 filterTarget
 		Object filterTarget = findFilterTarget(attribute.getFilterTarget(), ctx, mi);
+		/**
+		 * 其目的是修改方法参数列表的值。会根据执行的SpEL表达式决定是否需要这个参数的值
+		 * */
 		expressionHandler.filter(filterTarget, attribute.getExpression(), ctx);
+		// 放行
 		return mi.proceed();
 	}
 

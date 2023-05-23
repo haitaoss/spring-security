@@ -16,17 +16,6 @@
 
 package org.springframework.security.web.access.intercept;
 
-import java.io.IOException;
-import java.util.function.Supplier;
-
-import javax.servlet.DispatcherType;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
@@ -40,6 +29,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.util.Assert;
 import org.springframework.web.filter.GenericFilterBean;
+
+import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.function.Supplier;
 
 /**
  * An authorization filter that restricts access to the URL using
@@ -98,9 +93,10 @@ public class AuthorizationFilter extends GenericFilterBean {
 		request.setAttribute(alreadyFilteredAttributeName, Boolean.TRUE);
 		try {
 			/**
-			 * TODOHAITAO: 2023/5/16
 			 * 使用 authorizationManager 检查权限
-			 * {@link RequestMatcherDelegatingAuthorizationManager#check(Supplier, HttpServletRequest)}
+			 * 	{@link RequestMatcherDelegatingAuthorizationManager#check(Supplier, HttpServletRequest)}
+			 * 	1. 遍历配置的权限集合，找到匹配request的	AuthorizationManager
+			 * 	2. 回调 AuthorizationManager#check 得到鉴权结果
 			 * */
 			AuthorizationDecision decision = this.authorizationManager.check(this::getAuthentication, request);
 			// 发布事件

@@ -16,12 +16,12 @@
 
 package org.springframework.security.access.expression;
 
-import java.util.function.Supplier;
-
 import org.springframework.aop.framework.AopInfrastructureBean;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.security.core.Authentication;
+
+import java.util.function.Supplier;
 
 /**
  * Facade which isolates Spring Security's requirements for evaluating security

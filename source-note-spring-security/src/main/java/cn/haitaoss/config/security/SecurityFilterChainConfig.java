@@ -1,17 +1,10 @@
 package cn.haitaoss.config.security;
 
-import java.util.Optional;
-
-import javax.servlet.http.HttpServletRequest;
-
 import lombok.extern.slf4j.Slf4j;
-import static org.springframework.security.config.Customizer.withDefaults;
-import static org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher;
-import static org.springframework.security.web.util.matcher.RegexRequestMatcher.regexMatcher;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authorization.AuthorityAuthorizationManager;
 import org.springframework.security.authorization.AuthorizationManagers;
 import org.springframework.security.config.annotation.ObjectPostProcessor;
@@ -26,6 +19,13 @@ import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.www.DigestAuthenticationFilter;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.stereotype.Component;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.Optional;
+
+import static org.springframework.security.config.Customizer.withDefaults;
+import static org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher;
+import static org.springframework.security.web.util.matcher.RegexRequestMatcher.regexMatcher;
 
 @Component
 @Slf4j
@@ -154,10 +154,10 @@ public class SecurityFilterChainConfig {
 				 *
 				 * 会拼接成 SpEL 表达式，然后使用的 RootObject 是 SecurityExpressionRoot 类型的，所以才可以写 "hasRole('ADMIN') and hasRole('DBA')"
 				 * */
-				.securityMatcher("/f3/**")
+				.securityMatcher("/**", "/f3/**")
 				.authorizeRequests(authorize -> authorize
-						.requestMatchers("/f3/**").hasRole("xx")
 						.requestMatchers("/f3/xx").authenticated()
+						.requestMatchers("/f3/**").hasRole("xx")
 						.requestMatchers("/f3/xx2").access("hasRole('ADMIN') and hasRole('DBA')")
 						// 确保对我们应用程序的任何请求都需要对用户进行身份验证
 						.anyRequest().authenticated()
@@ -166,12 +166,13 @@ public class SecurityFilterChainConfig {
 				.authenticationProvider(new AuthenticationProvider() {
 					@Override
 					public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-						return null;
+						return UsernamePasswordAuthenticationToken.authenticated(authentication.getPrincipal(),
+								authentication.getCredentials(), authentication.getAuthorities());
 					}
 
 					@Override
 					public boolean supports(Class<?> authentication) {
-						return false;
+						return true;
 					}
 				})
 				/**
@@ -179,13 +180,15 @@ public class SecurityFilterChainConfig {
 				 * 2.
 				 * {@link org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter#doFilter(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, javax.servlet.FilterChain)}
 				 * {@link org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter#doFilter(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, javax.servlet.FilterChain)}
-				 * */.formLogin(withDefaults())
+				 * */
+				.formLogin(withDefaults())
 				.formLogin(config -> config.loginProcessingUrl("/login"))
 				/**
 				 * 存在请求头 Authorization=BasicXxx 才需要判断是否认证过
 				 * 注：匿名认证信息 不算认证过
 				 * {@link org.springframework.security.web.authentication.www.BasicAuthenticationFilter#doFilterInternal(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, javax.servlet.FilterChain)}
-				 * */.httpBasic(withDefaults());
+				 * */
+				.httpBasic(withDefaults());
 		return http.build();
 	}
 }

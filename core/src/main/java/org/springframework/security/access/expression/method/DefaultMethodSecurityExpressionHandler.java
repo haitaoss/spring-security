@@ -16,20 +16,9 @@
 
 package org.springframework.security.access.expression.method;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
-
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.core.log.LogMessage;
 import org.springframework.expression.EvaluationContext;
@@ -43,6 +32,11 @@ import org.springframework.security.authentication.AuthenticationTrustResolverIm
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.parameters.DefaultSecurityParameterNameDiscoverer;
 import org.springframework.util.Assert;
+
+import java.lang.reflect.Array;
+import java.util.*;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
  * The standard implementation of {@code MethodSecurityExpressionHandler}.
@@ -146,12 +140,16 @@ public class DefaultMethodSecurityExpressionHandler extends AbstractSecurityExpr
 		}
 		for (T filterObject : filterTarget) {
 			rootObject.setFilterObject(filterObject);
+			// 执行 SpEL
 			if (ExpressionUtils.evaluateAsBoolean(filterExpression, ctx)) {
+				// 记录值
 				retain.add(filterObject);
 			}
 		}
 		this.logger.debug(LogMessage.format("Retaining elements: %s", retain));
+		// 清空
 		filterTarget.clear();
+		// 填充
 		filterTarget.addAll(retain);
 		return filterTarget;
 	}

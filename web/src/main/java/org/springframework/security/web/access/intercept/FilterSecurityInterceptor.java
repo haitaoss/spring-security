@@ -16,19 +16,13 @@
 
 package org.springframework.security.web.access.intercept;
 
-import java.io.IOException;
-
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-
 import org.springframework.security.access.SecurityMetadataSource;
 import org.springframework.security.access.intercept.AbstractSecurityInterceptor;
 import org.springframework.security.access.intercept.InterceptorStatusToken;
 import org.springframework.security.web.FilterInvocation;
+
+import javax.servlet.*;
+import java.io.IOException;
 
 /**
  * Performs security handling of HTTP resources via a filter implementation.
@@ -137,7 +131,9 @@ public class FilterSecurityInterceptor extends AbstractSecurityInterceptor imple
 			super.finallyInvocation(token);
 		}
 		/**
-		 * 执行后
+		 * 执行后。
+		 *
+		 * 回调 afterInvocationManager#decide 对返回值进行鉴权，但是 FilterSecurityInterceptor 没设置这个属性所以没有这个步骤。
 		 * */
 		super.afterInvocation(token, null);
 	}

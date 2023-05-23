@@ -1,9 +1,6 @@
 package cn.haitaoss.config.security;
 
-import java.util.EnumSet;
-import javax.servlet.DispatcherType;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
@@ -19,10 +16,11 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.context.AbstractSecurityWebApplicationInitializer;
 
+import javax.servlet.DispatcherType;
+import java.util.EnumSet;
+
 /**
- * 第一步是创建我们的 Spring Security Java 配置。该配置创建了一个称为 springSecurityFilterChain 的 Servlet 过滤器，它负责应用程序中的所有安全（保护应用程序 URL、验证提交的用户名和密码、重定向到登录表单等）。您可以在下面找到 Spring Security
- *
- * Spring Security 提供了一个基类 AbstractSecurityWebApplicationInitializer ，它将确保为您注册 springSecurityFilterChain 。我们使用 AbstractSecurityWebApplicationInitializer 的方式有所不同，这取决于我们是否已经在使用 Spring，或者 Spring Security 是否是我们应用程序中唯一的 Spring 组件。
+ * AbstractSecurityWebApplicationInitializer 它会注册 springSecurityFilterChain 到web容器中
  * */
 @EnableWebSecurity
 @Slf4j
@@ -77,8 +75,10 @@ public class QuickStarterConfig extends AbstractSecurityWebApplicationInitialize
      * 使用(认证逻辑)在这里：
      *      {@link ProviderManager#authenticate(Authentication)}
      *
-     * TODOHAITAO: 2023/5/19 注册 UserDetailsService 或者 AuthenticationProvider 的意义在于指定兜底的 AuthenticationProvider
-     *			默认的 HttpSecurity 只设置了 AnonymousAuthenticationProvider, 可以单独设置
+     * TODOHAITAO: 2023/5/19
+	 *     注册 UserDetailsService 或者 AuthenticationProvider 的意义在于指定兜底的 AuthenticationProvider
+     *	   默认依赖注入的 HttpSecurity 只设置了 AnonymousAuthenticationProvider 这个并不会验证用户名密码，所以意义不是特别大。
+	 *     当然也可以直接为 HttpSecurity 设置 AuthenticationProvider
      * @return
      */
     @Bean
