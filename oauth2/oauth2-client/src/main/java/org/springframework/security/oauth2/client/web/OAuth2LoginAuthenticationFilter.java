@@ -16,9 +16,6 @@
 
 package org.springframework.security.oauth2.client.web;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
@@ -43,6 +40,9 @@ import org.springframework.security.web.util.UrlUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * An implementation of an {@link AbstractAuthenticationProcessingFilter} for OAuth 2.0
@@ -162,21 +162,30 @@ public class OAuth2LoginAuthenticationFilter extends AbstractAuthenticationProce
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws AuthenticationException {
 		MultiValueMap<String, String> params = OAuth2AuthorizationResponseUtils.toMultiMap(request.getParameterMap());
+		// 不是 OAuth2 服务方回调的请求（因为OAuth2回调时会传递一些参数，根据是否有这些参数来判断的）
 		if (!OAuth2AuthorizationResponseUtils.isAuthorizationResponse(params)) {
 			OAuth2Error oauth2Error = new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST);
+			// 抛出异常
 			throw new OAuth2AuthenticationException(oauth2Error, oauth2Error.toString());
 		}
+		// 获取 authorizationRequest
 		OAuth2AuthorizationRequest authorizationRequest = this.authorizationRequestRepository
 				.removeAuthorizationRequest(request, response);
+		// 不存在说明并没有认证过
 		if (authorizationRequest == null) {
 			OAuth2Error oauth2Error = new OAuth2Error(AUTHORIZATION_REQUEST_NOT_FOUND_ERROR_CODE);
+			// 抛出异常
 			throw new OAuth2AuthenticationException(oauth2Error, oauth2Error.toString());
 		}
+		// 拿到
 		String registrationId = authorizationRequest.getAttribute(OAuth2ParameterNames.REGISTRATION_ID);
+		// 根据 registrationId 获取 ClientRegistration
 		ClientRegistration clientRegistration = this.clientRegistrationRepository.findByRegistrationId(registrationId);
+		// 为空，说明没配置过
 		if (clientRegistration == null) {
 			OAuth2Error oauth2Error = new OAuth2Error(CLIENT_REGISTRATION_NOT_FOUND_ERROR_CODE,
 					"Client Registration not found with Id: " + registrationId, null);
+			// 抛出异常
 			throw new OAuth2AuthenticationException(oauth2Error, oauth2Error.toString());
 		}
 		// @formatter:off
@@ -188,19 +197,23 @@ public class OAuth2LoginAuthenticationFilter extends AbstractAuthenticationProce
 		OAuth2AuthorizationResponse authorizationResponse = OAuth2AuthorizationResponseUtils.convert(params,
 				redirectUri);
 		Object authenticationDetails = this.authenticationDetailsSource.buildDetails(request);
+		// 构造出 OAuth2LoginAuthenticationToken
 		OAuth2LoginAuthenticationToken authenticationRequest = new OAuth2LoginAuthenticationToken(clientRegistration,
 				new OAuth2AuthorizationExchange(authorizationRequest, authorizationResponse));
 		authenticationRequest.setDetails(authenticationDetails);
+		// 认证
 		OAuth2LoginAuthenticationToken authenticationResult = (OAuth2LoginAuthenticationToken) this
 				.getAuthenticationManager().authenticate(authenticationRequest);
 		OAuth2AuthenticationToken oauth2Authentication = this.authenticationResultConverter
 				.convert(authenticationResult);
 		Assert.notNull(oauth2Authentication, "authentication result cannot be null");
 		oauth2Authentication.setDetails(authenticationDetails);
+		// 构造出 OAuth2AuthorizedClient
 		OAuth2AuthorizedClient authorizedClient = new OAuth2AuthorizedClient(
 				authenticationResult.getClientRegistration(), oauth2Authentication.getName(),
 				authenticationResult.getAccessToken(), authenticationResult.getRefreshToken());
 
+		// 将 OAuth2AuthorizedClient 存起来
 		this.authorizedClientRepository.saveAuthorizedClient(authorizedClient, oauth2Authentication, request, response);
 		return oauth2Authentication;
 	}

@@ -16,15 +16,6 @@
 
 package org.springframework.security.web.authentication;
 
-import java.io.IOException;
-
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.context.MessageSource;
@@ -49,6 +40,14 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.util.Assert;
 import org.springframework.web.filter.GenericFilterBean;
+
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 /**
  * Abstract processor of browser-based HTTP-based authentication requests.
@@ -223,7 +222,12 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 
 	private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
 			throws IOException, ServletException {
-		// 不是需要认证的（其实就是判断不是 /login ）
+		/**
+		 * 不是需要认证的
+		 *
+		 * {@link UsernamePasswordAuthenticationFilter} 其实就是判断不是 /login
+		 * {@link org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter} 其实就是判断不是 /login/oauth2/code/*
+		 * */
 		if (!requiresAuthentication(request, response)) {
 			// 放行
 			chain.doFilter(request, response);
@@ -232,10 +236,12 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 		try {
 			/**
 			 * 尝试认证
-			 * 		{@link org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter#attemptAuthentication(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)}
+			 * 	{@link org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter#attemptAuthentication(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)}
+			 *		1. 从request参数中提取 username 和 password 构造出 UsernamePasswordAuthenticationToken
+			 *		2. 使用 AuthenticationManager 认证 UsernamePasswordAuthenticationToken
 			 *
-			 * 1. 从request参数中提取 username 和 password 构造出 UsernamePasswordAuthenticationToken
-			 * 2. 使用 AuthenticationManager 认证 UsernamePasswordAuthenticationToken
+			 * 	{@link org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter#attemptAuthentication(HttpServletRequest, HttpServletResponse)}
+			 *
 			 * */
 			Authentication authenticationResult = attemptAuthentication(request, response);
 			if (authenticationResult == null) {

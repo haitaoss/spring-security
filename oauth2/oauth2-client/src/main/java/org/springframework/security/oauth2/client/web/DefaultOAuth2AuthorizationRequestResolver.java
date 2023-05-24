@@ -16,16 +16,6 @@
 
 package org.springframework.security.oauth2.client.web;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Consumer;
-
-import javax.servlet.http.HttpServletRequest;
-
 import org.springframework.security.crypto.keygen.Base64StringKeyGenerator;
 import org.springframework.security.crypto.keygen.StringKeyGenerator;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
@@ -43,6 +33,15 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import javax.servlet.http.HttpServletRequest;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * An implementation of an {@link OAuth2AuthorizationRequestResolver} that attempts to
@@ -147,12 +146,16 @@ public final class DefaultOAuth2AuthorizationRequestResolver implements OAuth2Au
 		if (registrationId == null) {
 			return null;
 		}
+		// 获取 ClientRegistration
 		ClientRegistration clientRegistration = this.clientRegistrationRepository.findByRegistrationId(registrationId);
 		if (clientRegistration == null) {
 			throw new InvalidClientRegistrationIdException("Invalid Client Registration with Id: " + registrationId);
 		}
 		OAuth2AuthorizationRequest.Builder builder = getBuilder(clientRegistration);
 
+		/**
+		 * 根据 {@link ClientRegistration#redirectUri} 的值生成 redirectUriStr
+		 * */
 		String redirectUriStr = expandRedirectUri(request, clientRegistration, redirectUriAction);
 
 		// @formatter:off
@@ -163,6 +166,7 @@ public final class DefaultOAuth2AuthorizationRequestResolver implements OAuth2Au
 				.state(DEFAULT_STATE_GENERATOR.generateKey());
 		// @formatter:on
 
+		// 回调方法
 		this.authorizationRequestCustomizer.accept(builder);
 
 		return builder.build();

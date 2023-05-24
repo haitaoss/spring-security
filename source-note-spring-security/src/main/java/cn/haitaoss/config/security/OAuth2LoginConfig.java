@@ -2,6 +2,7 @@ package cn.haitaoss.config.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.oauth2.client.CommonOAuth2Provider;
@@ -22,15 +23,27 @@ public class OAuth2LoginConfig {
     @Bean
     @Order(4)
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .authorizeHttpRequests(authorize -> authorize
-                        .anyRequest().authenticated()
-                )
-                /**
-                 * OAuth2LoginAuthenticationFilter 匹配的路径是 /login/oauth2/code/*
-                 * OAuth2AuthorizationRequestRedirectFilter 用来根据地址重定向到登录页面的
-                 * */
-                .oauth2Login();
+		http
+				.authorizeHttpRequests(authorize -> authorize
+						.anyRequest().authenticated()
+				)
+				/**
+				 *
+				 * 执行顺序：OAuth2AuthorizationRequestRedirectFilter -> OAuth2LoginAuthenticationFilter
+				 *
+				 * OAuth2LoginAuthenticationProvider
+				 * OAuth2AuthorizationRequestRedirectFilter 用来根据地址重定向到登录 OAuth2 的授权页面的？
+				 * OAuth2LoginAuthenticationFilter 匹配的路径是 /login/oauth2/code/*
+				 *
+				 * Tips：OAuth2UserService
+				 * */
+				.oauth2Login(Customizer.withDefaults())
+				/**
+				 * OAuth2AuthorizationCodeAuthenticationProvider 授权码认证
+				 * OAuth2AuthorizationRequestRedirectFilter 认真请求重定向
+				 * OAuth2AuthorizationCodeGrantFilter 授权码
+				 * */
+				.oauth2Client();
         return http.build();
     }
 

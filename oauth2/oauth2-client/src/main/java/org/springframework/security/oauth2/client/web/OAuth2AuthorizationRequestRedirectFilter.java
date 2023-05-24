@@ -16,13 +16,6 @@
 
 package org.springframework.security.oauth2.client.web;
 
-import java.io.IOException;
-
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.springframework.core.log.LogMessage;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.client.ClientAuthorizationRequiredException;
@@ -37,6 +30,12 @@ import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.util.ThrowableAnalyzer;
 import org.springframework.util.Assert;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 /**
  * This {@code Filter} initiates the authorization code grant or implicit grant flow by
@@ -173,9 +172,13 @@ public class OAuth2AuthorizationRequestRedirectFilter extends OncePerRequestFilt
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
 		try {
+			// 解析出
 			OAuth2AuthorizationRequest authorizationRequest = this.authorizationRequestResolver.resolve(request);
+			// 不为空
 			if (authorizationRequest != null) {
+				// 设置重定向信息
 				this.sendRedirectForAuthorization(request, response, authorizationRequest);
+				// 结束方法
 				return;
 			}
 		}
@@ -184,6 +187,7 @@ public class OAuth2AuthorizationRequestRedirectFilter extends OncePerRequestFilt
 			return;
 		}
 		try {
+			// 放行
 			filterChain.doFilter(request, response);
 		}
 		catch (IOException ex) {
@@ -192,16 +196,20 @@ public class OAuth2AuthorizationRequestRedirectFilter extends OncePerRequestFilt
 		catch (Exception ex) {
 			// Check to see if we need to handle ClientAuthorizationRequiredException
 			Throwable[] causeChain = this.throwableAnalyzer.determineCauseChain(ex);
+			// 有 ClientAuthorizationRequiredException
 			ClientAuthorizationRequiredException authzEx = (ClientAuthorizationRequiredException) this.throwableAnalyzer
 					.getFirstThrowableOfType(ClientAuthorizationRequiredException.class, causeChain);
 			if (authzEx != null) {
 				try {
+					// 解析出 authorizationRequest
 					OAuth2AuthorizationRequest authorizationRequest = this.authorizationRequestResolver.resolve(request,
 							authzEx.getClientRegistrationId());
 					if (authorizationRequest == null) {
 						throw authzEx;
 					}
+					// 缓存request
 					this.requestCache.saveRequest(request, response);
+					// 设置重定向信息
 					this.sendRedirectForAuthorization(request, response, authorizationRequest);
 				}
 				catch (Exception failed) {
@@ -222,8 +230,10 @@ public class OAuth2AuthorizationRequestRedirectFilter extends OncePerRequestFilt
 	private void sendRedirectForAuthorization(HttpServletRequest request, HttpServletResponse response,
 			OAuth2AuthorizationRequest authorizationRequest) throws IOException {
 		if (AuthorizationGrantType.AUTHORIZATION_CODE.equals(authorizationRequest.getGrantType())) {
+			// 缓存
 			this.authorizationRequestRepository.saveAuthorizationRequest(authorizationRequest, request, response);
 		}
+		// 设置重定向信息
 		this.authorizationRedirectStrategy.sendRedirect(request, response,
 				authorizationRequest.getAuthorizationRequestUri());
 	}

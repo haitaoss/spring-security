@@ -40,6 +40,7 @@ import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.security.oauth2.client.userinfo.*;
 import org.springframework.security.oauth2.client.web.*;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
@@ -273,25 +274,33 @@ public final class OAuth2LoginConfigurer<B extends HttpSecurityBuilder<B>>
 	public void init(B http) throws Exception {
 		// 构造出 OAuth2LoginAuthenticationFilter
 		OAuth2LoginAuthenticationFilter authenticationFilter = new OAuth2LoginAuthenticationFilter(
+				// 这两个类型的对象需要设置到 SharedObject 或者 BeanFactory 中才行
 				OAuth2ClientConfigurerUtils.getClientRegistrationRepository(this.getBuilder()),
 				OAuth2ClientConfigurerUtils.getAuthorizedClientRepository(this.getBuilder()), this.loginProcessingUrl);
+
 		// 设置 SecurityContextHolderStrategy
 		authenticationFilter.setSecurityContextHolderStrategy(getSecurityContextHolderStrategy());
 		this.setAuthenticationFilter(authenticationFilter);
+		// 设置 authenticationFilter 拦截的url
 		super.loginProcessingUrl(this.loginProcessingUrl);
+		// 设置自定义登录页
 		if (this.loginPage != null) {
 			// Set custom login page
 			super.loginPage(this.loginPage);
 			super.init(http);
 		}
 		else {
+			// 获取登录客户端的地址
 			Map<String, String> loginUrlToClientName = this.getLoginLinks();
+			// 只有一个
 			if (loginUrlToClientName.size() == 1) {
 				// Setup auto-redirect to provider login page
 				// when only 1 client is configured
 				this.updateAuthenticationDefaults();
+				// 更新权限信息
 				this.updateAccessDefaults(http);
 				String providerLoginPage = loginUrlToClientName.keySet().iterator().next();
+				// 注册 AuthenticationEntryPoint，认证失败会调用这个进入认证的入口
 				this.registerAuthenticationEntryPoint(http, this.getLoginEntryPoint(http, providerLoginPage));
 			}
 			else {
@@ -302,6 +311,7 @@ public final class OAuth2LoginConfigurer<B extends HttpSecurityBuilder<B>>
 		if (accessTokenResponseClient == null) {
 			accessTokenResponseClient = new DefaultAuthorizationCodeTokenResponseClient();
 		}
+		//
 		OAuth2UserService<OAuth2UserRequest, OAuth2User> oauth2UserService = getOAuth2UserService();
 		// 实例化出
 		OAuth2LoginAuthenticationProvider oauth2LoginAuthenticationProvider = new OAuth2LoginAuthenticationProvider(
@@ -333,21 +343,27 @@ public final class OAuth2LoginConfigurer<B extends HttpSecurityBuilder<B>>
 			// 多添加
 			http.authenticationProvider(new OidcAuthenticationRequestChecker());
 		}
+		// 初始化默认登录页面
 		this.initDefaultLoginFilter(http);
 	}
 
 	@Override
 	public void configure(B http) throws Exception {
 		OAuth2AuthorizationRequestRedirectFilter authorizationRequestFilter;
+		// 存在
 		if (this.authorizationEndpointConfig.authorizationRequestResolver != null) {
+			// 构造出
 			authorizationRequestFilter = new OAuth2AuthorizationRequestRedirectFilter(
 					this.authorizationEndpointConfig.authorizationRequestResolver);
 		}
 		else {
 			String authorizationRequestBaseUri = this.authorizationEndpointConfig.authorizationRequestBaseUri;
+			// 不存在
 			if (authorizationRequestBaseUri == null) {
+				// 默认值是 /oauth2/authorization
 				authorizationRequestBaseUri = OAuth2AuthorizationRequestRedirectFilter.DEFAULT_AUTHORIZATION_REQUEST_BASE_URI;
 			}
+			// 构造出
 			authorizationRequestFilter = new OAuth2AuthorizationRequestRedirectFilter(
 					OAuth2ClientConfigurerUtils.getClientRegistrationRepository(this.getBuilder()),
 					authorizationRequestBaseUri);
@@ -427,15 +443,18 @@ public final class OAuth2LoginConfigurer<B extends HttpSecurityBuilder<B>>
 	}
 
 	private OAuth2UserService<OAuth2UserRequest, OAuth2User> getOAuth2UserService() {
+		// 不为空，直接返回
 		if (this.userInfoEndpointConfig.userService != null) {
 			return this.userInfoEndpointConfig.userService;
 		}
 		ResolvableType type = ResolvableType.forClassWithGenerics(OAuth2UserService.class, OAuth2UserRequest.class,
 				OAuth2User.class);
+		// 从 BeanFactory 中获取 OAuth2UserService 类型的bean
 		OAuth2UserService<OAuth2UserRequest, OAuth2User> bean = getBeanOrNull(type);
 		if (bean != null) {
 			return bean;
 		}
+		// 设置默认的
 		if (this.userInfoEndpointConfig.customUserTypes.isEmpty()) {
 			return new DefaultOAuth2UserService();
 		}
@@ -471,22 +490,32 @@ public final class OAuth2LoginConfigurer<B extends HttpSecurityBuilder<B>>
 	@SuppressWarnings("unchecked")
 	private Map<String, String> getLoginLinks() {
 		Iterable<ClientRegistration> clientRegistrations = null;
+		// 拿到 clientRegistrationRepository
 		ClientRegistrationRepository clientRegistrationRepository = OAuth2ClientConfigurerUtils
 				.getClientRegistrationRepository(this.getBuilder());
 		ResolvableType type = ResolvableType.forInstance(clientRegistrationRepository).as(Iterable.class);
+		/**
+		 * 是 Iterable 类型
+		 * 参考 {@link InMemoryClientRegistrationRepository}
+		 * */
 		if (type != ResolvableType.NONE && ClientRegistration.class.isAssignableFrom(type.resolveGenerics()[0])) {
 			clientRegistrations = (Iterable<ClientRegistration>) clientRegistrationRepository;
 		}
 		if (clientRegistrations == null) {
 			return Collections.emptyMap();
 		}
+		// 授权 url
 		String authorizationRequestBaseUri = (this.authorizationEndpointConfig.authorizationRequestBaseUri != null)
 				? this.authorizationEndpointConfig.authorizationRequestBaseUri
 				: OAuth2AuthorizationRequestRedirectFilter.DEFAULT_AUTHORIZATION_REQUEST_BASE_URI;
 		Map<String, String> loginUrlToClientName = new HashMap<>();
+		// 遍历
 		clientRegistrations.forEach((registration) -> {
+			// 是授权码
 			if (AuthorizationGrantType.AUTHORIZATION_CODE.equals(registration.getAuthorizationGrantType())) {
+				// 拼接上 registrationId 作为最终的授权url
 				String authorizationRequestUri = authorizationRequestBaseUri + "/" + registration.getRegistrationId();
+				// 记录
 				loginUrlToClientName.put(authorizationRequestUri, registration.getClientName());
 			}
 		});
