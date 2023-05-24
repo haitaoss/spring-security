@@ -1,5 +1,16 @@
 package cn.haitaoss;
 
+import java.io.File;
+import java.util.Collection;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+import javax.servlet.FilterChain;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.WebResourceRoot;
 import org.apache.catalina.connector.Connector;
@@ -8,6 +19,7 @@ import org.apache.catalina.startup.Tomcat;
 import org.apache.catalina.webresources.DirResourceSet;
 import org.apache.catalina.webresources.StandardRoot;
 import org.apache.coyote.http11.Http11NioProtocol;
+
 import org.springframework.context.ApplicationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ParseException;
@@ -34,16 +46,6 @@ import org.springframework.security.web.authentication.AbstractAuthenticationPro
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.util.matcher.RequestMatcher;
-
-import javax.servlet.FilterChain;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.util.Collection;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * @author haitao.chen
@@ -170,7 +172,6 @@ public class Main {
 	 * WebSecurityConfigurer
 	 * WebSecurityConfigurerAdapter
 	 * */
-
 	public static void main(String[] args) throws Exception {
 		startTomcat();
 //		test_spel();

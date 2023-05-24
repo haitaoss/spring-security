@@ -16,6 +16,12 @@
 
 package org.springframework.security.oauth2.client;
 
+import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
+import org.springframework.security.oauth2.client.endpoint.OAuth2ClientCredentialsGrantRequest;
+import org.springframework.security.oauth2.client.endpoint.OAuth2PasswordGrantRequest;
+import org.springframework.security.oauth2.client.endpoint.OAuth2RefreshTokenGrantRequest;
+import org.springframework.util.Assert;
+
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -24,12 +30,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-
-import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
-import org.springframework.security.oauth2.client.endpoint.OAuth2ClientCredentialsGrantRequest;
-import org.springframework.security.oauth2.client.endpoint.OAuth2PasswordGrantRequest;
-import org.springframework.security.oauth2.client.endpoint.OAuth2RefreshTokenGrantRequest;
-import org.springframework.util.Assert;
 
 /**
  * A builder that builds a {@link DelegatingOAuth2AuthorizedClientProvider} composed of
@@ -82,6 +82,7 @@ public final class OAuth2AuthorizedClientProviderBuilder {
 	 * @return the {@link OAuth2AuthorizedClientProviderBuilder}
 	 */
 	public OAuth2AuthorizedClientProviderBuilder authorizationCode() {
+		// 添加 AuthorizationCodeGrantBuilder
 		this.builders.computeIfAbsent(AuthorizationCodeOAuth2AuthorizedClientProvider.class,
 				(k) -> new AuthorizationCodeGrantBuilder());
 		return OAuth2AuthorizedClientProviderBuilder.this;
@@ -130,6 +131,7 @@ public final class OAuth2AuthorizedClientProviderBuilder {
 			Consumer<ClientCredentialsGrantBuilder> builderConsumer) {
 		ClientCredentialsGrantBuilder builder = (ClientCredentialsGrantBuilder) this.builders.computeIfAbsent(
 				ClientCredentialsOAuth2AuthorizedClientProvider.class, (k) -> new ClientCredentialsGrantBuilder());
+		// 回调方法
 		builderConsumer.accept(builder);
 		return OAuth2AuthorizedClientProviderBuilder.this;
 	}
@@ -175,9 +177,12 @@ public final class OAuth2AuthorizedClientProviderBuilder {
 	 */
 	public OAuth2AuthorizedClientProvider build() {
 		List<OAuth2AuthorizedClientProvider> authorizedClientProviders = new ArrayList<>();
+		// 遍历
 		for (Builder builder : this.builders.values()) {
+			// build 得到 OAuth2AuthorizedClientProvider
 			authorizedClientProviders.add(builder.build());
 		}
+		// 依赖 List<OAuth2AuthorizedClientProvider> 构造出 DelegatingOAuth2AuthorizedClientProvider
 		return new DelegatingOAuth2AuthorizedClientProvider(authorizedClientProviders);
 	}
 

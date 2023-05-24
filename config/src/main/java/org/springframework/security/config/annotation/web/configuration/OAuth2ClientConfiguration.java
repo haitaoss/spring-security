@@ -16,8 +16,6 @@
 
 package org.springframework.security.config.annotation.web.configuration;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -37,6 +35,8 @@ import org.springframework.util.ClassUtils;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.util.List;
+
 /**
  * {@link Configuration} for OAuth 2.0 Client support.
  *
@@ -55,10 +55,15 @@ final class OAuth2ClientConfiguration {
 
 		@Override
 		public String[] selectImports(AnnotationMetadata importingClassMetadata) {
+			// 不存在
 			if (!ClassUtils.isPresent("org.springframework.web.servlet.DispatcherServlet",
 					getClass().getClassLoader())) {
 				return new String[0];
 			}
+			/**
+			 * 注册配置类。其作用是注册 OAuth2AuthorizedClientArgumentResolver
+			 * {@link org.springframework.security.config.annotation.web.configuration.OAuth2ClientConfiguration.OAuth2ClientWebMvcSecurityConfiguration}
+			 * */
 			return new String[] { "org.springframework.security.config.annotation.web.configuration."
 					+ "OAuth2ClientConfiguration.OAuth2ClientWebMvcSecurityConfiguration" };
 		}
@@ -82,6 +87,7 @@ final class OAuth2ClientConfiguration {
 		public void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers) {
 			OAuth2AuthorizedClientManager authorizedClientManager = getAuthorizedClientManager();
 			if (authorizedClientManager != null) {
+				// 用于解析有 @RegisteredOAuth2AuthorizedClient 的参数
 				OAuth2AuthorizedClientArgumentResolver resolver = new OAuth2AuthorizedClientArgumentResolver(
 						authorizedClientManager);
 				if (this.securityContextHolderStrategy != null) {
@@ -128,23 +134,32 @@ final class OAuth2ClientConfiguration {
 				return this.authorizedClientManager;
 			}
 			OAuth2AuthorizedClientManager authorizedClientManager = null;
+			// 构造一个 OAuth2AuthorizedClientManager
 			if (this.clientRegistrationRepository != null && this.authorizedClientRepository != null) {
 				if (this.accessTokenResponseClient != null) {
 					// @formatter:off
 					OAuth2AuthorizedClientProvider authorizedClientProvider = OAuth2AuthorizedClientProviderBuilder
 						.builder()
+						// 最终会设置 AuthorizationCodeOAuth2AuthorizedClientProvider
 						.authorizationCode()
+						// 最终会设置 RefreshTokenOAuth2AuthorizedClientProvider
 						.refreshToken()
+						// 最终会设置 ClientCredentialsOAuth2AuthorizedClientProvider
 						.clientCredentials((configurer) -> configurer.accessTokenResponseClient(this.accessTokenResponseClient))
+						// 最终会设置 PasswordOAuth2AuthorizedClientProvider
 						.password()
 						.build();
 					// @formatter:on
+					// 构造出 DefaultOAuth2AuthorizedClientManager
 					DefaultOAuth2AuthorizedClientManager defaultAuthorizedClientManager = new DefaultOAuth2AuthorizedClientManager(
 							this.clientRegistrationRepository, this.authorizedClientRepository);
+					// 为其设置 authorizedClientProvider
 					defaultAuthorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider);
+					// 设置为属性
 					authorizedClientManager = defaultAuthorizedClientManager;
 				}
 				else {
+					// 构造这个，其实和上面的一样，只是少了对 ClientCredentialsOAuth2AuthorizedClientProvider 的自定义的环节
 					authorizedClientManager = new DefaultOAuth2AuthorizedClientManager(
 							this.clientRegistrationRepository, this.authorizedClientRepository);
 				}

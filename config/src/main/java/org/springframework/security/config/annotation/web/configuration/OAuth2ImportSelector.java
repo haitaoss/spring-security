@@ -16,13 +16,13 @@
 
 package org.springframework.security.config.annotation.web.configuration;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
-
 import org.springframework.context.annotation.ImportSelector;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * Used by {@link EnableWebSecurity} to conditionally import:
@@ -54,13 +54,19 @@ final class OAuth2ImportSelector implements ImportSelector {
 		boolean oauth2ResourceServerPresent = ClassUtils
 				.isPresent("org.springframework.security.oauth2.server.resource.BearerTokenError", classLoader);
 		if (oauth2ClientPresent) {
+			/**
+			 * 校验存在 DispatcherServlet 就注册配置类 OAuth2AuthorizedClientArgumentResolver，
+			 * 其是用来解析有 @RegisteredOAuth2AuthorizedClient 注解的参数，并完成认证(获取访问令牌、token)
+			 * */
 			imports.add("org.springframework.security.config.annotation.web.configuration.OAuth2ClientConfiguration");
 		}
 		if (webfluxPresent && oauth2ClientPresent) {
+			// 看不懂
 			imports.add(
 					"org.springframework.security.config.annotation.web.configuration.SecurityReactorContextConfiguration");
 		}
 		if (webfluxPresent && oauth2ResourceServerPresent) {
+			// 看不懂
 			imports.add(
 					"org.springframework.security.config.annotation.web.configuration.SecurityReactorContextConfiguration");
 		}

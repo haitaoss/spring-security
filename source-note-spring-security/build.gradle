@@ -20,6 +20,8 @@ dependencies {
     // 验证 spring-security 的功能
     api project(':spring-security-web')
     api project(':spring-security-config')
+    // 验证 OAuth2 认证
+    api project(':spring-security-oauth2-client')
 
 	// 引入 springmvc 方便验证
 	api "org.springframework:spring-webmvc"

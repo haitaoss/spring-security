@@ -6,9 +6,7 @@ import org.springframework.security.access.expression.method.DefaultMethodSecuri
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.authorization.AuthorizationEventPublisher;
 import org.springframework.security.authorization.SpringAuthorizationEventPublisher;
-import org.springframework.security.config.core.GrantedAuthorityDefaults;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.context.SecurityContextHolderStrategy;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.stereotype.Component;
 
 /**
@@ -19,13 +17,14 @@ import org.springframework.stereotype.Component;
  * 方法鉴权的
  */
 @Component
+@EnableMethodSecurity
 public class MethodSecurityConfig {
 	@Bean
 	public MethodSecurityExpressionHandler methodSecurityExpressionHandler() {
 		return new DefaultMethodSecurityExpressionHandler();
 	}
 
-	@Bean
+	/*@Bean
 	public SecurityContextHolderStrategy securityContextHolderStrategy() {
 		// 应当搞成和 Security Filter 中一样的
 		return SecurityContextHolder.getContextHolderStrategy();
@@ -35,7 +34,7 @@ public class MethodSecurityConfig {
 	public GrantedAuthorityDefaults grantedAuthorityDefaults() {
 		// 应当搞成和 Security Filter 中一样的
 		return new GrantedAuthorityDefaults("HAITAO_");
-	}
+	}*/
 
 	@Bean
 	public AuthorizationEventPublisher authorizationEventPublisher(ApplicationContext context) {

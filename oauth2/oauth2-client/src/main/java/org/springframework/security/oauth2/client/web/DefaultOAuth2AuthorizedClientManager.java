@@ -16,26 +16,9 @@
 
 package org.springframework.security.oauth2.client.web;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Function;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.springframework.lang.Nullable;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.client.AuthorizedClientServiceOAuth2AuthorizedClientManager;
-import org.springframework.security.oauth2.client.OAuth2AuthorizationContext;
-import org.springframework.security.oauth2.client.OAuth2AuthorizationFailureHandler;
-import org.springframework.security.oauth2.client.OAuth2AuthorizationSuccessHandler;
-import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProvider;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder;
-import org.springframework.security.oauth2.client.RemoveAuthorizedClientOAuth2AuthorizationFailureHandler;
+import org.springframework.security.oauth2.client.*;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.core.OAuth2AuthorizationException;
@@ -47,6 +30,13 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
 
 /**
  * The default implementation of an {@link OAuth2AuthorizedClientManager} for use within
@@ -120,12 +110,15 @@ public final class DefaultOAuth2AuthorizedClientManager implements OAuth2Authori
 		Assert.notNull(authorizedClientRepository, "authorizedClientRepository cannot be null");
 		this.clientRegistrationRepository = clientRegistrationRepository;
 		this.authorizedClientRepository = authorizedClientRepository;
+		// 用来进行认证的
 		this.authorizedClientProvider = DEFAULT_AUTHORIZED_CLIENT_PROVIDER;
 		this.contextAttributesMapper = new DefaultContextAttributesMapper();
+		// 认证成功会回调
 		this.authorizationSuccessHandler = (authorizedClient, principal, attributes) -> authorizedClientRepository
 				.saveAuthorizedClient(authorizedClient, principal,
 						(HttpServletRequest) attributes.get(HttpServletRequest.class.getName()),
 						(HttpServletResponse) attributes.get(HttpServletResponse.class.getName()));
+		// 认证失败会回调
 		this.authorizationFailureHandler = new RemoveAuthorizedClientOAuth2AuthorizationFailureHandler(
 				(clientRegistrationId, principal, attributes) -> authorizedClientRepository.removeAuthorizedClient(
 						clientRegistrationId, principal,
@@ -145,16 +138,21 @@ public final class DefaultOAuth2AuthorizedClientManager implements OAuth2Authori
 		HttpServletResponse servletResponse = getHttpServletResponseOrDefault(authorizeRequest.getAttributes());
 		Assert.notNull(servletResponse, "servletResponse cannot be null");
 		OAuth2AuthorizationContext.Builder contextBuilder;
+		// 为空
 		if (authorizedClient != null) {
+			// 构造出 contextBuilder
 			contextBuilder = OAuth2AuthorizationContext.withAuthorizedClient(authorizedClient);
 		}
 		else {
+			// 加载出 authorizedClient
 			authorizedClient = this.authorizedClientRepository.loadAuthorizedClient(clientRegistrationId, principal,
 					servletRequest);
 			if (authorizedClient != null) {
+				// 构造出 contextBuilder
 				contextBuilder = OAuth2AuthorizationContext.withAuthorizedClient(authorizedClient);
 			}
 			else {
+				// 客户端注册信息
 				ClientRegistration clientRegistration = this.clientRegistrationRepository
 						.findByRegistrationId(clientRegistrationId);
 				Assert.notNull(clientRegistration,
@@ -162,6 +160,7 @@ public final class DefaultOAuth2AuthorizedClientManager implements OAuth2Authori
 				contextBuilder = OAuth2AuthorizationContext.withClientRegistration(clientRegistration);
 			}
 		}
+		// 生成 OAuth2AuthorizationContext
 		// @formatter:off
 		OAuth2AuthorizationContext authorizationContext = contextBuilder.principal(principal)
 				.attributes((attributes) -> {
@@ -173,14 +172,20 @@ public final class DefaultOAuth2AuthorizedClientManager implements OAuth2Authori
 				.build();
 		// @formatter:on
 		try {
+			/**
+			 * 认证
+			 * */
 			authorizedClient = this.authorizedClientProvider.authorize(authorizationContext);
 		}
 		catch (OAuth2AuthorizationException ex) {
+			// 回调认证失败处理器
 			this.authorizationFailureHandler.onAuthorizationFailure(ex, principal,
 					createAttributes(servletRequest, servletResponse));
+			// 抛出异常
 			throw ex;
 		}
 		if (authorizedClient != null) {
+			// 回调成功处理器
 			this.authorizationSuccessHandler.onAuthorizationSuccess(authorizedClient, principal,
 					createAttributes(servletRequest, servletResponse));
 		}

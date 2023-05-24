@@ -16,9 +16,6 @@
 
 package org.springframework.security.oauth2.client.web.method.annotation;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.lang.NonNull;
@@ -28,12 +25,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
-import org.springframework.security.oauth2.client.ClientCredentialsOAuth2AuthorizedClientProvider;
-import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProvider;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder;
+import org.springframework.security.oauth2.client.*;
 import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
@@ -47,6 +39,9 @@ import org.springframework.web.bind.support.WebDataBinderFactory;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * An implementation of a {@link HandlerMethodArgumentResolver} that is capable of
@@ -118,18 +113,22 @@ public final class OAuth2AuthorizedClientArgumentResolver implements HandlerMeth
 	@Override
 	public Object resolveArgument(MethodParameter parameter, @Nullable ModelAndViewContainer mavContainer,
 			NativeWebRequest webRequest, @Nullable WebDataBinderFactory binderFactory) {
+		// 获取 clientRegistrationId。从注解值或者认证信息中获取
 		String clientRegistrationId = this.resolveClientRegistrationId(parameter);
+		// 为空就报错
 		if (StringUtils.isEmpty(clientRegistrationId)) {
 			throw new IllegalArgumentException("Unable to resolve the Client Registration Identifier. "
 					+ "It must be provided via @RegisteredOAuth2AuthorizedClient(\"client1\") or "
 					+ "@RegisteredOAuth2AuthorizedClient(registrationId = \"client1\").");
 		}
+		// 拿到认证信息
 		Authentication principal = this.securityContextHolderStrategy.getContext().getAuthentication();
 		if (principal == null) {
 			principal = ANONYMOUS_AUTHENTICATION;
 		}
 		HttpServletRequest servletRequest = webRequest.getNativeRequest(HttpServletRequest.class);
 		HttpServletResponse servletResponse = webRequest.getNativeResponse(HttpServletResponse.class);
+		// 构造出 authorizeRequest
 		// @formatter:off
 		OAuth2AuthorizeRequest authorizeRequest = OAuth2AuthorizeRequest
 				.withClientRegistrationId(clientRegistrationId)
@@ -138,19 +137,27 @@ public final class OAuth2AuthorizedClientArgumentResolver implements HandlerMeth
 				.attribute(HttpServletResponse.class.getName(), servletResponse)
 				.build();
 		// @formatter:on
+		/**
+		 * 进行认证
+		 * {@link OAuth2AuthorizedClientManager#authorize(org.springframework.security.oauth2.client.OAuth2AuthorizeRequest)}
+		 * */
 		return this.authorizedClientManager.authorize(authorizeRequest);
 	}
 
 	private String resolveClientRegistrationId(MethodParameter parameter) {
+		// 拿到注解
 		RegisteredOAuth2AuthorizedClient authorizedClientAnnotation = AnnotatedElementUtils
 				.findMergedAnnotation(parameter.getParameter(), RegisteredOAuth2AuthorizedClient.class);
+		// 获取认证信息
 		Authentication principal = this.securityContextHolderStrategy.getContext().getAuthentication();
+		// 设置了注解值就返回
 		if (!StringUtils.isEmpty(authorizedClientAnnotation.registrationId())) {
 			return authorizedClientAnnotation.registrationId();
 		}
 		if (!StringUtils.isEmpty(authorizedClientAnnotation.value())) {
 			return authorizedClientAnnotation.value();
 		}
+		// 从 principal 中获取
 		if (principal != null && OAuth2AuthenticationToken.class.isAssignableFrom(principal.getClass())) {
 			return ((OAuth2AuthenticationToken) principal).getAuthorizedClientRegistrationId();
 		}

@@ -16,17 +16,13 @@
 
 package org.springframework.security.config.annotation.web.configuration;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.config.annotation.authentication.configuration.EnableGlobalAuthentication;
 import org.springframework.security.config.annotation.web.WebSecurityConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
+
+import java.lang.annotation.*;
 
 /**
  * Add this annotation to an {@code @Configuration} class to have the Spring Security
@@ -43,7 +39,7 @@ import org.springframework.security.web.SecurityFilterChain;
  * 		return (web) -> web.ignoring()
  * 		// Spring Security should completely ignore URLs starting with /resources/
  * 				.requestMatchers(&quot;/resources/**&quot;);
- * 	}
+ *    }
  *
  * 	&#064;Bean
  * 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -54,7 +50,7 @@ import org.springframework.security.web.SecurityFilterChain;
  * 				// set permitAll for all URLs associated with Form Login
  * 				.permitAll();
  * 		return http.build();
- * 	}
+ *    }
  *
  * 	&#064;Bean
  * 	public UserDetailsService userDetailsService() {
@@ -69,7 +65,7 @@ import org.springframework.security.web.SecurityFilterChain;
  * 			.roles(&quot;ADMIN&quot;, &quot;USER&quot;)
  * 			.build();
  * 		return new InMemoryUserDetailsManager(user, admin);
- * 	}
+ *    }
  *
  * 	// Possibly more bean methods ...
  * }
@@ -93,8 +89,8 @@ import org.springframework.security.web.SecurityFilterChain;
  * OAuth2ImportSelector：用到在看
  * HttpSecurityConfiguration：
  * */
-@Import({ WebSecurityConfiguration.class, SpringWebMvcImportSelector.class, OAuth2ImportSelector.class,
-		HttpSecurityConfiguration.class })
+@Import({WebSecurityConfiguration.class, SpringWebMvcImportSelector.class, OAuth2ImportSelector.class,
+		HttpSecurityConfiguration.class})
 /**
  * 会注册这两个类型的bean ObjectPostProcessor、AuthenticationConfiguration
  * */

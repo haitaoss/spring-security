@@ -95,6 +95,10 @@ public class OverrideDefaultConfig {
 
 	/**
 	 * 用来设置默认的角色名称前缀的
+	 *
+	 * 使用的地方举例：
+	 * 		{@link org.springframework.security.config.annotation.web.configurers.ExpressionUrlAuthorizationConfigurer#ExpressionUrlAuthorizationConfigurer(org.springframework.context.ApplicationContext)}
+	 *
 	 * @return
 	 */
 	@Bean

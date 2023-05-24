@@ -16,8 +16,6 @@
 
 package org.springframework.security.config.annotation.web.configurers.oauth2.client;
 
-import java.util.Map;
-
 import org.springframework.beans.factory.BeanFactoryUtils;
 import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
@@ -29,6 +27,8 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.web.AuthenticatedPrincipalOAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.util.StringUtils;
+
+import java.util.Map;
 
 /**
  * Utility methods for the OAuth 2.0 Client {@link AbstractHttpConfigurer}'s.
@@ -42,10 +42,13 @@ final class OAuth2ClientConfigurerUtils {
 	}
 
 	static <B extends HttpSecurityBuilder<B>> ClientRegistrationRepository getClientRegistrationRepository(B builder) {
+		// 从 SharedObject 中找
 		ClientRegistrationRepository clientRegistrationRepository = builder
 				.getSharedObject(ClientRegistrationRepository.class);
 		if (clientRegistrationRepository == null) {
+			// 从IOC容器中找
 			clientRegistrationRepository = getClientRegistrationRepositoryBean(builder);
+			// 设置到 SharedObject 中
 			builder.setSharedObject(ClientRegistrationRepository.class, clientRegistrationRepository);
 		}
 		return clientRegistrationRepository;
@@ -58,14 +61,17 @@ final class OAuth2ClientConfigurerUtils {
 
 	static <B extends HttpSecurityBuilder<B>> OAuth2AuthorizedClientRepository getAuthorizedClientRepository(
 			B builder) {
+		// 从 SharedObject 中找
 		OAuth2AuthorizedClientRepository authorizedClientRepository = builder
 				.getSharedObject(OAuth2AuthorizedClientRepository.class);
 		if (authorizedClientRepository == null) {
+			// 从IOC容器中找
 			authorizedClientRepository = getAuthorizedClientRepositoryBean(builder);
 			if (authorizedClientRepository == null) {
 				authorizedClientRepository = new AuthenticatedPrincipalOAuth2AuthorizedClientRepository(
 						getAuthorizedClientService((builder)));
 			}
+			// 设置到SharedObject中
 			builder.setSharedObject(OAuth2AuthorizedClientRepository.class, authorizedClientRepository);
 		}
 		return authorizedClientRepository;
