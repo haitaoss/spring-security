@@ -225,8 +225,11 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 		/**
 		 * 不是需要认证的
 		 *
-		 * {@link UsernamePasswordAuthenticationFilter} 其实就是判断不是 /login
-		 * {@link org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter} 其实就是判断不是 /login/oauth2/code/*
+		 * {@link UsernamePasswordAuthenticationFilter}
+		 * 		其实就是判断不是 /login
+		 * {@link org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter}
+		 * 		其实就是判断不是 第三方服务回调的地址，默认是 /login/oauth2/code/*。
+		 * 		若是第三方服务回调的地址，一般会返回授权码，有了授权码就算是成功认证了
 		 * */
 		if (!requiresAuthentication(request, response)) {
 			// 放行

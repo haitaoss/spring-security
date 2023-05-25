@@ -16,9 +16,6 @@
 
 package org.springframework.security.oauth2.client.authentication;
 
-import java.util.Collection;
-import java.util.Map;
-
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -34,6 +31,9 @@ import org.springframework.security.oauth2.core.OAuth2AuthorizationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.util.Assert;
+
+import java.util.Collection;
+import java.util.Map;
 
 /**
  * An implementation of an {@link AuthenticationProvider} for OAuth 2.0 Login, which
@@ -104,6 +104,9 @@ public class OAuth2LoginAuthenticationProvider implements AuthenticationProvider
 		OAuth2AuthorizationCodeAuthenticationToken authorizationCodeAuthenticationToken;
 		try {
 			authorizationCodeAuthenticationToken = (OAuth2AuthorizationCodeAuthenticationToken) this.authorizationCodeAuthenticationProvider
+					/**
+					 * {@link OAuth2AuthorizationCodeAuthenticationProvider#authenticate(Authentication)}
+					 * */
 					.authenticate(new OAuth2AuthorizationCodeAuthenticationToken(
 							loginAuthenticationToken.getClientRegistration(),
 							loginAuthenticationToken.getAuthorizationExchange()));
@@ -114,10 +117,14 @@ public class OAuth2LoginAuthenticationProvider implements AuthenticationProvider
 		}
 		OAuth2AccessToken accessToken = authorizationCodeAuthenticationToken.getAccessToken();
 		Map<String, Object> additionalParameters = authorizationCodeAuthenticationToken.getAdditionalParameters();
+		/**
+		 * 获取用户信息
+		 * */
 		OAuth2User oauth2User = this.userService.loadUser(new OAuth2UserRequest(
 				loginAuthenticationToken.getClientRegistration(), accessToken, additionalParameters));
 		Collection<? extends GrantedAuthority> mappedAuthorities = this.authoritiesMapper
 				.mapAuthorities(oauth2User.getAuthorities());
+		// 构造出 OAuth2LoginAuthenticationToken
 		OAuth2LoginAuthenticationToken authenticationResult = new OAuth2LoginAuthenticationToken(
 				loginAuthenticationToken.getClientRegistration(), loginAuthenticationToken.getAuthorizationExchange(),
 				oauth2User, mappedAuthorities, accessToken, authorizationCodeAuthenticationToken.getRefreshToken());

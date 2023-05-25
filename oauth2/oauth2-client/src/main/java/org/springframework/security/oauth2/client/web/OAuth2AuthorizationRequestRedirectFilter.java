@@ -172,11 +172,24 @@ public class OAuth2AuthorizationRequestRedirectFilter extends OncePerRequestFilt
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
 		try {
-			// 解析出
+			/**
+			 * 能解析出 OAuth2AuthorizationRequest。
+			 * 1. request 匹配了 authorizationRequestMatcher
+			 * 2. 从 request 中提取出 registrationId
+			 * 3. clientRegistrationRepository.findByRegistrationId(registrationId) 得到 ClientRegistration
+			 * 4. 根据 ClientRegistration 构造出 OAuth2AuthorizationRequest。其实就是重定向地址、clientId、clientSecret等信息
+			 *
+			 * {@link DefaultOAuth2AuthorizationRequestResolver#resolve(HttpServletRequest)}
+			 * */
 			OAuth2AuthorizationRequest authorizationRequest = this.authorizationRequestResolver.resolve(request);
 			// 不为空
 			if (authorizationRequest != null) {
-				// 设置重定向信息
+				/**
+				 * 设置重定向信息。
+				 *
+				 * 1. 使用 authorizationRequestRepository 保存 authorizationRequest
+				 * 2. 重定向到第三方应用的授权页面
+				 * */
 				this.sendRedirectForAuthorization(request, response, authorizationRequest);
 				// 结束方法
 				return;
@@ -230,7 +243,10 @@ public class OAuth2AuthorizationRequestRedirectFilter extends OncePerRequestFilt
 	private void sendRedirectForAuthorization(HttpServletRequest request, HttpServletResponse response,
 			OAuth2AuthorizationRequest authorizationRequest) throws IOException {
 		if (AuthorizationGrantType.AUTHORIZATION_CODE.equals(authorizationRequest.getGrantType())) {
-			// 缓存
+			/**
+			 * 缓存。第三方服务回调时，会判断是否存在这个
+			 * {@link OAuth2LoginAuthenticationFilter#attemptAuthentication(HttpServletRequest, HttpServletResponse)}
+			 * */
 			this.authorizationRequestRepository.saveAuthorizationRequest(authorizationRequest, request, response);
 		}
 		// 设置重定向信息

@@ -311,7 +311,7 @@ public final class OAuth2LoginConfigurer<B extends HttpSecurityBuilder<B>>
 		if (accessTokenResponseClient == null) {
 			accessTokenResponseClient = new DefaultAuthorizationCodeTokenResponseClient();
 		}
-		//
+		// 从 BeanFactory 中获取 OAuth2UserService，拿不到会构造一个默认的
 		OAuth2UserService<OAuth2UserRequest, OAuth2User> oauth2UserService = getOAuth2UserService();
 		// 实例化出
 		OAuth2LoginAuthenticationProvider oauth2LoginAuthenticationProvider = new OAuth2LoginAuthenticationProvider(
@@ -504,7 +504,7 @@ public final class OAuth2LoginConfigurer<B extends HttpSecurityBuilder<B>>
 		if (clientRegistrations == null) {
 			return Collections.emptyMap();
 		}
-		// 授权 url
+		// 授权 url 前缀
 		String authorizationRequestBaseUri = (this.authorizationEndpointConfig.authorizationRequestBaseUri != null)
 				? this.authorizationEndpointConfig.authorizationRequestBaseUri
 				: OAuth2AuthorizationRequestRedirectFilter.DEFAULT_AUTHORIZATION_REQUEST_BASE_URI;

@@ -22,14 +22,14 @@ import java.util.EnumSet;
 /**
  * AbstractSecurityWebApplicationInitializer 它会注册 springSecurityFilterChain 到web容器中
  * */
-@EnableWebSecurity
+@EnableWebSecurity(debug = true)
 @Slf4j
-public class QuickStarterConfig extends AbstractSecurityWebApplicationInitializer {
+public class WebSecurityQuickStartConfig extends AbstractSecurityWebApplicationInitializer {
     @Override
     protected EnumSet<DispatcherType> getSecurityDispatcherTypes() {
         // 指定 Filter 拦截的方式
         EnumSet<DispatcherType> securityDispatcherTypes = super.getSecurityDispatcherTypes();
-         securityDispatcherTypes.add(DispatcherType.FORWARD); // 增加拦截 forward
+        securityDispatcherTypes.add(DispatcherType.FORWARD); // 增加拦截 forward
         return securityDispatcherTypes;
     }
 
@@ -76,9 +76,9 @@ public class QuickStarterConfig extends AbstractSecurityWebApplicationInitialize
      *      {@link ProviderManager#authenticate(Authentication)}
      *
      * TODOHAITAO: 2023/5/19
-	 *     注册 UserDetailsService 或者 AuthenticationProvider 的意义在于指定兜底的 AuthenticationProvider
+     *     注册 UserDetailsService 或者 AuthenticationProvider 的意义在于指定兜底的 AuthenticationProvider
      *	   默认依赖注入的 HttpSecurity 只设置了 AnonymousAuthenticationProvider 这个并不会验证用户名密码，所以意义不是特别大。
-	 *     当然也可以直接为 HttpSecurity 设置 AuthenticationProvider
+     *     当然也可以直接为 HttpSecurity 设置 AuthenticationProvider
      * @return
      */
     @Bean
@@ -97,8 +97,7 @@ public class QuickStarterConfig extends AbstractSecurityWebApplicationInitialize
 
             @Override
             public boolean supports(Class<?> authentication) {
-                // 全部都支持
-                return true;
+                return authentication.isAssignableFrom(UsernamePasswordAuthenticationToken.class);
             }
         };
     }

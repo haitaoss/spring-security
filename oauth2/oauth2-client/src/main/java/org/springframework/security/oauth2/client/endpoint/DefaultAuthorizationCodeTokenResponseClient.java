@@ -16,8 +16,6 @@
 
 package org.springframework.security.oauth2.client.endpoint;
 
-import java.util.Arrays;
-
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +32,8 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestOperations;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.Arrays;
 
 /**
  * The default implementation of an {@link OAuth2AccessTokenResponseClient} for the
@@ -73,7 +73,12 @@ public final class DefaultAuthorizationCodeTokenResponseClient
 	public OAuth2AccessTokenResponse getTokenResponse(
 			OAuth2AuthorizationCodeGrantRequest authorizationCodeGrantRequest) {
 		Assert.notNull(authorizationCodeGrantRequest, "authorizationCodeGrantRequest cannot be null");
+		/**
+		 * 构造出获取访问令牌的url
+		 * {@link AbstractOAuth2AuthorizationGrantRequestEntityConverter#convert(AbstractOAuth2AuthorizationGrantRequest)}
+		 * */
 		RequestEntity<?> request = this.requestEntityConverter.convert(authorizationCodeGrantRequest);
+		// 执行请求
 		ResponseEntity<OAuth2AccessTokenResponse> response = getResponse(request);
 		// As per spec, in Section 5.1 Successful Access Token Response
 		// https://tools.ietf.org/html/rfc6749#section-5.1

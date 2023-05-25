@@ -155,7 +155,7 @@ public class SecurityFilterChainConfig {
                  *
                  * 会拼接成 SpEL 表达式，然后使用的 RootObject 是 SecurityExpressionRoot 类型的，所以才可以写 "hasRole('ADMIN') and hasRole('DBA')"
                  * */
-                .securityMatcher("/login", "/f3/**")
+                .securityMatcher(/*"/login",*/ "/f3/**")
                 .authorizeRequests(authorize -> authorize
                         .requestMatchers("/f3/xx").authenticated()
                         .requestMatchers("/f3/**").hasRole("xx")
@@ -192,4 +192,5 @@ public class SecurityFilterChainConfig {
                 .httpBasic(withDefaults());
         return http.build();
     }
+
 }

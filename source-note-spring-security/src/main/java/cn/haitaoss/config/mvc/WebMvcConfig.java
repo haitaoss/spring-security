@@ -1,14 +1,11 @@
-package cn.haitaoss.config;
+package cn.haitaoss.config.mvc;
 
 import cn.haitaoss.Main;
 import lombok.extern.slf4j.Slf4j;
-
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
 
 /**
  * @author haitao.chen
@@ -17,9 +14,8 @@ import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatche
  *
  */
 @EnableWebMvc
-@ComponentScan
 @Slf4j
-public class WebMvcConfig extends AbstractAnnotationConfigDispatcherServletInitializer implements WebMvcConfigurer {
+public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
@@ -40,20 +36,5 @@ public class WebMvcConfig extends AbstractAnnotationConfigDispatcherServletIniti
          * 比如，访问 /index /index.html /index.xx 都是符合 @RequestMapping("/index") 的
          * */
         configurer.setUseSuffixPatternMatch(true);
-    }
-
-    @Override
-    protected Class<?>[] getRootConfigClasses() {
-        return new Class[0];
-    }
-
-    @Override
-    protected Class<?>[] getServletConfigClasses() {
-        return new Class[]{WebMvcConfig.class};
-    }
-
-    @Override
-    protected String[] getServletMappings() {
-        return new String[]{"/"};
     }
 }

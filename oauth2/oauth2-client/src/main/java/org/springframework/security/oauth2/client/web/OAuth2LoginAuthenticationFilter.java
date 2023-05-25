@@ -168,10 +168,16 @@ public class OAuth2LoginAuthenticationFilter extends AbstractAuthenticationProce
 			// 抛出异常
 			throw new OAuth2AuthenticationException(oauth2Error, oauth2Error.toString());
 		}
-		// 获取 authorizationRequest
+		/**
+		 * 获取 authorizationRequest
+		 *
+		 * 在跳转到第三方系统认证页面之前会设置 OAuth2AuthorizationRequest
+		 * 		{@link OAuth2AuthorizationRequestRedirectFilter#sendRedirectForAuthorization(HttpServletRequest, HttpServletResponse, OAuth2AuthorizationRequest)}
+		 * */
 		OAuth2AuthorizationRequest authorizationRequest = this.authorizationRequestRepository
 				.removeAuthorizationRequest(request, response);
-		// 不存在说明并没有认证过
+
+		// 不存在说明并发起过第三方认证请求
 		if (authorizationRequest == null) {
 			OAuth2Error oauth2Error = new OAuth2Error(AUTHORIZATION_REQUEST_NOT_FOUND_ERROR_CODE);
 			// 抛出异常
@@ -201,13 +207,16 @@ public class OAuth2LoginAuthenticationFilter extends AbstractAuthenticationProce
 		OAuth2LoginAuthenticationToken authenticationRequest = new OAuth2LoginAuthenticationToken(clientRegistration,
 				new OAuth2AuthorizationExchange(authorizationRequest, authorizationResponse));
 		authenticationRequest.setDetails(authenticationDetails);
-		// 认证
+		/**
+		 * 执行本系统的认证逻辑。主要是通过 code(授权码) 访问第三方系统拿到访问令牌
+		 * */
 		OAuth2LoginAuthenticationToken authenticationResult = (OAuth2LoginAuthenticationToken) this
 				.getAuthenticationManager().authenticate(authenticationRequest);
 		OAuth2AuthenticationToken oauth2Authentication = this.authenticationResultConverter
 				.convert(authenticationResult);
 		Assert.notNull(oauth2Authentication, "authentication result cannot be null");
 		oauth2Authentication.setDetails(authenticationDetails);
+
 		// 构造出 OAuth2AuthorizedClient
 		OAuth2AuthorizedClient authorizedClient = new OAuth2AuthorizedClient(
 				authenticationResult.getClientRegistration(), oauth2Authentication.getName(),

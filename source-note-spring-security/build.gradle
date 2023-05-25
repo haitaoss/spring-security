@@ -22,6 +22,8 @@ dependencies {
     api project(':spring-security-config')
     // 验证 OAuth2 认证
     api project(':spring-security-oauth2-client')
+    // OAuth2 内部会用到，调用第三方获取访问令牌时，要映射响应体成实例
+    api 'com.google.code.gson:gson:2.8.6'
 
 	// 引入 springmvc 方便验证
 	api "org.springframework:spring-webmvc"
