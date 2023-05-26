@@ -16,18 +16,6 @@
 
 package org.springframework.security.oauth2.client.web;
 
-import java.io.IOException;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.springframework.security.authentication.AuthenticationDetailsSource;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
@@ -57,6 +45,13 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * A {@code Filter} for the OAuth 2.0 Authorization Code Grant, which handles the
@@ -176,18 +171,23 @@ public class OAuth2AuthorizationCodeGrantFilter extends OncePerRequestFilter {
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
+		// 是第三方授权后回调本系统的请求
 		if (matchesAuthorizationResponse(request)) {
+			// 处理授权数据
 			processAuthorizationResponse(request, response);
 			return;
 		}
+		// 放行
 		filterChain.doFilter(request, response);
 	}
 
 	private boolean matchesAuthorizationResponse(HttpServletRequest request) {
 		MultiValueMap<String, String> params = OAuth2AuthorizationResponseUtils.toMultiMap(request.getParameterMap());
+		// 不是第三方授权后回调本系统的请求
 		if (!OAuth2AuthorizationResponseUtils.isAuthorizationResponse(params)) {
 			return false;
 		}
+		// 加载 authorizationRequest
 		OAuth2AuthorizationRequest authorizationRequest = this.authorizationRequestRepository
 				.loadAuthorizationRequest(request);
 		if (authorizationRequest == null) {
@@ -218,12 +218,17 @@ public class OAuth2AuthorizationCodeGrantFilter extends OncePerRequestFilter {
 
 	private void processAuthorizationResponse(HttpServletRequest request, HttpServletResponse response)
 			throws IOException {
+		// authorizationRequest
 		OAuth2AuthorizationRequest authorizationRequest = this.authorizationRequestRepository
 				.removeAuthorizationRequest(request, response);
 		String registrationId = authorizationRequest.getAttribute(OAuth2ParameterNames.REGISTRATION_ID);
+
+		// 获取 ClientRegistration
 		ClientRegistration clientRegistration = this.clientRegistrationRepository.findByRegistrationId(registrationId);
 		MultiValueMap<String, String> params = OAuth2AuthorizationResponseUtils.toMultiMap(request.getParameterMap());
 		String redirectUri = UrlUtils.buildFullRequestUrl(request);
+
+		// 构造出 OAuth2AuthorizationResponse
 		OAuth2AuthorizationResponse authorizationResponse = OAuth2AuthorizationResponseUtils.convert(params,
 				redirectUri);
 		OAuth2AuthorizationCodeAuthenticationToken authenticationRequest = new OAuth2AuthorizationCodeAuthenticationToken(
@@ -231,6 +236,7 @@ public class OAuth2AuthorizationCodeGrantFilter extends OncePerRequestFilter {
 		authenticationRequest.setDetails(this.authenticationDetailsSource.buildDetails(request));
 		OAuth2AuthorizationCodeAuthenticationToken authenticationResult;
 		try {
+			// 开始认证
 			authenticationResult = (OAuth2AuthorizationCodeAuthenticationToken) this.authenticationManager
 					.authenticate(authenticationRequest);
 		}
@@ -244,6 +250,7 @@ public class OAuth2AuthorizationCodeGrantFilter extends OncePerRequestFilter {
 			if (!StringUtils.isEmpty(error.getUri())) {
 				uriBuilder.queryParam(OAuth2ParameterNames.ERROR_URI, error.getUri());
 			}
+			// 重定向
 			this.redirectStrategy.sendRedirect(request, response, uriBuilder.build().encode().toString());
 			return;
 		}
@@ -252,6 +259,7 @@ public class OAuth2AuthorizationCodeGrantFilter extends OncePerRequestFilter {
 		OAuth2AuthorizedClient authorizedClient = new OAuth2AuthorizedClient(
 				authenticationResult.getClientRegistration(), principalName, authenticationResult.getAccessToken(),
 				authenticationResult.getRefreshToken());
+		// 保存
 		this.authorizedClientRepository.saveAuthorizedClient(authorizedClient, currentAuthentication, request,
 				response);
 		String redirectUrl = authorizationRequest.getRedirectUri();
@@ -260,6 +268,7 @@ public class OAuth2AuthorizationCodeGrantFilter extends OncePerRequestFilter {
 			redirectUrl = savedRequest.getRedirectUrl();
 			this.requestCache.removeRequest(request, response);
 		}
+		// 重定向会原来的页面
 		this.redirectStrategy.sendRedirect(request, response, redirectUrl);
 	}
 

@@ -23,6 +23,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
 import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
 import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
+import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
@@ -103,6 +104,7 @@ public class OAuth2LoginAuthenticationProvider implements AuthenticationProvider
 		}
 		OAuth2AuthorizationCodeAuthenticationToken authorizationCodeAuthenticationToken;
 		try {
+			// 获取访问令牌
 			authorizationCodeAuthenticationToken = (OAuth2AuthorizationCodeAuthenticationToken) this.authorizationCodeAuthenticationProvider
 					/**
 					 * {@link OAuth2AuthorizationCodeAuthenticationProvider#authenticate(Authentication)}
@@ -115,20 +117,27 @@ public class OAuth2LoginAuthenticationProvider implements AuthenticationProvider
 			OAuth2Error oauth2Error = ex.getError();
 			throw new OAuth2AuthenticationException(oauth2Error, oauth2Error.toString(), ex);
 		}
+		// 拿到访问令牌
 		OAuth2AccessToken accessToken = authorizationCodeAuthenticationToken.getAccessToken();
 		Map<String, Object> additionalParameters = authorizationCodeAuthenticationToken.getAdditionalParameters();
 		/**
 		 * 获取用户信息
+		 * 	{@link DefaultOAuth2UserService#loadUser(OAuth2UserRequest)}
+		 * 	其实就是根据设置的 用户个人信息url + 访问令牌 请求url得到用户基本信息 构造出 OAuth2User
 		 * */
 		OAuth2User oauth2User = this.userService.loadUser(new OAuth2UserRequest(
 				loginAuthenticationToken.getClientRegistration(), accessToken, additionalParameters));
+
+		// 转换一下权限信息
 		Collection<? extends GrantedAuthority> mappedAuthorities = this.authoritiesMapper
 				.mapAuthorities(oauth2User.getAuthorities());
+
 		// 构造出 OAuth2LoginAuthenticationToken
 		OAuth2LoginAuthenticationToken authenticationResult = new OAuth2LoginAuthenticationToken(
 				loginAuthenticationToken.getClientRegistration(), loginAuthenticationToken.getAuthorizationExchange(),
 				oauth2User, mappedAuthorities, accessToken, authorizationCodeAuthenticationToken.getRefreshToken());
 		authenticationResult.setDetails(loginAuthenticationToken.getDetails());
+		// 返回
 		return authenticationResult;
 	}
 

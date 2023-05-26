@@ -16,9 +16,6 @@
 
 package org.springframework.security.oauth2.client.userinfo;
 
-import java.net.URI;
-import java.util.Collections;
-
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -30,6 +27,9 @@ import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import java.net.URI;
+import java.util.Collections;
 
 /**
  * A {@link Converter} that converts the provided {@link OAuth2UserRequest} to a
@@ -57,6 +57,7 @@ public class OAuth2UserRequestEntityConverter implements Converter<OAuth2UserReq
 		HttpMethod httpMethod = getHttpMethod(clientRegistration);
 		HttpHeaders headers = new HttpHeaders();
 		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+		// 这是访问个人信息的 url 地址
 		URI uri = UriComponentsBuilder
 				.fromUriString(clientRegistration.getProviderDetails().getUserInfoEndpoint().getUri()).build().toUri();
 

@@ -223,7 +223,7 @@ public abstract class AbstractAuthenticationFilterConfigurer<B extends HttpSecur
 
 	@Override
 	public void init(B http) throws Exception {
-		// 更新认证的默认信息，比如设置 登录路径、登录路径 这些
+		// 更新认证的默认信息，比如设置 Filter拦截的路径、认证失败跳转路径、登出路径 这些
 		updateAuthenticationDefaults();
 		// 设置访问权限，默认是为 loginPage、loginProcessingUrl、failureUrl 设置不需要鉴权
 		updateAccessDefaults(http);
@@ -391,9 +391,11 @@ public abstract class AbstractAuthenticationFilterConfigurer<B extends HttpSecur
 	 */
 	protected final void updateAuthenticationDefaults() {
 		if (this.loginProcessingUrl == null) {
+			// Filter 拦截的路径
 			loginProcessingUrl(this.loginPage);
 		}
 		if (this.failureHandler == null) {
+			// 设置认证失败要跳转的路径
 			failureUrl(this.loginPage + "?error");
 		}
 		// LogoutConfigurer 的作用是生成登录页面的

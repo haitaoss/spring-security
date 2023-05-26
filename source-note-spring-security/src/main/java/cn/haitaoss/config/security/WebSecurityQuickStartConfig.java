@@ -81,7 +81,7 @@ public class WebSecurityQuickStartConfig extends AbstractSecurityWebApplicationI
      *     当然也可以直接为 HttpSecurity 设置 AuthenticationProvider
      * @return
      */
-    @Bean
+    // @Bean
     public AuthenticationProvider myAuthenticationProvider() {
         return new AuthenticationProvider() {
             @Override

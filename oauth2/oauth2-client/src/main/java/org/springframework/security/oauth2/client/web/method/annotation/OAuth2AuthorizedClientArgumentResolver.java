@@ -139,7 +139,7 @@ public final class OAuth2AuthorizedClientArgumentResolver implements HandlerMeth
 		// @formatter:on
 		/**
 		 * 进行认证
-		 * {@link OAuth2AuthorizedClientManager#authorize(org.springframework.security.oauth2.client.OAuth2AuthorizeRequest)}
+		 * {@link DefaultOAuth2AuthorizedClientManager#authorize(OAuth2AuthorizeRequest)}
 		 * */
 		return this.authorizedClientManager.authorize(authorizeRequest);
 	}

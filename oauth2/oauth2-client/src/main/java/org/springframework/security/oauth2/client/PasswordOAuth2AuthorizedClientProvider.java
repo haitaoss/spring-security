@@ -16,10 +16,6 @@
 
 package org.springframework.security.oauth2.client;
 
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
-
 import org.springframework.lang.Nullable;
 import org.springframework.security.oauth2.client.endpoint.DefaultPasswordTokenResponseClient;
 import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
@@ -31,6 +27,10 @@ import org.springframework.security.oauth2.core.OAuth2Token;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AccessTokenResponse;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 
 /**
  * An implementation of an {@link OAuth2AuthorizedClientProvider} for the
@@ -84,19 +84,23 @@ public final class PasswordOAuth2AuthorizedClientProvider implements OAuth2Autho
 		Assert.notNull(context, "context cannot be null");
 		ClientRegistration clientRegistration = context.getClientRegistration();
 		OAuth2AuthorizedClient authorizedClient = context.getAuthorizedClient();
+		// 不是 password 模式
 		if (!AuthorizationGrantType.PASSWORD.equals(clientRegistration.getAuthorizationGrantType())) {
 			return null;
 		}
 		String username = context.getAttribute(OAuth2AuthorizationContext.USERNAME_ATTRIBUTE_NAME);
 		String password = context.getAttribute(OAuth2AuthorizationContext.PASSWORD_ATTRIBUTE_NAME);
+		// 没有 username 或者 password
 		if (!StringUtils.hasText(username) || !StringUtils.hasText(password)) {
 			return null;
 		}
+		// 访问令牌没过期
 		if (authorizedClient != null && !hasTokenExpired(authorizedClient.getAccessToken())) {
 			// If client is already authorized and access token is NOT expired than no
 			// need for re-authorization
 			return null;
 		}
+		// 访问令牌过期了 且 refreshToken不是null
 		if (authorizedClient != null && hasTokenExpired(authorizedClient.getAccessToken())
 				&& authorizedClient.getRefreshToken() != null) {
 			// If client is already authorized and access token is expired and a refresh
@@ -106,6 +110,7 @@ public final class PasswordOAuth2AuthorizedClientProvider implements OAuth2Autho
 		}
 		OAuth2PasswordGrantRequest passwordGrantRequest = new OAuth2PasswordGrantRequest(clientRegistration, username,
 				password);
+		// 获取访问令牌
 		OAuth2AccessTokenResponse tokenResponse = getTokenResponse(clientRegistration, passwordGrantRequest);
 		return new OAuth2AuthorizedClient(clientRegistration, context.getPrincipal().getName(),
 				tokenResponse.getAccessToken(), tokenResponse.getRefreshToken());

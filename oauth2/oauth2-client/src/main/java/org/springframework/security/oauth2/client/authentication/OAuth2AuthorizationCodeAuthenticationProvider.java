@@ -72,16 +72,20 @@ public class OAuth2AuthorizationCodeAuthenticationProvider implements Authentica
 	@Override
 	public Authentication authenticate(Authentication authentication) throws AuthenticationException {
 		OAuth2AuthorizationCodeAuthenticationToken authorizationCodeAuthentication = (OAuth2AuthorizationCodeAuthenticationToken) authentication;
+		// 这里面包含了授权码
 		OAuth2AuthorizationResponse authorizationResponse = authorizationCodeAuthentication.getAuthorizationExchange()
 				.getAuthorizationResponse();
+
 		// 授权方返回的信息是 错误状态码
 		if (authorizationResponse.statusError()) {
 			// 抛出异常
 			throw new OAuth2AuthorizationException(authorizationResponse.getError());
 		}
-		// 授权信息
+
+		// request授权信息
 		OAuth2AuthorizationRequest authorizationRequest = authorizationCodeAuthentication.getAuthorizationExchange()
 				.getAuthorizationRequest();
+
 		// 请求发送的state 和响应的state 不一致。state是唯一标识
 		if (!authorizationResponse.getState().equals(authorizationRequest.getState())) {
 			OAuth2Error oauth2Error = new OAuth2Error(INVALID_STATE_PARAMETER_ERROR_CODE);
@@ -89,8 +93,7 @@ public class OAuth2AuthorizationCodeAuthenticationProvider implements Authentica
 			throw new OAuth2AuthorizationException(oauth2Error);
 		}
 		/**
-		 * 根据 code 请求第三方服务拿到 访问令牌
-		 *
+		 * 根据 code(授权码) 请求第三方服务拿到 访问令牌
 		 * Tips：authorizationCodeAuthentication.getAuthorizationExchange() 可以拿到 code
 		 *
 		 * {@link DefaultAuthorizationCodeTokenResponseClient#getTokenResponse(OAuth2AuthorizationCodeGrantRequest)}
@@ -98,6 +101,7 @@ public class OAuth2AuthorizationCodeAuthenticationProvider implements Authentica
 		OAuth2AccessTokenResponse accessTokenResponse = this.accessTokenResponseClient.getTokenResponse(
 				new OAuth2AuthorizationCodeGrantRequest(authorizationCodeAuthentication.getClientRegistration(),
 						authorizationCodeAuthentication.getAuthorizationExchange()));
+
 		// 装饰成 OAuth2AuthorizationCodeAuthenticationToken
 		OAuth2AuthorizationCodeAuthenticationToken authenticationResult = new OAuth2AuthorizationCodeAuthenticationToken(
 				authorizationCodeAuthentication.getClientRegistration(),

@@ -173,7 +173,17 @@ public final class DefaultOAuth2AuthorizedClientManager implements OAuth2Authori
 		// @formatter:on
 		try {
 			/**
-			 * 认证
+			 * 授权。本质是校验有 访问令牌
+			 *
+			 * {@link DelegatingOAuth2AuthorizedClientProvider#authorize(OAuth2AuthorizationContext)}
+			 * 		是 authorization_code 模式 就必须有 授权过的信息
+			 * 		{@link AuthorizationCodeOAuth2AuthorizedClientProvider#authorize(OAuth2AuthorizationContext)}
+			 * 		访问令牌过期了，就调第三方接口获取新的 访问令牌
+			 * 		{@link RefreshTokenOAuth2AuthorizedClientProvider#authorize(OAuth2AuthorizationContext)}
+			 *		是 client_credentials 模式，然后访问令牌过期了，就调第三方接口获取新的 访问令牌
+			 * 		{@link ClientCredentialsOAuth2AuthorizedClientProvider#authorize(OAuth2AuthorizationContext)}
+			 *		是 password 模式，然后访问令牌过期 就获取访问令牌
+			 * 		{@link PasswordOAuth2AuthorizedClientProvider#authorize(OAuth2AuthorizationContext)}
 			 * */
 			authorizedClient = this.authorizedClientProvider.authorize(authorizationContext);
 		}
@@ -190,6 +200,7 @@ public final class DefaultOAuth2AuthorizedClientManager implements OAuth2Authori
 					createAttributes(servletRequest, servletResponse));
 		}
 		else {
+			// 返回现在的，说明不需要更新
 			// In the case of re-authorization, the returned `authorizedClient` may be
 			// null if re-authorization is not supported.
 			// For these cases, return the provided

@@ -16,15 +16,6 @@
 
 package org.springframework.security.web.authentication.logout;
 
-import java.io.IOException;
-
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.springframework.core.log.LogMessage;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -35,6 +26,14 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.GenericFilterBean;
+
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 /**
  * Logs a principal out.
@@ -103,7 +102,9 @@ public class LogoutFilter extends GenericFilterBean {
 			}
 			// 回调 LogoutHandler
 			this.handler.logout(request, response, auth);
-			// 回调 LogoutSuccessHandler
+			/**
+			 * 回调 LogoutSuccessHandler。默认就是重定向到登录页地址
+			 * */
 			this.logoutSuccessHandler.onLogoutSuccess(request, response, auth);
 			return;
 		}

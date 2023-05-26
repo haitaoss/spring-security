@@ -56,10 +56,15 @@ public enum CommonOAuth2Provider {
 		@Override
 		public Builder getBuilder(String registrationId) {
 			ClientRegistration.Builder builder = getBuilder(registrationId,
-					ClientAuthenticationMethod.CLIENT_SECRET_BASIC, DEFAULT_REDIRECT_URL);
+					ClientAuthenticationMethod.CLIENT_SECRET_BASIC,
+					// 访问授权码的重定向地址参数
+					DEFAULT_REDIRECT_URL);
 			builder.scope("read:user");
+			// 获取授权码的url。未认证时，会重定向到这个地址，交由第三方进行授权。
 			builder.authorizationUri("https://github.com/login/oauth/authorize");
+			// 获取访问令牌的url。第三方回调本系统传递了授权码，本系统会拿着授权码访问这个地址得到访问令牌
 			builder.tokenUri("https://github.com/login/oauth/access_token");
+			// 获取个人信息的url。会拿着访问令牌访问个人信息，构造出 OAuth2LoginAuthenticationToken 说明认证通过了
 			builder.userInfoUri("https://api.github.com/user");
 			builder.userNameAttributeName("id");
 			builder.clientName("GitHub");

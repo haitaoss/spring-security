@@ -16,10 +16,6 @@
 
 package org.springframework.security.oauth2.client;
 
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
-
 import org.springframework.lang.Nullable;
 import org.springframework.security.oauth2.client.endpoint.DefaultClientCredentialsTokenResponseClient;
 import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
@@ -30,6 +26,10 @@ import org.springframework.security.oauth2.core.OAuth2AuthorizationException;
 import org.springframework.security.oauth2.core.OAuth2Token;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AccessTokenResponse;
 import org.springframework.util.Assert;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 
 /**
  * An implementation of an {@link OAuth2AuthorizedClientProvider} for the
@@ -65,10 +65,12 @@ public final class ClientCredentialsOAuth2AuthorizedClientProvider implements OA
 	public OAuth2AuthorizedClient authorize(OAuth2AuthorizationContext context) {
 		Assert.notNull(context, "context cannot be null");
 		ClientRegistration clientRegistration = context.getClientRegistration();
+		// 不是
 		if (!AuthorizationGrantType.CLIENT_CREDENTIALS.equals(clientRegistration.getAuthorizationGrantType())) {
 			return null;
 		}
 		OAuth2AuthorizedClient authorizedClient = context.getAuthorizedClient();
+		// 访问令牌未过期
 		if (authorizedClient != null && !hasTokenExpired(authorizedClient.getAccessToken())) {
 			// If client is already authorized but access token is NOT expired than no
 			// need for re-authorization
@@ -82,6 +84,7 @@ public final class ClientCredentialsOAuth2AuthorizedClientProvider implements OA
 		// is the same as acquiring a new access token (authorization).
 		OAuth2ClientCredentialsGrantRequest clientCredentialsGrantRequest = new OAuth2ClientCredentialsGrantRequest(
 				clientRegistration);
+		// 获取新的访问令牌
 		OAuth2AccessTokenResponse tokenResponse = getTokenResponse(clientRegistration, clientCredentialsGrantRequest);
 		return new OAuth2AuthorizedClient(clientRegistration, context.getPrincipal().getName(),
 				tokenResponse.getAccessToken());

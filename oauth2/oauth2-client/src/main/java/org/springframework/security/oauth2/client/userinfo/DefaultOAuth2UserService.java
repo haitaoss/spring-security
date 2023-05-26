@@ -16,10 +16,6 @@
 
 package org.springframework.security.oauth2.client.userinfo;
 
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
-
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.RequestEntity;
@@ -37,11 +33,11 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2UserAuthority;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
-import org.springframework.web.client.ResponseErrorHandler;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestOperations;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.client.UnknownContentTypeException;
+import org.springframework.web.client.*;
+
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * An implementation of an {@link OAuth2UserService} that supports standard OAuth 2.0
@@ -86,17 +82,22 @@ public class DefaultOAuth2UserService implements OAuth2UserService<OAuth2UserReq
 
 	@Override
 	public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
+		// 不能是空
 		Assert.notNull(userRequest, "userRequest cannot be null");
+		// 为空
 		if (!StringUtils
 				.hasText(userRequest.getClientRegistration().getProviderDetails().getUserInfoEndpoint().getUri())) {
+			// 没有设置 用户信息url
 			OAuth2Error oauth2Error = new OAuth2Error(MISSING_USER_INFO_URI_ERROR_CODE,
 					"Missing required UserInfo Uri in UserInfoEndpoint for Client Registration: "
 							+ userRequest.getClientRegistration().getRegistrationId(),
 					null);
 			throw new OAuth2AuthenticationException(oauth2Error, oauth2Error.toString());
 		}
+		// 获取username
 		String userNameAttributeName = userRequest.getClientRegistration().getProviderDetails().getUserInfoEndpoint()
 				.getUserNameAttributeName();
+		// 不能是空
 		if (!StringUtils.hasText(userNameAttributeName)) {
 			OAuth2Error oauth2Error = new OAuth2Error(MISSING_USER_NAME_ATTRIBUTE_ERROR_CODE,
 					"Missing required \"user name\" attribute name in UserInfoEndpoint for Client Registration: "
@@ -104,15 +105,23 @@ public class DefaultOAuth2UserService implements OAuth2UserService<OAuth2UserReq
 					null);
 			throw new OAuth2AuthenticationException(oauth2Error, oauth2Error.toString());
 		}
+		/**
+		 * 其实就是根据 用户信息url + 访问令牌 构造出 request
+		 * {@link OAuth2UserRequestEntityConverter#convert(OAuth2UserRequest)}
+		 * */
 		RequestEntity<?> request = this.requestEntityConverter.convert(userRequest);
+		// 执行请求
 		ResponseEntity<Map<String, Object>> response = getResponse(userRequest, request);
+		// 返回的内容
 		Map<String, Object> userAttributes = response.getBody();
 		Set<GrantedAuthority> authorities = new LinkedHashSet<>();
+		// 提取出权限数据
 		authorities.add(new OAuth2UserAuthority(userAttributes));
 		OAuth2AccessToken token = userRequest.getAccessToken();
 		for (String authority : token.getScopes()) {
 			authorities.add(new SimpleGrantedAuthority("SCOPE_" + authority));
 		}
+		// 构造出 DefaultOAuth2User
 		return new DefaultOAuth2User(authorities, userAttributes, userNameAttributeName);
 	}
 

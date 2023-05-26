@@ -16,14 +16,6 @@
 
 package org.springframework.security.oauth2.client;
 
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.springframework.lang.Nullable;
 import org.springframework.security.oauth2.client.endpoint.DefaultRefreshTokenTokenResponseClient;
 import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
@@ -33,6 +25,14 @@ import org.springframework.security.oauth2.core.OAuth2AuthorizationException;
 import org.springframework.security.oauth2.core.OAuth2Token;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AccessTokenResponse;
 import org.springframework.util.Assert;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * An implementation of an {@link OAuth2AuthorizedClientProvider} for the
@@ -76,8 +76,10 @@ public final class RefreshTokenOAuth2AuthorizedClientProvider implements OAuth2A
 	public OAuth2AuthorizedClient authorize(OAuth2AuthorizationContext context) {
 		Assert.notNull(context, "context cannot be null");
 		OAuth2AuthorizedClient authorizedClient = context.getAuthorizedClient();
+		// 没过期，不需要刷新访问令牌
 		if (authorizedClient == null || authorizedClient.getRefreshToken() == null
 				|| !hasTokenExpired(authorizedClient.getAccessToken())) {
+			// 直接 return null
 			return null;
 		}
 		Object requestScope = context.getAttribute(OAuth2AuthorizationContext.REQUEST_SCOPE_ATTRIBUTE_NAME);
@@ -90,6 +92,7 @@ public final class RefreshTokenOAuth2AuthorizedClientProvider implements OAuth2A
 		OAuth2RefreshTokenGrantRequest refreshTokenGrantRequest = new OAuth2RefreshTokenGrantRequest(
 				authorizedClient.getClientRegistration(), authorizedClient.getAccessToken(),
 				authorizedClient.getRefreshToken(), scopes);
+		// 调第三方接口获取新的 访问令牌
 		OAuth2AccessTokenResponse tokenResponse = getTokenResponse(authorizedClient, refreshTokenGrantRequest);
 		return new OAuth2AuthorizedClient(context.getAuthorizedClient().getClientRegistration(),
 				context.getPrincipal().getName(), tokenResponse.getAccessToken(), tokenResponse.getRefreshToken());

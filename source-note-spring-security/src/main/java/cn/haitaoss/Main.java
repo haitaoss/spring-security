@@ -1,9 +1,9 @@
 package cn.haitaoss;
 
 import cn.haitaoss.config.mvc.WebMvcConfig;
-import cn.haitaoss.config.security.OAuth2LoginConfig;
 import cn.haitaoss.config.security.OverrideDefaultConfig;
 import cn.haitaoss.config.security.WebSecurityQuickStartConfig;
+import cn.haitaoss.config.security.oauth2.OAuth2LoginConfig;
 import cn.haitaoss.controller.IndexController;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.WebResourceRoot;
@@ -31,6 +31,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractIn
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.config.annotation.web.configurers.ExpressionUrlAuthorizationConfigurer;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.authentication.OAuth2LoginAuthenticationProvider;
 import org.springframework.security.web.access.ExceptionTranslationFilter;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.access.intercept.FilterSecurityInterceptor;
@@ -74,7 +75,7 @@ public class Main extends AbstractAnnotationConfigDispatcherServletInitializer {
                 // 覆盖 WebSecurity 的默认配置
                 OverrideDefaultConfig.class,
                 // 验证常用的配置项
-                // SecurityFilterChainConfig.class,
+//                SecurityFilterChainConfig.class,
                 // 验证集成 OAuth2
                 OAuth2LoginConfig.class,
                 // 测试用的
@@ -203,6 +204,22 @@ public class Main extends AbstractAnnotationConfigDispatcherServletInitializer {
      * AuthenticationEntryPoint
      * WebSecurityConfigurer
      * WebSecurityConfigurerAdapter
+     *
+     * 自定义认证Filter都应该实现 AbstractAuthenticationProcessingFilter，
+     * 聚合了 AuthenticationSuccessHandler、AuthenticationFailureHandler。
+     * 认证成功回调 AuthenticationSuccessHandler，认证失败回调 AuthenticationFailureHandler
+     *
+     * OAuth2LoginAuthenticationProvider
+     *      {@link OAuth2LoginAuthenticationProvider#authenticate(Authentication)}
+     *      1. 委托给 OAuth2AuthorizationCodeAuthenticationProvider 得到 OAuth2AuthorizationCodeAuthenticationToken
+     *          1.1 校验第三方系统回调本系统传递的参数是正确的（主要是有授权码）
+     *          1.2 根据授权码请求第三方系统提供的接口，获取 访问令牌
+     *
+     *      2. 调用 OAuth2UserService 得到用户信息
+     *          可以自定义 OAuth2UserService 决定应该访问那些 OAuth2 接口得到更多用户信息（默认是根据访问令牌请求第三方的个人信息接口获取用户信息）
+     *
+     *      3. 构造出 OAuth2LoginAuthenticationToken。
+     *
      * */
     public static void main(String[] args) throws Exception {
         startTomcat();
