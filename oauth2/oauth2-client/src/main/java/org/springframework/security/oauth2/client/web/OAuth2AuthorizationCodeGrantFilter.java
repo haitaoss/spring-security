@@ -259,7 +259,10 @@ public class OAuth2AuthorizationCodeGrantFilter extends OncePerRequestFilter {
 		OAuth2AuthorizedClient authorizedClient = new OAuth2AuthorizedClient(
 				authenticationResult.getClientRegistration(), principalName, authenticationResult.getAccessToken(),
 				authenticationResult.getRefreshToken());
-		// 保存
+		/**
+		 * 持久化。从而保证在web请求间能复用 授权状态
+		 * {@link AuthenticatedPrincipalOAuth2AuthorizedClientRepository#saveAuthorizedClient(OAuth2AuthorizedClient, Authentication, HttpServletRequest, HttpServletResponse)}
+		 * */
 		this.authorizedClientRepository.saveAuthorizedClient(authorizedClient, currentAuthentication, request,
 				response);
 		String redirectUrl = authorizationRequest.getRedirectUri();

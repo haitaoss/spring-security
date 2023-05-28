@@ -188,6 +188,7 @@ public final class DefaultOAuth2AuthorizationRequestResolver implements OAuth2Au
 				applyNonce(builder);
 			}
 			if (ClientAuthenticationMethod.NONE.equals(clientRegistration.getClientAuthenticationMethod())) {
+				// 设置附加的参数
 				DEFAULT_PKCE_APPLIER.accept(builder);
 			}
 			return builder;

@@ -204,7 +204,9 @@ public class Main extends AbstractAnnotationConfigDispatcherServletInitializer {
      * AuthenticationEntryPoint
      * WebSecurityConfigurer
      * WebSecurityConfigurerAdapter
-     *
+     * ExceptionTranslationFilter
+	 *  	AuthenticationEntryPoint
+	 *  	AccessDeniedHandler
      * 自定义认证Filter都应该实现 AbstractAuthenticationProcessingFilter，
      * 聚合了 AuthenticationSuccessHandler、AuthenticationFailureHandler。
      * 认证成功回调 AuthenticationSuccessHandler，认证失败回调 AuthenticationFailureHandler

@@ -16,11 +16,8 @@
 
 package org.springframework.security.oauth2.server.resource.authentication;
 
-import java.util.Collection;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -34,6 +31,8 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.security.oauth2.server.resource.InvalidBearerTokenException;
 import org.springframework.util.Assert;
+
+import java.util.Collection;
 
 /**
  * An {@link AuthenticationProvider} implementation of the {@link Jwt}-encoded
@@ -84,7 +83,11 @@ public final class JwtAuthenticationProvider implements AuthenticationProvider {
 	@Override
 	public Authentication authenticate(Authentication authentication) throws AuthenticationException {
 		BearerTokenAuthenticationToken bearer = (BearerTokenAuthenticationToken) authentication;
+		// 使用 jwtDecoder 解析出 Jwt
 		Jwt jwt = getJwt(bearer);
+		/**
+		 * {@link JwtAuthenticationConverter#convert(Jwt)}
+		 * */
 		AbstractAuthenticationToken token = this.jwtAuthenticationConverter.convert(jwt);
 		token.setDetails(bearer.getDetails());
 		this.logger.debug("Authenticated token");
@@ -93,6 +96,7 @@ public final class JwtAuthenticationProvider implements AuthenticationProvider {
 
 	private Jwt getJwt(BearerTokenAuthenticationToken bearer) {
 		try {
+			// 解码
 			return this.jwtDecoder.decode(bearer.getToken());
 		}
 		catch (BadJwtException failed) {

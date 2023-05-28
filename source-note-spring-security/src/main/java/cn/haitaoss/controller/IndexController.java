@@ -3,6 +3,9 @@ package cn.haitaoss.controller;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.annotation.CurrentSecurityContext;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
@@ -25,7 +28,7 @@ public class IndexController {
     private ApplicationContext applicationContext;
 
     @RequestMapping("*/index")
-    public Object index() {
+    public Object index(@AuthenticationPrincipal String name,@CurrentSecurityContext SecurityContext securityContext) {
         HashMap<String, Object> map = new HashMap<>();
         map.put("当前认证的用户信息", SecurityContextHolder.getContext());
         return map;

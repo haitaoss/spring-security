@@ -16,13 +16,6 @@
 
 package org.springframework.security.oauth2.server.resource.web.authentication;
 
-import java.io.IOException;
-
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.springframework.core.log.LogMessage;
 import org.springframework.security.authentication.AuthenticationDetailsSource;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -46,6 +39,12 @@ import org.springframework.security.web.context.NullSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.util.Assert;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 /**
  * Authenticates requests that contain an OAuth 2.0
@@ -124,12 +123,14 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
 		}
 		catch (OAuth2AuthenticationException invalid) {
 			this.logger.trace("Sending to authentication entry point since failed to resolve bearer token", invalid);
-			// 使用 authenticationEntryPoint 进入认证
+			// 使用 authenticationEntryPoint 开始认证(默认是重定向到登录页面)
 			this.authenticationEntryPoint.commence(request, response, invalid);
 			return;
 		}
+		// 不存在 token
 		if (token == null) {
 			this.logger.trace("Did not process request since did not find bearer token");
+			// 放行
 			filterChain.doFilter(request, response);
 			return;
 		}
@@ -138,15 +139,24 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
 		authenticationRequest.setDetails(this.authenticationDetailsSource.buildDetails(request));
 
 		try {
+			/**
+			 * 根据 request 推断出用啥 AuthenticationManager
+			 * */
 			AuthenticationManager authenticationManager = this.authenticationManagerResolver.resolve(request);
+			/**
+			 * 开始认证。默认使用的是 JwtAuthenticationProvider 或者 OpaqueTokenAuthenticationProvider
+			 * */
 			Authentication authenticationResult = authenticationManager.authenticate(authenticationRequest);
 			SecurityContext context = this.securityContextHolderStrategy.createEmptyContext();
 			context.setAuthentication(authenticationResult);
+			// 保存到上下文
 			this.securityContextHolderStrategy.setContext(context);
+			// 持久化
 			this.securityContextRepository.saveContext(context, request, response);
 			if (this.logger.isDebugEnabled()) {
 				this.logger.debug(LogMessage.format("Set SecurityContextHolder to %s", authenticationResult));
 			}
+			// 放行
 			filterChain.doFilter(request, response);
 		}
 		catch (AuthenticationException failed) {

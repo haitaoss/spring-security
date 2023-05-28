@@ -16,15 +16,15 @@
 
 package org.springframework.security.oauth2.client.web;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.springframework.security.authentication.AuthenticationTrustResolver;
 import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.util.Assert;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * An implementation of an {@link OAuth2AuthorizedClientRepository} that delegates to the
@@ -85,10 +85,13 @@ public final class AuthenticatedPrincipalOAuth2AuthorizedClientRepository implem
 	@Override
 	public void saveAuthorizedClient(OAuth2AuthorizedClient authorizedClient, Authentication principal,
 			HttpServletRequest request, HttpServletResponse response) {
+		// OAuth2 授权得到的用户信息 已经在本系统认证过了
 		if (this.isPrincipalAuthenticated(principal)) {
+			// 存在这里
 			this.authorizedClientService.saveAuthorizedClient(authorizedClient, principal);
 		}
 		else {
+			// 否则存在这里
 			this.anonymousAuthorizedClientRepository.saveAuthorizedClient(authorizedClient, principal, request,
 					response);
 		}

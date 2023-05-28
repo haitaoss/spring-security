@@ -5,21 +5,28 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.ObjectPostProcessor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.oauth2.client.CommonOAuth2Provider;
 import org.springframework.security.oauth2.client.InMemoryOAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.endpoint.OAuth2RefreshTokenGrantRequestEntityConverter;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
-import org.springframework.security.oauth2.client.web.AuthenticatedPrincipalOAuth2AuthorizedClientRepository;
-import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.client.web.*;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtBearerTokenAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.security.web.authentication.ui.DefaultLoginPageGeneratingFilter;
 import org.springframework.stereotype.Component;
@@ -28,16 +35,19 @@ import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Field;
 import java.util.List;
 
+import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS512;
+import static org.springframework.security.web.authentication.ui.DefaultLoginPageGeneratingFilter.ERROR_PARAMETER_NAME;
+
 @Component
 @Import(MyOAuth2UserService.class)
 @Slf4j
 public class OAuth2LoginConfig {
-
-	private String prefix = "/f4";
-	private String host = "http://24a9f15d.r2.cpolar.cn";
+	//	private String prefix = "/f4";
+	private String prefix = "";
+	private String host = "http://353b1af8.r9.cpolar.top";
 	// private String host = "http://localhost:8080";
 
-	@Bean
+	//	@Bean
 	public ObjectPostProcessor<Object> urlOpp() {
 		return new ObjectPostProcessor<Object>() {
 			@Override
@@ -75,8 +85,8 @@ public class OAuth2LoginConfig {
 	}
 
 	@Bean
-	@Order(4)
-	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+//	@Order(4)
+	public SecurityFilterChain filterChain4(HttpSecurity http) throws Exception {
 		/**
 		 *
 		 * 访问 http://localhost:8080/security/f4/img/img.png
@@ -105,9 +115,12 @@ public class OAuth2LoginConfig {
 				 *
 				 * OAuth2LoginAuthenticationFilter 匹配的路径是 /login/oauth2/code/*
 				 *
-				 * Tips：OAuth2UserService
+				 * Tips：OAuth2UserService、AuthorizationRequestCustomizer
+				 *
+				 * 授权时不需要 clientsecert 获取访问令牌时才需要
+				 * {@link OAuth2RefreshTokenGrantRequestEntityConverter}
 				 * */
-				/*.oauth2Login(oAuth2LoginConfig -> oAuth2LoginConfig
+				.oauth2Login(oAuth2LoginConfig -> oAuth2LoginConfig
 						// 设置 认证Filter 拦截的路径
 						.loginProcessingUrl(prefix + OAuth2LoginAuthenticationFilter.DEFAULT_FILTER_PROCESSES_URI)
 						// 设置认证失败要转发的地址
@@ -117,9 +130,22 @@ public class OAuth2LoginConfig {
 						// 设置获取授权码的地址
 						.authorizationEndpoint(config -> config.baseUri(prefix
 								+ OAuth2AuthorizationRequestRedirectFilter.DEFAULT_AUTHORIZATION_REQUEST_BASE_URI))
-				)*/
+				)
 				.formLogin(config -> config.loginProcessingUrl(prefix + "/login"))
-				.logout(config -> config.logoutSuccessUrl(prefix + "/login?logout"))
+				.logout(config -> config.logoutSuccessUrl(prefix + "/login?logout"));
+		return http.build();
+	}
+
+	@Bean
+	@Order(5)
+	public SecurityFilterChain filterChain5(HttpSecurity http) throws Exception {
+		http
+
+				// 该Filter拦截的路径
+				.securityMatcher("/**")
+				.authorizeHttpRequests(authorize -> authorize
+						.anyRequest().authenticated())
+				.formLogin(Customizer.withDefaults())
 				/**
 				 * OAuth2AuthorizationCodeAuthenticationProvider 授权码认证
 				 * OAuth2AuthorizationRequestRedirectFilter 认真请求重定向
@@ -130,10 +156,58 @@ public class OAuth2LoginConfig {
 				 * 而且它和 OAuth2LoginAuthenticationFilter 是互斥的，OAuth2LoginAuthenticationFilter 先执行，命中了 OAuth2LoginAuthenticationFilter
 				 * 就不会执行 OAuth2LoginAuthenticationFilter 了
 				 * */
-				.oauth2Client()
+				.oauth2Client(Customizer.withDefaults())
+				/**
+				 * JwtAuthenticationProvider 或者 OpaqueTokenAuthenticationProvider
+				 * BearerTokenAuthenticationFilter
+				 *
+				 * Tips：只是通过 JwtAuthenticationProvider 完成的 OAuth 的授权流程，其实可以直接使用 BearerTokenAuthenticationFilter 实现
+				 * 单独的jwt的认证
+				 *
+				 *
+				 * {@link JwtBearerTokenAuthenticationConverter#convert(Jwt)}
+				 *
+				 * 默认的行为好像只是负责将 token 解析成 Authentication 并不负责调第三方接口完成认证授权逻辑
+				 * */
+				//.oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt)
+				.oauth2ResourceServer(config -> config
+						.jwt()
+						// 默认不设置就会从IOC容器中查找
+						.decoder(jwtDecoder()) // 用来解析 token 得到 Jwt
+						.jwtAuthenticationConverter(jwtAuthenticationConverter()) // 将 Jwt 转成 认证信息
+				)
+
 		;
 		return http.build();
 	}
+
+	//	@Bean
+	public JwtDecoder jwtDecoder() {
+		return NimbusJwtDecoder.withJwkSetUri("")
+				.jwsAlgorithm(RS512).build();
+	}
+
+	//	@Bean
+	public JwtAuthenticationConverter jwtAuthenticationConverter() {
+		JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
+		grantedAuthoritiesConverter.setAuthoritiesClaimName("authorities");
+
+		JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
+		jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
+		return jwtAuthenticationConverter;
+	}
+/*
+	@Bean
+	WebClient webClient(OAuth2AuthorizedClientManager authorizedClientManager) {
+		// 配置 WebClient ，之后使用 WebClient 发送请求就会带上 访问令牌
+		ServletOAuth2AuthorizedClientExchangeFilterFunction oauth2Client =
+				new ServletOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager);
+		oauth2Client.setDefaultOAuth2AuthorizedClient(true);
+		return WebClient.builder()
+				.apply(oauth2Client.oauth2Configuration())
+				.build();
+	}
+*/
 
 	@Bean
 	public ClientRegistration githubClientRegistration() {

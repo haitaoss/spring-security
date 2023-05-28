@@ -16,15 +16,6 @@
 
 package org.springframework.security.config.annotation.web.configurers.oauth2.server.resource;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.function.Supplier;
-
-import javax.servlet.http.HttpServletRequest;
-
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.MediaType;
@@ -59,15 +50,14 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.AccessDeniedHandlerImpl;
 import org.springframework.security.web.access.DelegatingAccessDeniedHandler;
 import org.springframework.security.web.csrf.CsrfException;
-import org.springframework.security.web.util.matcher.AndRequestMatcher;
-import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
-import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
-import org.springframework.security.web.util.matcher.OrRequestMatcher;
-import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
-import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.security.web.util.matcher.*;
 import org.springframework.util.Assert;
 import org.springframework.web.accept.ContentNegotiationStrategy;
 import org.springframework.web.accept.HeaderContentNegotiationStrategy;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.*;
+import java.util.function.Supplier;
 
 /**
  *
@@ -249,12 +239,18 @@ public final class OAuth2ResourceServerConfigurer<H extends HttpSecurityBuilder<
 
 	@Override
 	public void init(H http) {
+		// 验证属性不能为空
 		validateConfiguration();
+		// 修改 ExceptionHandlingConfigurer 注册默认的 AccessDeniedHandler
 		registerDefaultAccessDeniedHandler(http);
+		// 修改 ExceptionHandlingConfigurer 注册默认的 AuthenticationEntryPoint
 		registerDefaultEntryPoint(http);
+		// 修改 CsrfConfigurer 注册忽略的path
 		registerDefaultCsrfOverride(http);
+		// 根据配置的属性，构造出 JwtAuthenticationProvider 或者 OpaqueTokenAuthenticationProvider
 		AuthenticationProvider authenticationProvider = getAuthenticationProvider();
 		if (authenticationProvider != null) {
+			// 注册 authenticationProvider
 			http.authenticationProvider(authenticationProvider);
 		}
 	}
@@ -266,14 +262,17 @@ public final class OAuth2ResourceServerConfigurer<H extends HttpSecurityBuilder<
 		AuthenticationManagerResolver resolver = this.authenticationManagerResolver;
 		if (resolver == null) {
 			AuthenticationManager authenticationManager = getAuthenticationManager(http);
+			// 设置默认值
 			resolver = (request) -> authenticationManager;
 		}
 
+		// 构造 Filter
 		BearerTokenAuthenticationFilter filter = new BearerTokenAuthenticationFilter(resolver);
 		filter.setBearerTokenResolver(bearerTokenResolver);
 		filter.setAuthenticationEntryPoint(this.authenticationEntryPoint);
 		filter.setSecurityContextHolderStrategy(getSecurityContextHolderStrategy());
 		filter = postProcess(filter);
+		// 注册
 		http.addFilter(filter);
 	}
 
