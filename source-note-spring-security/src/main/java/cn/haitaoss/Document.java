@@ -1,27 +1,27 @@
 
 package cn.haitaoss;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.security.acl.Permission;
-import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.config.annotation.ObjectPostProcessor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.parameters.P;
-import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.logout.HeaderWriterLogoutHandler;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.header.writers.ClearSiteDataHeaderWriter;
-import static org.springframework.security.web.header.writers.ClearSiteDataHeaderWriter.Directive.COOKIES;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.security.acl.Permission;
+import java.util.List;
+
+import static org.springframework.security.web.header.writers.ClearSiteDataHeaderWriter.Directive.COOKIES;
 
 /**
  * @author haitao.chen
@@ -30,10 +30,6 @@ import org.springframework.security.web.session.HttpSessionEventPublisher;
  *
  */
 public class Document {
-	/**
-	 * {@link EnableWebSecurity}
-	 * {@link DefaultSecurityFilterChain}
-	 * */
 	/** Spring Boot Auto Configuration 做了什么
 	 Spring Boot Auto Configuration：
 	 1. 启用 Spring Security 的默认配置，它创建一个 servlet Filter 作为一个名为 springSecurityFilterChain 的 bean。这个 bean 负责应用程序中的所有安全（保护应用程序 URL、验证提交的用户名和密码、重定向到登录表单等）。

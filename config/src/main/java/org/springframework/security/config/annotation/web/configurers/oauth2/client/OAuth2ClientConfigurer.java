@@ -295,6 +295,7 @@ public final class OAuth2ClientConfigurer<B extends HttpSecurityBuilder<B>>
 
 		private OAuth2AuthorizationCodeGrantFilter createAuthorizationCodeGrantFilter(B builder) {
 			AuthenticationManager authenticationManager = builder.getSharedObject(AuthenticationManager.class);
+			// 实例化 OAuth2AuthorizationCodeGrantFilter
 			OAuth2AuthorizationCodeGrantFilter authorizationCodeGrantFilter = new OAuth2AuthorizationCodeGrantFilter(
 					OAuth2ClientConfigurerUtils.getClientRegistrationRepository(builder),
 					OAuth2ClientConfigurerUtils.getAuthorizedClientRepository(builder), authenticationManager);

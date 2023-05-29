@@ -68,6 +68,7 @@ final class OAuth2ClientConfigurerUtils {
 			// 从IOC容器中找
 			authorizedClientRepository = getAuthorizedClientRepositoryBean(builder);
 			if (authorizedClientRepository == null) {
+				// 构造默认的
 				authorizedClientRepository = new AuthenticatedPrincipalOAuth2AuthorizedClientRepository(
 						getAuthorizedClientService((builder)));
 			}

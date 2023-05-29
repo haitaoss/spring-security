@@ -2,6 +2,7 @@ package cn.haitaoss;
 
 import cn.haitaoss.config.mvc.WebMvcConfig;
 import cn.haitaoss.config.security.OverrideDefaultConfig;
+import cn.haitaoss.config.security.SecurityFilterChainConfig;
 import cn.haitaoss.config.security.WebSecurityQuickStartConfig;
 import cn.haitaoss.config.security.oauth2.OAuth2LoginConfig;
 import cn.haitaoss.controller.IndexController;
@@ -75,7 +76,7 @@ public class Main extends AbstractAnnotationConfigDispatcherServletInitializer {
                 // 覆盖 WebSecurity 的默认配置
                 OverrideDefaultConfig.class,
                 // 验证常用的配置项
-//                SecurityFilterChainConfig.class,
+                SecurityFilterChainConfig.class,
                 // 验证集成 OAuth2
                 OAuth2LoginConfig.class,
                 // 测试用的
