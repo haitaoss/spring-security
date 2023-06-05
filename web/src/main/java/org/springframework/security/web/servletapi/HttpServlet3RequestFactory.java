@@ -265,7 +265,7 @@ final class HttpServlet3RequestFactory implements HttpServletRequestFactory {
 				/**
 				 * 使用 AuthenticationManager 进行认证
 				 * 		{@link ProviderManager#authenticate(Authentication)}
-				 * */
+				 */
 				return authManager.authenticate(authentication);
 			}
 			catch (AuthenticationException ex) {

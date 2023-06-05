@@ -90,7 +90,7 @@ final class PrePostMethodSecurityConfiguration {
 
 	/**
 	 * 动态代理AOP会根据 Advisor 来决定那些bean需要创建代理对象
-	 * */
+	 */
 	@Bean
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 	Advisor preFilterAuthorizationMethodInterceptor() {

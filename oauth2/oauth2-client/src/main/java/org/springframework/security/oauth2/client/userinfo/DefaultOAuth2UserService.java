@@ -108,7 +108,7 @@ public class DefaultOAuth2UserService implements OAuth2UserService<OAuth2UserReq
 		/**
 		 * 其实就是根据 用户信息url + 访问令牌 构造出 request
 		 * {@link OAuth2UserRequestEntityConverter#convert(OAuth2UserRequest)}
-		 * */
+		 */
 		RequestEntity<?> request = this.requestEntityConverter.convert(userRequest);
 		// 执行请求
 		ResponseEntity<Map<String, Object>> response = getResponse(userRequest, request);

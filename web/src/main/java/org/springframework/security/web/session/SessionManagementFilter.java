@@ -102,7 +102,7 @@ public class SessionManagementFilter extends GenericFilterBean {
 			/**
 			 * 认证信息不为空 且 不是匿名用户认证信息。
 			 * 说明是认证通过了
-			 * */
+			 */
 			if (authentication != null && !this.trustResolver.isAnonymous(authentication)) {
 				// The user has been authenticated during the current request, so call the
 				// session strategy

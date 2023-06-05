@@ -214,7 +214,7 @@ public abstract class AbstractSecurityInterceptor
 		 *
 		 * 比如根据 request 获取为 request 配置的权限信息
 		 * 		{@link org.springframework.security.web.access.intercept.DefaultFilterInvocationSecurityMetadataSource#getAttributes(Object)}
-		 * */
+		 */
 		Collection<ConfigAttribute> attributes = this.obtainSecurityMetadataSource().getAttributes(object);
 		if (CollectionUtils.isEmpty(attributes)) {
 			// 必须是true
@@ -238,7 +238,7 @@ public abstract class AbstractSecurityInterceptor
 		}
 		/**
 		 * 获取认证信息，如果未认证过就使用 authenticationManager 进行认证
-		 * */
+		 */
 		Authentication authenticated = authenticateIfRequired();
 		if (this.logger.isTraceEnabled()) {
 			this.logger.trace(LogMessage.format("Authorizing %s with attributes %s", object, attributes));
@@ -246,7 +246,7 @@ public abstract class AbstractSecurityInterceptor
 		/**
 		 * 鉴权。
 		 * AccessDecisionManager 会依赖 AccessDecisionVoter 校验 authenticated 是否具备 ConfigAttribute 配置的内容，具备了就不会抛出异常
-		 * */
+		 */
 		// Attempt authorization
 		attemptAuthorization(object, attributes, authenticated);
 		if (this.logger.isDebugEnabled()) {
@@ -259,7 +259,7 @@ public abstract class AbstractSecurityInterceptor
 
 		/**
 		 * 尝试运行不同的用户。其实就是扩展机制，判断是否将 attributes 的权限添加给 authenticated
-		 * */
+		 */
 		// Attempt to run as a different user
 		Authentication runAs = this.runAsManager.buildRunAs(authenticated, object, attributes);
 		if (runAs != null) {
@@ -277,7 +277,7 @@ public abstract class AbstractSecurityInterceptor
 			 * 调用方一般会根据 true 来决定是否恢复 origCtx
 			 *
 			 * 比如：{@link org.springframework.security.access.intercept.AbstractSecurityInterceptor#finallyInvocation(org.springframework.security.access.intercept.InterceptorStatusToken)}
-			 * */
+			 */
 			// need to revert to token.Authenticated post-invocation
 			return new InterceptorStatusToken(origCtx, true, attributes, object);
 		}
@@ -297,7 +297,7 @@ public abstract class AbstractSecurityInterceptor
 			 * 	{@link AffirmativeBased#decide(Authentication, Object, Collection)}
 			 * 	{@link org.springframework.security.web.access.expression.WebExpressionVoter#vote}
 			 * 	AccessDecisionManager 会依赖 AccessDecisionVoter 校验 authenticated 是否具备 ConfigAttribute 配置的内容，具备了就不会抛出异常
-			 * */
+			 */
 			this.accessDecisionManager.decide(authenticated, object, attributes);
 		}
 		catch (AccessDeniedException ex) {
@@ -357,7 +357,7 @@ public abstract class AbstractSecurityInterceptor
 				 *
 				 * 对于 FilterSecurityInterceptor 默认是空的，因为 Filter 的执行没有返回值啊，能算的上返回值的是 Response。初始化逻辑在这里
 				 * 		{@link org.springframework.security.config.annotation.web.configurers.AbstractInterceptUrlConfigurer#configure}
-				 * */
+				 */
 				returnedObject = this.afterInvocationManager.decide(token.getSecurityContext().getAuthentication(),
 						token.getSecureObject(), token.getAttributes(), returnedObject);
 			}

@@ -55,7 +55,7 @@ final class PermitAllSupport {
 		 * 注：这种方式已经过时了，不推荐使用了，因为它的鉴权每次都是执行 SpEL 非常的耗时
 		 *
 		 * 示例代码 {@link cn.haitaoss.config.security.SecurityFilterChainConfig#filterChain3}
-		 * */
+		 */
 		ExpressionUrlAuthorizationConfigurer<?> configurer = http
 				.getConfigurer(ExpressionUrlAuthorizationConfigurer.class);
 		/**
@@ -63,7 +63,7 @@ final class PermitAllSupport {
 		 * 鉴权思路同上，他默认提供了很多种鉴权实现(字符串匹配、集合contains、属性值) 还支持写复杂的SpEL，所以性能比较好。
 		 *
 		 * 示例代码 {@link cn.haitaoss.config.security.SecurityFilterChainConfig#filterChain2}
-		 * */
+		 */
 		AuthorizeHttpRequestsConfigurer<?> httpConfigurer = http.getConfigurer(AuthorizeHttpRequestsConfigurer.class);
 
 		// 存在一个

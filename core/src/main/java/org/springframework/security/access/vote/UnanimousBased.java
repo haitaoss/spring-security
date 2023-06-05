@@ -73,14 +73,14 @@ public class UnanimousBased extends AbstractAccessDecisionManager {
 		 * 比如：
 		 * 		{@link RoleVoter#vote(Authentication, Object, Collection)}
 		 *		{@link org.springframework.security.web.access.expression.WebExpressionVoter#vote}
-		 * */
+		 */
 		for (ConfigAttribute attribute : attributes) {
 			singleAttributeList.set(0, attribute);
 			for (AccessDecisionVoter voter : getDecisionVoters()) {
 				/**
 				 * 投票结果
 				 * {@link org.springframework.security.web.access.expression.WebExpressionVoter#vote}
-				 * */
+				 */
 				int result = voter.vote(authentication, object, singleAttributeList);
 				switch (result) {
 				case AccessDecisionVoter.ACCESS_GRANTED:

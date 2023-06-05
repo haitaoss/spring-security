@@ -180,7 +180,7 @@ public class BasicAuthenticationFilter extends OncePerRequestFilter {
 			if (authenticationIsRequired(username)) {
 				/**
 				 * 认证 {@link ProviderManager#authenticate(Authentication)}
-				 * */
+				 */
 				Authentication authResult = this.authenticationManager.authenticate(authRequest);
 				SecurityContext context = this.securityContextHolderStrategy.createEmptyContext();
 				context.setAuthentication(authResult);

@@ -66,7 +66,7 @@ class InitializeUserDetailsBeanManagerConfigurer extends GlobalAuthenticationCon
 			 * 从IOC容器中获取 UserDetailsService 类型的bean
 			 *
 			 * 注：会校验只能有一个 UserDetailsService 类型的bean，多个就返回 null
-			 * */
+			 */
 			UserDetailsService userDetailsService = getBeanOrNull(UserDetailsService.class);
 			// 为空
 			if (userDetailsService == null) {
@@ -88,11 +88,11 @@ class InitializeUserDetailsBeanManagerConfigurer extends GlobalAuthenticationCon
 			/**
 			 * 回调方法
 			 * DaoAuthenticationProvider 会校验 userDetailsService 不能是空
-			 * */
+			 */
 			provider.afterPropertiesSet();
 			/**
 			 * 将 provider 设置给 auth，auth 会使用 provider 完成认证逻辑
-			 * */
+			 */
 			auth.authenticationProvider(provider);
 		}
 

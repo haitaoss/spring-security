@@ -155,7 +155,7 @@ public final class DefaultOAuth2AuthorizationRequestResolver implements OAuth2Au
 
 		/**
 		 * 根据 {@link ClientRegistration#redirectUri} 的值生成 redirectUriStr
-		 * */
+		 */
 		String redirectUriStr = expandRedirectUri(request, clientRegistration, redirectUriAction);
 
 		// @formatter:off

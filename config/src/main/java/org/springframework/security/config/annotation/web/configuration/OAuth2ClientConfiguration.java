@@ -63,7 +63,7 @@ final class OAuth2ClientConfiguration {
 			/**
 			 * 注册配置类。其作用是注册 OAuth2AuthorizedClientArgumentResolver
 			 * {@link org.springframework.security.config.annotation.web.configuration.OAuth2ClientConfiguration.OAuth2ClientWebMvcSecurityConfiguration}
-			 * */
+			 */
 			return new String[] { "org.springframework.security.config.annotation.web.configuration."
 					+ "OAuth2ClientConfiguration.OAuth2ClientWebMvcSecurityConfiguration" };
 		}

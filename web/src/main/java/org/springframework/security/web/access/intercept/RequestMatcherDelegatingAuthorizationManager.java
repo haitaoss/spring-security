@@ -88,7 +88,7 @@ public final class RequestMatcherDelegatingAuthorizationManager implements Autho
 				 *
 				 * {@link AuthorityAuthorizationManager#check(Supplier, Object)}
 				 * 		鉴权：认证过 且 认证信息包含权限
-				 * */
+				 */
 				return manager.check(authentication,
 						new RequestAuthorizationContext(request, matchResult.getVariables()));
 			}

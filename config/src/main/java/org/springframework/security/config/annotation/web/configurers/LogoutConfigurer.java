@@ -288,7 +288,7 @@ public final class LogoutConfigurer<H extends HttpSecurityBuilder<H>>
 			/**
 			 * 设置 登出成功url。会根据这个值决定生成的html的内容
 			 * 		{@link DefaultLoginPageGeneratingFilter#generateLoginPageHtml(HttpServletRequest, boolean, boolean)}
-			 * */
+			 */
 			loginPageGeneratingFilter.setLogoutSuccessUrl(getLogoutSuccessUrl());
 		}
 	}
@@ -343,7 +343,7 @@ public final class LogoutConfigurer<H extends HttpSecurityBuilder<H>>
 		/**
 		 * 依赖 handlers 构造一个 LogoutFilter。
 		 * doFilter 满足 logout 的匹配规则会回调 handlers
-		 * */
+		 */
 		LogoutFilter result = new LogoutFilter(getLogoutSuccessHandler(), handlers);
 		result.setSecurityContextHolderStrategy(getSecurityContextHolderStrategy());
 		// 设置 LogoutRequestMatcher。用来匹配request匹配规则

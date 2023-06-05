@@ -309,7 +309,7 @@ public final class OAuth2LoginConfigurer<B extends HttpSecurityBuilder<B>>
 		}
 		/**
 		 * 是用来生成访问令牌的。其实就是调接口
-		 * */
+		 */
 		OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> accessTokenResponseClient = this.tokenEndpointConfig.accessTokenResponseClient;
 		if (accessTokenResponseClient == null) {
 			accessTokenResponseClient = new DefaultAuthorizationCodeTokenResponseClient();
@@ -317,7 +317,7 @@ public final class OAuth2LoginConfigurer<B extends HttpSecurityBuilder<B>>
 		/**
 		 * 从 BeanFactory 中获取 OAuth2UserService，拿不到会构造一个默认的，
 		 * 默认是 DefaultOAuth2UserService。其作用是 根据设置的 用户个人信息url + 访问令牌 请求url得到用户基本信息 构造出 OAuth2User
-		 * */
+		 */
 		OAuth2UserService<OAuth2UserRequest, OAuth2User> oauth2UserService = getOAuth2UserService();
 		// 实例化出
 		OAuth2LoginAuthenticationProvider oauth2LoginAuthenticationProvider = new OAuth2LoginAuthenticationProvider(
@@ -505,7 +505,7 @@ public final class OAuth2LoginConfigurer<B extends HttpSecurityBuilder<B>>
 		/**
 		 * 是 Iterable 类型
 		 * 参考 {@link InMemoryClientRegistrationRepository}
-		 * */
+		 */
 		if (type != ResolvableType.NONE && ClientRegistration.class.isAssignableFrom(type.resolveGenerics()[0])) {
 			clientRegistrations = (Iterable<ClientRegistration>) clientRegistrationRepository;
 		}

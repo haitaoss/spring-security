@@ -159,7 +159,7 @@ public class ThrowableAnalyzer {
 			chain.add(currentThrowable);
 			/**
 			 * 提取异常了信息
-			 * */
+			 */
 			currentThrowable = extractCause(currentThrowable);
 		}
 		return chain.toArray(new Throwable[0]);
@@ -175,7 +175,7 @@ public class ThrowableAnalyzer {
 		 * 遍历
 		 *
 		 * 注：默认只会处理这两个类型的异常 InvocationTargetException、Throwable
-		 * */
+		 */
 		for (Map.Entry<Class<? extends Throwable>, ThrowableCauseExtractor> entry : this.extractorMap.entrySet()) {
 			Class<? extends Throwable> throwableType = entry.getKey();
 			// throwable 是 throwableType 实例对象

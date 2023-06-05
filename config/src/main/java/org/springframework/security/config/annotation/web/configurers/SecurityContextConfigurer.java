@@ -119,7 +119,7 @@ public final class SecurityContextConfigurer<H extends HttpSecurityBuilder<H>>
 			 * 		2. 将 SecurityContext 设置到 SecurityContextHolderStrategy
 			 * 		3. doFilter
 			 * 		4. 将 SecurityContext 从 SecurityContextHolderStrategy 中清除
-			 * */
+			 */
 			SecurityContextHolderFilter securityContextHolderFilter = postProcess(
 					new SecurityContextHolderFilter(securityContextRepository));
 			securityContextHolderFilter.setSecurityContextHolderStrategy(getSecurityContextHolderStrategy());
@@ -135,7 +135,7 @@ public final class SecurityContextConfigurer<H extends HttpSecurityBuilder<H>>
 			 * 		4. 将 SecurityContext 保存到 SecurityContextRepository
 			 * 		5. 将 SecurityContext 从 SecurityContextHolderStrategy 中清除
 			 * {@link SecurityContextPersistenceFilter#doFilter(HttpServletRequest, HttpServletResponse, FilterChain)}
-			 * */
+			 */
 			SecurityContextPersistenceFilter securityContextFilter = new SecurityContextPersistenceFilter(
 					securityContextRepository);
 			securityContextFilter.setSecurityContextHolderStrategy(getSecurityContextHolderStrategy());

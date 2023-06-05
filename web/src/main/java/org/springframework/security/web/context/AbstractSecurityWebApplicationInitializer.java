@@ -110,7 +110,7 @@ public abstract class AbstractSecurityWebApplicationInitializer implements WebAp
 			rootAppContext.register(this.configurationClasses);
 			/**
 			 * 注册一个 Listener ，是用来触发 rootAppContext.refresh()
-			 * */
+			 */
 			servletContext.addListener(new ContextLoaderListener(rootAppContext));
 		}
 		// 默认是 false
@@ -122,7 +122,7 @@ public abstract class AbstractSecurityWebApplicationInitializer implements WebAp
 		/**
 		 * 注册 DelegatingFilterProxy 到 servletContext 中，注册的 filterName 是 {@link AbstractSecurityWebApplicationInitializer#DEFAULT_FILTER_NAME}
 		 * 而  DelegatingFilterProxy.doFilter 其实是委托给 context.getName("springSecurityFilterChain",Filter.class) 执行
-		 * */
+		 */
 		insertSpringSecurityFilterChain(servletContext);
 		// 预留的模板方法
 		afterSpringSecurityFilterChain(servletContext);

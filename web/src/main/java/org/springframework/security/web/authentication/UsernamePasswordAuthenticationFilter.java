@@ -92,7 +92,7 @@ public class UsernamePasswordAuthenticationFilter extends AbstractAuthentication
 		/**
 		 * 使用 AuthenticationManager 进行认证。具体如何认证看 AuthenticationProvider
 		 * {@link org.springframework.security.authentication.ProviderManager#authenticate(org.springframework.security.core.Authentication)}
-		 * */
+		 */
 		return this.getAuthenticationManager().authenticate(authRequest);
 	}
 

@@ -21,6 +21,9 @@ import java.util.List;
 import java.util.Map;
 
 import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 
 import org.springframework.beans.factory.BeanClassLoaderAware;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,15 +43,19 @@ import org.springframework.security.access.expression.SecurityExpressionHandler;
 import org.springframework.security.config.annotation.AbstractConfiguredSecurityBuilder;
 import org.springframework.security.config.annotation.ObjectPostProcessor;
 import org.springframework.security.config.annotation.SecurityConfigurer;
+import org.springframework.security.config.annotation.web.HttpSecurityBuilder;
 import org.springframework.security.config.annotation.web.WebSecurityConfigurer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
+import org.springframework.security.config.annotation.web.configurers.SessionManagementConfigurer;
 import org.springframework.security.config.crypto.RsaKeyConversionServicePostProcessor;
 import org.springframework.security.context.DelegatingApplicationListener;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.web.FilterChainProxy;
 import org.springframework.security.web.FilterInvocation;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.WebInvocationPrivilegeEvaluator;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.access.intercept.FilterSecurityInterceptor;
 import org.springframework.security.web.context.AbstractSecurityWebApplicationInitializer;
 import org.springframework.util.Assert;
@@ -89,13 +96,20 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 		/**
 		 * 实现了 ApplicationListener<ApplicationEvent> 接口，
 		 * 会将收到的事件广播给适配的 ApplicationListener (DelegatingApplicationListener 内部的 ApplicationListener)
-		 * */
+		 *
+		 * 比如
+		 * 		{@link SessionManagementConfigurer#configure(HttpSecurityBuilder)} 会往 DelegatingApplicationListener 注册 ApplicationListener
+		 * 		{@link AuthorizationFilter#doFilter(ServletRequest, ServletResponse, FilterChain)} 会发布事件
+		 */
 		return new DelegatingApplicationListener();
 	}
 
 	@Bean
 	@DependsOn(AbstractSecurityWebApplicationInitializer.DEFAULT_FILTER_NAME)
 	public SecurityExpressionHandler<FilterInvocation> webSecurityExpressionHandler() {
+		/**
+		 * 是一个工具类，是用来生成 SpEL 表达式的 RootObject 和 EvaluationContext
+		 */
 		return this.webSecurity.getExpressionHandler();
 	}
 
@@ -113,24 +127,26 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 				"Found WebSecurityConfigurerAdapter as well as SecurityFilterChain. Please select just one.");
 		// 没有配置类 && 没有 FilterChain。
 		if (!hasConfigurers && !hasFilterChain) {
-			// （是依赖注入得到的）
+			// objectObjectPostProcessor 是依赖注入得到的
 			WebSecurityConfigurerAdapter adapter = this.objectObjectPostProcessor
 					// 使用 objectObjectPostProcessor 加工 adapter
 					.postProcess(new WebSecurityConfigurerAdapter() { });
 			/**
-			 * 注册 WebSecurityConfigurerAdapter 这个 configurer。这是用来注册默认的 SecurityFilterChain，
-			 * 默认是拦截所有请求。
+			 * 注册 WebSecurityConfigurerAdapter 这个 configurer。这是用来注册默认的 SecurityFilterChain，其默认是拦截所有请求。
+			 * 而认证逻辑 需要IOC容器中有且仅有一个 [ UserDetailsService | AuthenticationProvider] 类型的bean 才行。
 			 * 		{@link WebSecurityConfigurerAdapter#init(WebSecurity)}
 			 * 		{@link WebSecurityConfigurerAdapter#configure(HttpSecurity)}
 			 *
-			 * 而认证逻辑 需要IOC容器中有且仅有一个 [ UserDetailsService | AuthenticationProvider] 类型的bean 才行。
-			 * */
+			 */
 			this.webSecurity.apply(adapter);
 		}
 		// 遍历 securityFilterChains（是依赖注入得到的）
 		for (SecurityFilterChain securityFilterChain : this.securityFilterChains) {
 			// 添加 SecurityFilterChainBuilder
 			this.webSecurity.addSecurityFilterChainBuilder(() -> securityFilterChain);
+			/**
+			 * 从 securityFilterChain 中找到 FilterSecurityInterceptor 设置为 WebSecurity
+			 */
 			for (Filter filter : securityFilterChain.getFilters()) {
 				if (filter instanceof FilterSecurityInterceptor) {
 					/**
@@ -138,7 +154,7 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 					 * 		看 {@link #privilegeEvaluator}
 					 *
 					 * 注：这不是一个集合属性，所以后设置的 FilterSecurityInterceptor 会覆盖前面的
-					 * */
+					 */
 					this.webSecurity.securityInterceptor((FilterSecurityInterceptor) filter);
 					break;
 				}
@@ -155,7 +171,7 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 		 * 		1. 回调 SecurityConfigurer#init
 		 * 		2. 回调 SecurityConfigurer#configure
 		 * 		3. 构造出实例对象
-		 * */
+		 */
 		return this.webSecurity.build();
 	}
 
@@ -167,6 +183,12 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 	@Bean
 	@DependsOn(AbstractSecurityWebApplicationInitializer.DEFAULT_FILTER_NAME)
 	public WebInvocationPrivilegeEvaluator privilegeEvaluator() {
+		/**
+		 * 是一个工具类，可以在代码中使用 WebInvocationPrivilegeEvaluator 来实现声明式的权限校验
+		 *
+		 * 该属性设置的地方 {@link WebSecurity#performBuild()}
+		 * 示例代码 {@link cn.haitaoss.controller.IndexController#index2(SecurityContext)}
+		 */
 		return this.webSecurity.getPrivilegeEvaluator();
 	}
 
@@ -203,7 +225,7 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 			 * 校验，不允许有相同的 order 值。
 			 *
 			 * 注：因为前面已经排序过了，所以相同值肯定是相邻的
-			 * */
+			 */
 			if (previousOrder != null && previousOrder.equals(order)) {
 				throw new IllegalStateException("@Order on WebSecurityConfigurers must be unique. Order of " + order
 						+ " was already used on " + previousConfig + ", so it cannot be used on " + config + " too.");
@@ -214,8 +236,8 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 		// 遍历
 		for (SecurityConfigurer<Filter, WebSecurity> webSecurityConfigurer : webSecurityConfigurers) {
 			/**
-			 * 将 webSecurityConfigurer 记录到集合中
-			 * */
+			 * 将 webSecurityConfigurer 应用到 webSecurity
+			 */
 			this.webSecurity.apply(webSecurityConfigurer);
 		}
 		// 设置为属性
@@ -227,7 +249,7 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 		/**
 		 * 依赖注入，注入的集合是已经排序过得了
 		 * 源码在这里 {@link org.springframework.beans.factory.support.DefaultListableBeanFactory#resolveMultipleBeans(org.springframework.beans.factory.config.DependencyDescriptor, String, java.util.Set, org.springframework.beans.TypeConverter)}
-		 * */
+		 */
 		this.securityFilterChains = securityFilterChains;
 	}
 
@@ -239,10 +261,10 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 	@Bean
 	public static BeanFactoryPostProcessor conversionServicePostProcessor() {
 		/**
-		 * 是 BeanFactoryPostProcessor 接口的实现类，用来给 BeanFactory 设置 类型转换的东西
+		 * 是 BeanFactoryPostProcessor 接口的实现类，用来给 BeanFactory 设置 类型转换的组件
 		 * 		String ---> RSAPrivateKey
 		 * 		String ---> RSAPublicKey
-		 * */
+		 */
 		return new RsaKeyConversionServicePostProcessor();
 	}
 

@@ -57,7 +57,7 @@ final class OAuth2ImportSelector implements ImportSelector {
 			/**
 			 * 校验存在 DispatcherServlet 就注册配置类 OAuth2AuthorizedClientArgumentResolver，
 			 * 其是用来解析有 @RegisteredOAuth2AuthorizedClient 注解的参数，并完成认证(获取访问令牌、token)
-			 * */
+			 */
 			imports.add("org.springframework.security.config.annotation.web.configuration.OAuth2ClientConfiguration");
 		}
 		if (webfluxPresent && oauth2ClientPresent) {

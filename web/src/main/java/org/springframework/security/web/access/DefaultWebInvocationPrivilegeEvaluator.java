@@ -89,16 +89,23 @@ public class DefaultWebInvocationPrivilegeEvaluator implements WebInvocationPriv
 	@Override
 	public boolean isAllowed(String contextPath, String uri, String method, Authentication authentication) {
 		Assert.notNull(uri, "uri parameter is required");
+		// 构造出
 		FilterInvocation filterInvocation = new FilterInvocation(contextPath, uri, method, this.servletContext);
+		// 获取 filterInvocation 对应的权限信息
 		Collection<ConfigAttribute> attributes = this.securityInterceptor.obtainSecurityMetadataSource()
 				.getAttributes(filterInvocation);
+		// 没有权限信息
 		if (attributes == null) {
+			// 默认是 false
 			return (!this.securityInterceptor.isRejectPublicInvocations());
 		}
+		// 认证信息为空
 		if (authentication == null) {
+			// 直接返回 false
 			return false;
 		}
 		try {
+			// 鉴权
 			this.securityInterceptor.getAccessDecisionManager().decide(authentication, filterInvocation, attributes);
 			return true;
 		}

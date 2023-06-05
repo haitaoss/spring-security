@@ -86,7 +86,7 @@ public class DelegatingAuthenticationEntryPoint implements AuthenticationEntryPo
 				/**
 				 * 使用匹配的 entryPoint 开始认证
 				 * {@link LoginUrlAuthenticationEntryPoint#commence(HttpServletRequest, HttpServletResponse, AuthenticationException)}
-				 * */
+				 */
 				entryPoint.commence(request, response, authException);
 				return;
 			}

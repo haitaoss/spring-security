@@ -115,17 +115,17 @@ public final class CsrfFilter extends OncePerRequestFilter {
 		 * 设置到 request 中。
 		 * 比如 {@link DefaultLoginPageGeneratingFilter#generateLoginPageHtml(HttpServletRequest, boolean, boolean)} 会使用这个属性，拼接出 登录页面，
 		 * 从而保证能通过 {@link this#doFilterInternal} 的验证
-		 * */
+		 */
 		request.setAttribute(DeferredCsrfToken.class.getName(), deferredCsrfToken);
 		/**
 		 *  执行 requestHandler。一般就是设置属性而已，看具体的实现
 		 * {@link CsrfTokenRequestAttributeHandler#handle(HttpServletRequest, HttpServletResponse, Supplier)}
-		 * */
+		 */
 		this.requestHandler.handle(request, response, deferredCsrfToken::get);
 		/**
 		 * request 不满足规则，默认就是校验 requestMethod 是 {"GET", "HEAD", "TRACE", "OPTIONS"} 就放行
 		 * {@link DefaultRequiresCsrfMatcher#matches(HttpServletRequest)}
-		 * */
+		 */
 		if (!this.requireCsrfProtectionMatcher.matches(request)) {
 			if (this.logger.isTraceEnabled()) {
 				this.logger.trace("Did not protect against CSRF since request did not match "
@@ -139,7 +139,7 @@ public final class CsrfFilter extends OncePerRequestFilter {
 		/**
 		 * 拿到 token 。根据那么从请求头或者请求参数中
 		 * {@link CsrfTokenRequestHandler#resolveCsrfTokenValue(HttpServletRequest, CsrfToken)}
-		 * */
+		 */
 		String actualToken = this.requestHandler.resolveCsrfTokenValue(request, csrfToken);
 		// token 不一致
 		if (!equalsConstantTime(csrfToken.getToken(), actualToken)) {

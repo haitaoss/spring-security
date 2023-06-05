@@ -71,7 +71,7 @@ public class AfterInvocationProviderManager implements AfterInvocationManager, I
 		for (AfterInvocationProvider provider : this.providers) {
 			/**
 			 * {@link org.springframework.security.access.prepost.PostInvocationAdviceProvider#decide}
-			 * */
+			 */
 			result = provider.decide(authentication, object, config, result);
 		}
 		return result;

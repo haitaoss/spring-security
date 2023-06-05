@@ -53,7 +53,7 @@ public class WebExpressionVoter implements AccessDecisionVoter<FilterInvocation>
 		/**
 		 * 获取配置的属性。
 		 * 迭代 attributes 找到是 WebExpressionConfigAttribute 类型的就返回，也就是只会检验一个 ConfigAttribute
-		 * */
+		 */
 		WebExpressionConfigAttribute webExpressionConfigAttribute = findConfigAttribute(attributes);
 		// 为空，说明没设置权限信息
 		if (webExpressionConfigAttribute == null) {

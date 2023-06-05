@@ -141,11 +141,11 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
 		try {
 			/**
 			 * 根据 request 推断出用啥 AuthenticationManager
-			 * */
+			 */
 			AuthenticationManager authenticationManager = this.authenticationManagerResolver.resolve(request);
 			/**
 			 * 开始认证。默认使用的是 JwtAuthenticationProvider 或者 OpaqueTokenAuthenticationProvider
-			 * */
+			 */
 			Authentication authenticationResult = authenticationManager.authenticate(authenticationRequest);
 			SecurityContext context = this.securityContextHolderStrategy.createEmptyContext();
 			context.setAuthentication(authenticationResult);

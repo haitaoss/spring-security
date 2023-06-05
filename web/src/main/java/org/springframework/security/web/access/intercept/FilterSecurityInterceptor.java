@@ -114,7 +114,7 @@ public class FilterSecurityInterceptor extends AbstractSecurityInterceptor imple
 		 * 1. 根据 request 获取为 request 配置的权限信息
 		 * 2. 未认证过就进行认证。	AuthenticationManager#authenticate
 		 * 2. 校验认证信息是否具备配置的权限	AccessDecisionManager#decide
-		 * */
+		 */
 		InterceptorStatusToken token = super.beforeInvocation(filterInvocation);
 		try {
 			// 放行
@@ -127,14 +127,14 @@ public class FilterSecurityInterceptor extends AbstractSecurityInterceptor imple
 			 *
 			 * 比如 {@link AbstractSecurityInterceptor#beforeInvocation(Object)} 会构造新的SecurityContext, 并将原来的SecurityContext
 			 * 记录到 token 中，finallyInvocation 就是判断是否构造了新的SecurityContext，若是新的执行完之后 应当在这一步恢复SecurityContext
-			 * */
+			 */
 			super.finallyInvocation(token);
 		}
 		/**
 		 * 执行后。
 		 *
 		 * 回调 afterInvocationManager#decide 对返回值进行鉴权，但是 FilterSecurityInterceptor 没设置这个属性所以没有这个步骤。
-		 * */
+		 */
 		super.afterInvocation(token, null);
 	}
 

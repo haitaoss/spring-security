@@ -108,7 +108,7 @@ public class OAuth2LoginAuthenticationProvider implements AuthenticationProvider
 			authorizationCodeAuthenticationToken = (OAuth2AuthorizationCodeAuthenticationToken) this.authorizationCodeAuthenticationProvider
 					/**
 					 * {@link OAuth2AuthorizationCodeAuthenticationProvider#authenticate(Authentication)}
-					 * */
+					 */
 					.authenticate(new OAuth2AuthorizationCodeAuthenticationToken(
 							loginAuthenticationToken.getClientRegistration(),
 							loginAuthenticationToken.getAuthorizationExchange()));
@@ -124,7 +124,7 @@ public class OAuth2LoginAuthenticationProvider implements AuthenticationProvider
 		 * 获取用户信息
 		 * 	{@link DefaultOAuth2UserService#loadUser(OAuth2UserRequest)}
 		 * 	其实就是根据设置的 用户个人信息url + 访问令牌 请求url得到用户基本信息 构造出 OAuth2User
-		 * */
+		 */
 		OAuth2User oauth2User = this.userService.loadUser(new OAuth2UserRequest(
 				loginAuthenticationToken.getClientRegistration(), accessToken, additionalParameters));
 

@@ -51,7 +51,7 @@ final class MethodSecuritySelector implements ImportSelector {
 		 * 获取默认要注入的配置类 {@link AutoProxyRegistrarSelector#selectImports(AdviceMode)}
 		 * 默认是注册这个 AutoProxyRegistrar 它的作用是会注册 InfrastructureAdvisorAutoProxyCreator 到BeanFactory中，
 		 * 其作用是根据从 BeanFactory 中获取 @Role(BeanDefinition.ROLE_INFRASTRUCTURE) 的 Advisor 类型的bean，完成动态代理实现的AOP
-		 * */
+		 */
 		List<String> imports = new ArrayList<>(Arrays.asList(this.autoProxy.selectImports(importMetadata)));
 		// 根据注解属性值决定是否添加配置类
 		if (annotation.prePostEnabled()) {
@@ -63,7 +63,7 @@ final class MethodSecuritySelector implements ImportSelector {
 			 * 	- 有 @PostAuthorize 的bean（方法或者类上有）就为bean创建代理对象，增强逻辑是：先执行方法在鉴权
 			 * 	- 有 @PreFilter 的bean（方法或者类上有）就为bean创建代理对象，增强逻辑是：对方法的参数列表做修改
 			 * 	- 有 @PostFilter 的bean（方法或者类上有）就为bean创建代理对象，增强逻辑是：对方法的返回值做修改
-			 * */
+			 */
 			imports.add(PrePostMethodSecurityConfiguration.class.getName());
 		}
 		if (annotation.securedEnabled()) {

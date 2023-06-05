@@ -281,7 +281,7 @@ public abstract class AbstractAuthenticationFilterConfigurer<B extends HttpSecur
 		 *
 		 * 而 SavedRequestAwareAuthenticationSuccessHandler
 		 * 		{@link SavedRequestAwareAuthenticationSuccessHandler#onAuthenticationSuccess(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, org.springframework.security.core.Authentication)}
-		 * */
+		 */
 		this.authFilter.setAuthenticationSuccessHandler(this.successHandler);
 		this.authFilter.setAuthenticationFailureHandler(this.failureHandler);
 		if (this.authenticationDetailsSource != null) {

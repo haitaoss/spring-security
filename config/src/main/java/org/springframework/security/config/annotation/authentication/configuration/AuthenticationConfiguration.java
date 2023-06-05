@@ -64,7 +64,7 @@ import org.springframework.util.Assert;
 @Configuration(proxyBeanMethods = false)
 /**
  * 会注册 AutowireBeanFactoryObjectPostProcessor 到容器中
- * */
+ */
 @Import(ObjectPostProcessorConfiguration.class)
 public class AuthenticationConfiguration {
 	private AtomicBoolean buildingAuthenticationManager = new AtomicBoolean();
@@ -93,17 +93,18 @@ public class AuthenticationConfiguration {
 	public AuthenticationManagerBuilder authenticationManagerBuilder(ObjectPostProcessor<Object> objectPostProcessor,
 			ApplicationContext context) {
 		/**
-		 * 特点是尝试从IOC容器中获取 PasswordEncoder，拿不到就new一个默认的
-		 * */
+		 * 特点是从 BeanFactory 中获取 PasswordEncoder 类型的bean 或者 使用 {@link PasswordEncoderFactories#createDelegatingPasswordEncoder()}
+		 */
 		LazyPasswordEncoder defaultPasswordEncoder = new LazyPasswordEncoder(context);
 		/**
 		 * 尝试从IOC容器中获取 AuthenticationEventPublisher，拿不到就new一个默认的
-		 * */
+		 */
 		AuthenticationEventPublisher authenticationEventPublisher = getAuthenticationEventPublisher(context);
 		// 构造出 DefaultPasswordEncoderAuthenticationManagerBuilder
 		DefaultPasswordEncoderAuthenticationManagerBuilder result = new DefaultPasswordEncoderAuthenticationManagerBuilder(
 				objectPostProcessor, defaultPasswordEncoder);
 		if (authenticationEventPublisher != null) {
+			// 设置事件发布器
 			result.authenticationEventPublisher(authenticationEventPublisher);
 		}
 		return result;
@@ -115,7 +116,7 @@ public class AuthenticationConfiguration {
 		/**
 		 * 继承 GlobalAuthenticationConfigurerAdapter 抽象类，
 		 * 它的职责是 获取有 @EnableGlobalAuthentication 注解的bean，会进行 getBean 将bean实例化出来，也就是提前初始化
-		 * */
+		 */
 		return new EnableGlobalAuthenticationAutowiredConfigurer(context);
 	}
 
@@ -127,7 +128,7 @@ public class AuthenticationConfiguration {
 		 * 它的职责是为  AuthenticationManagerBuilder 添加 InitializeUserDetailsManagerConfigurer 这个 configurer，
 		 * 而 InitializeUserDetailsManagerConfigurer 的功能是若IOC容器中只有一个 UserDetailsService 类型的bean，就构造一个
 		 * DaoAuthenticationProvider 设置给 AuthenticationManagerBuilder
-		 * */
+		 */
 		return new InitializeUserDetailsBeanManagerConfigurer(context);
 	}
 
@@ -139,7 +140,7 @@ public class AuthenticationConfiguration {
 		 * 它的职责是为  AuthenticationManagerBuilder 添加 InitializeAuthenticationProviderManagerConfigurer 这个 configurer，
 		 * 而 InitializeAuthenticationProviderManagerConfigurer 的功能是若IOC容器中只有一个 AuthenticationProvider 类型的bean，
 		 * 就将其设置给 AuthenticationManagerBuilder
-		 * */
+		 */
 		return new InitializeAuthenticationProviderBeanManagerConfigurer(context);
 	}
 
@@ -152,7 +153,7 @@ public class AuthenticationConfiguration {
 		/**
 		 * 从IOC容器中获取 AuthenticationManagerBuilder
 		 * Tips：本类的 {@link #authenticationManagerBuilder} 方法注册了
-		 * */
+		 */
 		AuthenticationManagerBuilder authBuilder = this.applicationContext.getBean(AuthenticationManagerBuilder.class);
 		// 默认是false
 		if (this.buildingAuthenticationManager.getAndSet(true)) {
@@ -171,7 +172,7 @@ public class AuthenticationConfiguration {
 		 * 		initializeAuthenticationProviderBeanManagerConfigurer 先执行，会判断IOC容器中存在 AuthenticationProvider 就设置给 authBuilder ，
 		 * 		initializeUserDetailsBeanManagerConfigurer 会判断IOC容器中存在 UserDetailsService 就设置 DaoAuthenticationProvider 给 authBuilder。
 		 *		不会设置两个，因为设置之前会判断是否有 {@link AuthenticationManagerBuilder#authenticationProviders} ,所以可以理解成两者是互斥的
-		 * */
+		 */
 		for (GlobalAuthenticationConfigurerAdapter config : this.globalAuthConfigurers) {
 			// 添加 config
 			authBuilder.apply(config);
@@ -183,8 +184,9 @@ public class AuthenticationConfiguration {
 		 * 		1. 回调 GlobalAuthenticationConfigurerAdapter#init
 		 * 		2. 回调 GlobalAuthenticationConfigurerAdapter#configure
 		 * 		3. 构造出实例对象
-		 * */
+		 */
 		this.authenticationManager = authBuilder.build();
+		// 为空
 		if (this.authenticationManager == null) {
 			// 尝试从容器中获取 AuthenticationManager 类型的bean
 			this.authenticationManager = getAuthenticationManagerBean();
@@ -292,7 +294,7 @@ public class AuthenticationConfiguration {
 		public void init(AuthenticationManagerBuilder auth) {
 			/**
 			 * 获取有这个注解的bean，会进行 getBean 将bean实例化出来，也就是提前初始化
-			 * */
+			 */
 			Map<String, Object> beansWithAnnotation = this.context
 					.getBeansWithAnnotation(EnableGlobalAuthentication.class);
 			if (logger.isTraceEnabled()) {

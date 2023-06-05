@@ -73,6 +73,9 @@ public final class RequestMatcherDelegatingWebInvocationPrivilegeEvaluator
 			return true;
 		}
 		for (WebInvocationPrivilegeEvaluator evaluator : privilegeEvaluators) {
+			/**
+			 * {@link DefaultWebInvocationPrivilegeEvaluator#isAllowed(String, String, String, Authentication)}
+			 */
 			boolean isAllowed = evaluator.isAllowed(uri, authentication);
 			if (!isAllowed) {
 				return false;

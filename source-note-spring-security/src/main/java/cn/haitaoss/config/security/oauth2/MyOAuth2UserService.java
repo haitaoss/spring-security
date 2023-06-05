@@ -17,7 +17,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 public class MyOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
-        // 这是默认的逻辑。会反问第三方的个人用户信息接口
+        // 这是默认的逻辑。会访问第三方的个人用户信息接口
         DefaultOAuth2UserService defaultOAuth2UserService = new DefaultOAuth2UserService();
         OAuth2User oAuth2User = defaultOAuth2UserService.loadUser(userRequest);
         log.info("MyOAuth2UserService.loadUser...accessToken is {}", userRequest.getAccessToken());

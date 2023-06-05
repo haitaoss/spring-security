@@ -76,7 +76,7 @@ public final class DefaultAuthorizationCodeTokenResponseClient
 		/**
 		 * 构造出获取访问令牌的url
 		 * {@link AbstractOAuth2AuthorizationGrantRequestEntityConverter#convert(AbstractOAuth2AuthorizationGrantRequest)}
-		 * */
+		 */
 		RequestEntity<?> request = this.requestEntityConverter.convert(authorizationCodeGrantRequest);
 		// 执行请求
 		ResponseEntity<OAuth2AccessTokenResponse> response = getResponse(request);

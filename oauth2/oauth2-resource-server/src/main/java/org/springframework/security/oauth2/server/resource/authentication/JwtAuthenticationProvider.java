@@ -87,7 +87,7 @@ public final class JwtAuthenticationProvider implements AuthenticationProvider {
 		Jwt jwt = getJwt(bearer);
 		/**
 		 * {@link JwtAuthenticationConverter#convert(Jwt)}
-		 * */
+		 */
 		AbstractAuthenticationToken token = this.jwtAuthenticationConverter.convert(jwt);
 		token.setDetails(bearer.getDetails());
 		this.logger.debug("Authenticated token");

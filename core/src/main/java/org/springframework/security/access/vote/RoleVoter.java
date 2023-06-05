@@ -109,7 +109,7 @@ public class RoleVoter implements AccessDecisionVoter<Object> {
 						 * return 同意
 						 *
 						 * 注：也就是说只要具备其中一条权限就能通过
-						 * */
+						 */
 						return ACCESS_GRANTED;
 					}
 				}

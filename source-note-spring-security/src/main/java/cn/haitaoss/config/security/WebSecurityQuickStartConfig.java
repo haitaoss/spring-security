@@ -21,7 +21,7 @@ import java.util.EnumSet;
 
 /**
  * AbstractSecurityWebApplicationInitializer 它会注册 springSecurityFilterChain 到web容器中
- * */
+ */
 @EnableWebSecurity(debug = true)
 @Slf4j
 public class WebSecurityQuickStartConfig extends AbstractSecurityWebApplicationInitializer {

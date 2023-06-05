@@ -61,7 +61,7 @@ class InitializeAuthenticationProviderBeanManagerConfigurer extends GlobalAuthen
 			 * 从IOC容器中获取 AuthenticationProvider 类型的bean
 			 *
 			 * 注：会校验只能有一个 AuthenticationProvider 类型的bean，多个就返回 null
-			 * */
+			 */
 			AuthenticationProvider authenticationProvider = getBeanOrNull(AuthenticationProvider.class);
 			if (authenticationProvider == null) {
 				return;

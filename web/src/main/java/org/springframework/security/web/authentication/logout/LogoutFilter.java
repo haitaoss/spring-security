@@ -104,7 +104,7 @@ public class LogoutFilter extends GenericFilterBean {
 			this.handler.logout(request, response, auth);
 			/**
 			 * 回调 LogoutSuccessHandler。默认就是重定向到登录页地址
-			 * */
+			 */
 			this.logoutSuccessHandler.onLogoutSuccess(request, response, auth);
 			return;
 		}

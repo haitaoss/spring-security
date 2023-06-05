@@ -25,7 +25,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 /**
                  * 资源的前缀
                  * 注：因为IDEA运行 {@link Main#main} 时，将 out/production/resources 添加到 -classpath 参数了，所以放在 resources 目录下面的资源是可以找到的
-                 * */
+                 */
                 .addResourceLocations("classpath:/");
     }
 
@@ -34,7 +34,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
         /**
          * 开启后缀通配符匹配
          * 比如，访问 /index /index.html /index.xx 都是符合 @RequestMapping("/index") 的
-         * */
+         */
         configurer.setUseSuffixPatternMatch(true);
     }
 }

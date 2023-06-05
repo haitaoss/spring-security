@@ -180,7 +180,7 @@ public class OAuth2AuthorizationRequestRedirectFilter extends OncePerRequestFilt
 			 * 4. 根据 ClientRegistration 构造出 OAuth2AuthorizationRequest。其实就是重定向地址、clientId、clientSecret等信息
 			 *
 			 * {@link DefaultOAuth2AuthorizationRequestResolver#resolve(HttpServletRequest)}
-			 * */
+			 */
 			OAuth2AuthorizationRequest authorizationRequest = this.authorizationRequestResolver.resolve(request);
 			// 不为空
 			if (authorizationRequest != null) {
@@ -189,7 +189,7 @@ public class OAuth2AuthorizationRequestRedirectFilter extends OncePerRequestFilt
 				 *
 				 * 1. 使用 authorizationRequestRepository 保存 authorizationRequest
 				 * 2. 重定向到第三方应用的授权页面
-				 * */
+				 */
 				this.sendRedirectForAuthorization(request, response, authorizationRequest);
 				// 结束方法
 				return;
@@ -246,7 +246,7 @@ public class OAuth2AuthorizationRequestRedirectFilter extends OncePerRequestFilt
 			/**
 			 * 缓存。第三方服务回调时，会判断是否存在这个
 			 * {@link OAuth2LoginAuthenticationFilter#attemptAuthentication(HttpServletRequest, HttpServletResponse)}
-			 * */
+			 */
 			this.authorizationRequestRepository.saveAuthorizationRequest(authorizationRequest, request, response);
 		}
 		// 设置重定向信息

@@ -97,7 +97,7 @@ public class OAuth2AuthorizationCodeAuthenticationProvider implements Authentica
 		 * Tips：authorizationCodeAuthentication.getAuthorizationExchange() 可以拿到 code
 		 *
 		 * {@link DefaultAuthorizationCodeTokenResponseClient#getTokenResponse(OAuth2AuthorizationCodeGrantRequest)}
-		 * */
+		 */
 		OAuth2AccessTokenResponse accessTokenResponse = this.accessTokenResponseClient.getTokenResponse(
 				new OAuth2AuthorizationCodeGrantRequest(authorizationCodeAuthentication.getClientRegistration(),
 						authorizationCodeAuthentication.getAuthorizationExchange()));

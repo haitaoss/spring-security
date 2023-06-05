@@ -79,7 +79,7 @@ public class SavedRequestAwareAuthenticationSuccessHandler extends SimpleUrlAuth
 			/**
 			 * 1. 根据设置的参数名 从request中提取url 设置为重定向的地址
 			 * 2. 移除 认证异常 标记
-			 * */
+			 */
 			super.onAuthenticationSuccess(request, response, authentication);
 			return;
 		}

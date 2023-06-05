@@ -15,11 +15,14 @@ repositories {
 dependencies {
     // 声明依赖的版本
     management platform(project(":spring-security-dependencies"))
+
 	// 日志
 	api "ch.qos.logback:logback-classic"
+
     // 验证 spring-security 的功能
     api project(':spring-security-web')
     api project(':spring-security-config')
+
     // 验证 OAuth2 认证
     api project(':spring-security-oauth2-client')
     api project(':spring-security-oauth2-resource-server')
@@ -31,6 +34,7 @@ dependencies {
 	api "org.springframework:spring-webmvc"
 	api 'org.apache.tomcat.embed:tomcat-embed-core:9.0.52'
 	api 'org.apache.tomcat.embed:tomcat-embed-jasper:9.0.52'
+
     // lombok
     annotationProcessor 'org.projectlombok:lombok:1.18.2'
     compileOnly 'org.projectlombok:lombok:1.18.2'

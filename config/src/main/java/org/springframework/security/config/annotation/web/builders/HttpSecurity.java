@@ -3248,7 +3248,7 @@ public final class HttpSecurity extends AbstractConfiguredSecurityBuilder<Defaul
 				"authorizeHttpRequests cannot be used in conjunction with authorizeRequests. Please select just one.");
 		/**
 		 * 排序。这一点很关键
-		 * */
+		 */
 		this.filters.sort(OrderComparator.INSTANCE);
 		List<Filter> sortedFilters = new ArrayList<>(this.filters.size());
 		for (Filter filter : this.filters) {
@@ -3262,7 +3262,7 @@ public final class HttpSecurity extends AbstractConfiguredSecurityBuilder<Defaul
 		 * 可以通过这些方法修改默认的值
 		 * 	- {@link #antMatcher}
 		 * 	- {@link #mvcMatcher}
-		 * */
+		 */
 		return new DefaultSecurityFilterChain(this.requestMatcher, sortedFilters);
 	}
 
@@ -3309,7 +3309,7 @@ public final class HttpSecurity extends AbstractConfiguredSecurityBuilder<Defaul
 		/**
 		 * 从缓存中获取 order 值
 		 * {@link FilterOrderRegistration#FilterOrderRegistration()}
-		 * */
+		 */
 		Integer order = this.filterOrders.getOrder(filter.getClass());
 		// 没有与设置就报错
 		if (order == null) {
@@ -3938,7 +3938,7 @@ public final class HttpSecurity extends AbstractConfiguredSecurityBuilder<Defaul
 		 * 没有 mvcHandlerMappingIntrospector
 		 *
 		 * Tips: @EnableWebMvc 会注册这个 bean。看 {@link WebMvcConfigurationSupport#mvcHandlerMappingIntrospector()}
-		 * */
+		 */
 		if (!getContext().containsBean(HANDLER_MAPPING_INTROSPECTOR_BEAN_NAME)) {
 			// 抛出异常
 			throw new NoSuchBeanDefinitionException("A Bean named " + HANDLER_MAPPING_INTROSPECTOR_BEAN_NAME
@@ -3955,7 +3955,7 @@ public final class HttpSecurity extends AbstractConfiguredSecurityBuilder<Defaul
 			 * 会依赖 HandlerMappingIntrospector 来判断是否匹配，其实就是拿到匹配的 RequestMapping 的规则，用来匹配。
 			 * 比如，访问 /index /index.html /index.xx 都是符合 @RequestMapping("/index") 的
 			 * {@link cn.haitaoss.config.WebMvcConfig#configurePathMatch(PathMatchConfigurer)}
-			 * */
+			 */
 			MvcRequestMatcher matcher = new MvcRequestMatcher(introspector, mvcPattern);
 			// 使用 opp 加工
 			opp.postProcess(matcher);

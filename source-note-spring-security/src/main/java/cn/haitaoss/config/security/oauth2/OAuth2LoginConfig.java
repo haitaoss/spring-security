@@ -63,7 +63,7 @@ public class OAuth2LoginConfig {
                 if (object instanceof LoginUrlAuthenticationEntryPoint) {
                     /**
                      * 这是认证失败时，会使用 进入认证页面(说白了就是重定向到登录页面)，
-                     * */
+                     */
                     String loginFormUrl = ((LoginUrlAuthenticationEntryPoint) object).getLoginFormUrl();
                     log.warn("LoginUrlAuthenticationEntryPoint--->update before: {}", loginFormUrl);
                     try {
@@ -94,7 +94,7 @@ public class OAuth2LoginConfig {
          * 在授权页面登录后，第三方会重定向回我们配置的 callBackUrl  http://localhost:8080/security/f4/login/oauth2/code/github?code=8853f32ea635770f6481&state=pI5zlpURjAd9FYWfB_VHj7DZdr0kW0DmORj7ekdAbLM%3D
          * 会被 OAuth2LoginAuthenticationFilter 匹配到 callBackUrl ，然后开始完成认证逻辑，
          * 认证逻辑其实就是 拿着code请求获取访问令牌的地址
-         * */
+         */
         http
                 .objectPostProcessor(urlOpp(objectPostProcessor))
                 // 该Filter拦截的路径
@@ -125,7 +125,7 @@ public class OAuth2LoginConfig {
                  *
                  * 授权时不需要 clientsecert 获取访问令牌时才需要
                  * {@link OAuth2RefreshTokenGrantRequestEntityConverter}
-                 * */
+                 */
                 .oauth2Login(oAuth2LoginConfig -> oAuth2LoginConfig
                         // 设置 认证Filter 拦截的路径
                         .loginProcessingUrl(prefix + OAuth2LoginAuthenticationFilter.DEFAULT_FILTER_PROCESSES_URI)
@@ -160,7 +160,7 @@ public class OAuth2LoginConfig {
                  * 授权信息保存到 OAuth2AuthorizedClientRepository 而已。
                  * 而且它和 OAuth2LoginAuthenticationFilter 是互斥的，OAuth2LoginAuthenticationFilter 先执行，命中了 OAuth2LoginAuthenticationFilter
                  * 就不会执行 OAuth2LoginAuthenticationFilter 了
-                 * */
+                 */
                 // .oauth2Client(Customizer.withDefaults())
                 // 访问 http://localhost:8080/security/f5/oauth2/authorization/github 会重定向到 github 的授权页面
                 .oauth2Client(config -> config.authorizationCodeGrant(authorizationCodeGrantConfigurer ->
@@ -181,7 +181,7 @@ public class OAuth2LoginConfig {
                  * {@link JwtBearerTokenAuthenticationConverter#convert(Jwt)}
                  *
                  * 默认的行为好像只是负责将 token 解析成 Authentication 并不负责调第三方接口完成认证授权逻辑
-                 * */
+                 */
 //                .oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt)
                 .oauth2ResourceServer(config -> config
                         .jwt()
@@ -230,14 +230,14 @@ public class OAuth2LoginConfig {
         /**
          * ClientRegistration 是用来描述 服务方的信息。
          * 默认配置了的内容 {@link CommonOAuth2Provider#GITHUB}
-         * */
+         */
         // https://github.com/settings/developers
         return CommonOAuth2Provider.GITHUB
                 .getBuilder("github")
                 /**
                  * 能写啥占位符看这里
                  *      {@link DefaultOAuth2AuthorizationRequestResolver#resolve(HttpServletRequest, String, String)}
-                 * */
+                 */
                 .redirectUri(host + "{basePath}" + prefix + "/{action}/oauth2/code/{registrationId}")
                 .clientId("8117171eab928ac5e561")
                 .clientSecret("4df13fc394ca45ee3cfaa59c46cc44f8ffb780f0")
@@ -287,7 +287,7 @@ public class OAuth2LoginConfig {
         /**
          * OAuth2AuthorizedClientService 用于存储、检索 OAuth2AuthorizedClient，
          * 其依赖 ClientRegistrationRepository 检索出 ClientRegistration 从而构造出 OAuth2AuthorizedClient
-         * */
+         */
         return new InMemoryOAuth2AuthorizedClientService(clientRegistrationRepository);
     }
 

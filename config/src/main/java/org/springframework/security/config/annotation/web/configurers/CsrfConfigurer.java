@@ -269,7 +269,7 @@ public final class CsrfConfigurer<H extends HttpSecurityBuilder<H>>
 			/**
 			 * 设置 LogoutHandler。LogoutConfigurer 会将 LogoutHandler 设置给 LogoutFilter，
 			 * {@link LogoutFilter#doFilter(HttpServletRequest, HttpServletResponse, FilterChain)} 会回调 LogoutHandler
-			 * */
+			 */
 			logoutConfigurer.addLogoutHandler(new CsrfLogoutHandler(this.csrfTokenRepository));
 		}
 		// 获取 SessionManagementConfigurer
@@ -284,7 +284,7 @@ public final class CsrfConfigurer<H extends HttpSecurityBuilder<H>>
 		}
 		/**
 		 * 遍历 List<ObjectPostProcessor<T>> 找到泛型类型适配 Filter 的就回调 ObjectPostProcessor#postProcess
-		 * */
+		 */
 		filter = postProcess(filter);
 		// 添加 Filter 到 http 中
 		http.addFilter(filter);

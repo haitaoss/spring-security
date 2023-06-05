@@ -58,7 +58,7 @@ public class OverrideDefaultConfig {
      *  若两个都不注册，默认会使用 WebSecurityConfigurerAdapter，此时可以定义 ObjectPostProcessor 来处理 WebSecurityConfigurerAdapter
      *
      * {@link WebSecurityConfiguration#springSecurityFilterChain()}
-     * */
+     */
     //		@Bean
     public WebSecurityConfigurer myWebSecurityConfigurer() {
         return new WebSecurityConfigurer() {

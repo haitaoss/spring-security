@@ -150,7 +150,7 @@ public final class ExpressionUrlAuthorizationConfigurer<H extends HttpSecurityBu
 		List<AccessDecisionVoter<?>> decisionVoters = new ArrayList<>();
 		/**
 		 * 使用 WebExpressionVoter ， 它只会解析 WebExpressionConfigAttribute
-		 * */
+		 */
 		WebExpressionVoter expressionVoter = new WebExpressionVoter();
 		expressionVoter.setExpressionHandler(getExpressionHandler(http));
 		decisionVoters.add(expressionVoter);
@@ -165,7 +165,7 @@ public final class ExpressionUrlAuthorizationConfigurer<H extends HttpSecurityBu
 				"At least one mapping is required (i.e. authorizeRequests().anyRequest().authenticated())");
 		/**
 		 * 很关键，会将 ConfigAttribute 处理成 WebExpressionConfigAttribute
-		 * */
+		 */
 		return new ExpressionBasedFilterInvocationSecurityMetadataSource(requestMap, getExpressionHandler(http));
 	}
 

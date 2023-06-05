@@ -71,7 +71,7 @@ public final class Base64 {
 
 	private static final byte EQUALS_SIGN_ENC = -1; // Indicates equals sign in encoding
 
-	/* ******** S T A N D A R D B A S E 6 4 A L P H A B E T ******** */
+	/* ******** S T A N D A R D B A S E 6 4 A L P H A B E T ********/
 
 	/** The 64 valid Base64 values. */
 	/* Host platform me be something funny like EBCDIC, so we hardcode these values. */
@@ -124,7 +124,7 @@ public final class Base64 {
 			-9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9 // Decimal 244 - 255
 	};
 
-	/* ******** U R L S A F E B A S E 6 4 A L P H A B E T ******** */
+	/* ******** U R L S A F E B A S E 6 4 A L P H A B E T ********/
 
 	/**
 	 * Used in the URL- and Filename-safe dialect described in Section 4 of RFC3548:
@@ -185,7 +185,7 @@ public final class Base64 {
 			-9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9 // Decimal 244 - 255
 	};
 
-	/* ******** O R D E R E D B A S E 6 4 A L P H A B E T ******** */
+	/* ******** O R D E R E D B A S E 6 4 A L P H A B E T ********/
 
 	private static final byte[] _ORDERED_ALPHABET = { (byte) '-', (byte) '0', (byte) '1', (byte) '2', (byte) '3',
 			(byte) '4', (byte) '5', (byte) '6', (byte) '7', (byte) '8', (byte) '9', (byte) 'A', (byte) 'B', (byte) 'C',
@@ -294,7 +294,7 @@ public final class Base64 {
 		}
 	}
 
-	/* ******** E N C O D I N G M E T H O D S ******** */
+	/* ******** E N C O D I N G M E T H O D S ********/
 
 	/**
 	 * <p>
@@ -447,7 +447,7 @@ public final class Base64 {
 		}
 	}
 
-	/* ******** D E C O D I N G M E T H O D S ******** */
+	/* ******** D E C O D I N G M E T H O D S ********/
 
 	/**
 	 * Decodes four bytes from array <var>source</var> and writes the resulting bytes (up

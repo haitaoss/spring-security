@@ -79,7 +79,7 @@ public abstract class AbstractInterceptUrlConfigurer<C extends AbstractIntercept
 		 * metadataSource 是用来描述 资源对应的权限数据
 		 *
 		 * {@link ExpressionUrlAuthorizationConfigurer#createMetadataSource(HttpSecurityBuilder)}
-		 * */
+		 */
 		FilterInvocationSecurityMetadataSource metadataSource = createMetadataSource(http);
 		if (metadataSource == null) {
 			return;
@@ -90,7 +90,7 @@ public abstract class AbstractInterceptUrlConfigurer<C extends AbstractIntercept
 		 * 会设置 SecurityMetadataSource，是用来记录 资源对应的权限数据
 		 * 会设置 AccessDecisionManager ，是用来实现 鉴权的逻辑的。默认是 AffirmativeBased
 		 * 会设置 setAuthenticationManager，是用来实现 认证逻辑的。
-		 * */
+		 */
 		FilterSecurityInterceptor securityInterceptor = createFilterSecurityInterceptor(http, metadataSource,
 				http.getSharedObject(AuthenticationManager.class));
 		if (this.filterSecurityInterceptorOncePerRequest != null) {
@@ -169,7 +169,7 @@ public abstract class AbstractInterceptUrlConfigurer<C extends AbstractIntercept
 		/**
 		 * 校验
 		 * 会校验 AccessDecisionManager 是否支持 SecurityMetadataSource
-		 * */
+		 */
 		securityInterceptor.afterPropertiesSet();
 		return securityInterceptor;
 	}

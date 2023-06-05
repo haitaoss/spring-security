@@ -185,7 +185,7 @@ public abstract class AbstractConfiguredSecurityBuilder<O, B extends SecurityBui
 		/**
 		 * 生命周期在这里；INITIALIZING ---> CONFIGURING ---> BUILDING ---> BUILT
 		 * {@link AbstractConfiguredSecurityBuilder#doBuild()}
-		 * */
+		 */
 		synchronized (this.configurers) {
 			// 已经配置完了(说明过了初始化阶段)，就不能添加 configurer 了，直接报错
 			if (this.buildState.isConfigured()) {
@@ -315,7 +315,7 @@ public abstract class AbstractConfiguredSecurityBuilder<O, B extends SecurityBui
 			beforeInit();
 			/**
 			 * 遍历设置的 List<SecurityConfigurer> ,回调 {@link SecurityConfigurer#init(SecurityBuilder)} 用来配置 this
-			 * */
+			 */
 			init();
 			this.buildState = BuildState.CONFIGURING;
 			/**
@@ -324,11 +324,11 @@ public abstract class AbstractConfiguredSecurityBuilder<O, B extends SecurityBui
 			 * {@link HttpSecurity#beforeConfigure()}
 			 * 		设置 setSharedObject(AuthenticationManager.class, this.authenticationManager);
 			 * 		这个很重要，AuthenticationManager 是用来实现认证、鉴权的
-			 * */
+			 */
 			beforeConfigure();
 			/**
 			 * 遍历设置的 List<SecurityConfigurer> ,回调 {@link SecurityConfigurer#configure(SecurityBuilder)} 用来配置 this
-			 * */
+			 */
 			configure();
 			this.buildState = BuildState.BUILDING;
 			/**
@@ -339,7 +339,7 @@ public abstract class AbstractConfiguredSecurityBuilder<O, B extends SecurityBui
 			 *			new FilterChainProxy(List<SecurityFilterChain>);
 			 * 	{@link AuthenticationManagerBuilder#performBuild()}
 			 * 			new ProviderManager(this.authenticationProviders,this.parentAuthenticationManager);
-			 * */
+			 */
 			O result = performBuild();
 			this.buildState = BuildState.BUILT;
 			return result;

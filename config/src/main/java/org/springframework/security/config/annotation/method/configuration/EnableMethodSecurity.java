@@ -40,6 +40,10 @@ import org.springframework.security.access.prepost.PreFilter;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Documented
+/**
+ * 默认是注册 InfrastructureAdvisorAutoProxyCreator，是用来实现动态代理AOP的
+ * 然后注册各种 Advisor ，是用来指定那些bean需要AOP、AOP的增强逻辑是啥
+ */
 @Import(MethodSecuritySelector.class)
 @Configuration
 public @interface EnableMethodSecurity {

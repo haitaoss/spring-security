@@ -114,7 +114,7 @@ public class RememberMeAuthenticationFilter extends GenericFilterBean implements
 		}
 		/**
 		 * 自动登录。其实就是获取叫 remember-me 的 cookie，对cookie解析装饰成 Authentication
-		 * */
+		 */
 		Authentication rememberMeAuth = this.rememberMeServices.autoLogin(request, response);
 		if (rememberMeAuth != null) {
 			// Attempt authenticaton via AuthenticationManager
@@ -141,7 +141,7 @@ public class RememberMeAuthenticationFilter extends GenericFilterBean implements
 					/**
 					 * 回调。
 					 * 默认就是设置 重定向地址
-					 * */
+					 */
 					this.successHandler.onAuthenticationSuccess(request, response, rememberMeAuth);
 					// 直接 return 不要执行后续的Filter了
 					return;
@@ -156,7 +156,7 @@ public class RememberMeAuthenticationFilter extends GenericFilterBean implements
 				/**
 				 * 登录失败。一般就是清空cookie，因为这个cookie记录的信息不对
 				 * 1. 删除cookie
-				 * */
+				 */
 				this.rememberMeServices.loginFail(request, response);
 				// 模板方法
 				onUnsuccessfulAuthentication(request, response, ex);

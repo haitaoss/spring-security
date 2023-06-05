@@ -133,7 +133,7 @@ public class ExceptionTranslationFilter extends GenericFilterBean implements Mes
 		catch (Exception ex) {
 			/**
 			 * 构造出 causeChain。其实就是遍历异常调用找，收集期望的异常对象
-			 * */
+			 */
 			// Try to extract a SpringSecurityException from the stacktrace
 			Throwable[] causeChain = this.throwableAnalyzer.determineCauseChain(ex);
 			// 遍历 causeChain 拿到 AuthenticationException 类型的异常对象
@@ -159,7 +159,7 @@ public class ExceptionTranslationFilter extends GenericFilterBean implements Mes
 			 * 2. 是 AccessDeniedException 异常：
 			 * 		2.1 是匿名用户 或者 是rememberMe 就开始认证(执行步骤1的逻辑)
 			 * 		2.2 往响应体设置异常信息 或者 重定向到错误页面
-			 * */
+			 */
 			handleSpringSecurityException(request, response, chain, securityException);
 		}
 	}
@@ -196,7 +196,7 @@ public class ExceptionTranslationFilter extends GenericFilterBean implements Mes
 			 * 处理 AccessDeniedException
 			 * 	是匿名用户 或者 是rememberMe 就 handleAuthenticationException
 			 * 	否则就 往响应体设置异常信息 或者 重定向到错误页面
-			 * */
+			 */
 			handleAccessDeniedException(request, response, chain, (AccessDeniedException) exception);
 		}
 	}
@@ -235,7 +235,7 @@ public class ExceptionTranslationFilter extends GenericFilterBean implements Mes
 			/**
 			 * 使用 accessDeniedHandler 处理异常（往响应体设置异常信息 或者 重定向到错误页面）
 			 * 		{@link DelegatingAccessDeniedHandler#handle(HttpServletRequest, HttpServletResponse, AccessDeniedException)}
-			 * */
+			 */
 			this.accessDeniedHandler.handle(request, response, exception);
 		}
 	}
@@ -250,12 +250,12 @@ public class ExceptionTranslationFilter extends GenericFilterBean implements Mes
 		this.securityContextHolderStrategy.setContext(context);
 		/**
 		 * 缓存原始的request信息，用于后面认证通过后可以恢复现场
-		 * */
+		 */
 		this.requestCache.saveRequest(request, response);
 		/**
 		 * 开始认证。根据配置的参数决定是 重定向还是转发的方式 访问登录页面
 		 * 		{@link DelegatingAuthenticationEntryPoint#commence(HttpServletRequest, HttpServletResponse, AuthenticationException)}
-		 * */
+		 */
 		this.authenticationEntryPoint.commence(request, response, reason);
 	}
 

@@ -72,7 +72,7 @@ public class ConsensusBased extends AbstractAccessDecisionManager {
 			/**
 			 * 投票结果
 			 * 		{@link org.springframework.security.web.access.expression.WebExpressionVoter#vote(Authentication, org.springframework.security.web.FilterInvocation, Collection)}
-			 * */
+			 */
 			int result = voter.vote(authentication, object, configAttributes);
 			switch (result) {
 			case AccessDecisionVoter.ACCESS_GRANTED:

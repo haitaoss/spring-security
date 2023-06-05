@@ -74,7 +74,7 @@ public abstract class GitHubMilestoneNextVersionDueTodayTask extends DefaultTask
 		 * 	IDEA 指定的 ajc 是种混合模式，它是 ajc+javac 的结合，会根据文件类型决定使用 ajc 还是 javac。
 		 * 	但是这个项目的编译需要 ajc + javac + groovy ，所以我取巧直接将 groovy 的语法改成 java 的语法，
 		 * 	这样就能使用 IDEA 实现项目的编译和运行了
-		 * */
+		 */
 		// Files.writeString(isDueTodayPath, String.valueOf(milestoneDueToday));
 		try (FileOutputStream fileOutputStream = new FileOutputStream(isDueTodayPath.toFile());) {
 			fileOutputStream.write(String.valueOf(milestoneDueToday).getBytes(StandardCharsets.UTF_8));

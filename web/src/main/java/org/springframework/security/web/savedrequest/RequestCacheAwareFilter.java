@@ -71,7 +71,7 @@ public class RequestCacheAwareFilter extends GenericFilterBean {
 		 *
 		 * 比如,使用 UsernamePasswordAuthenticationFilter 进行认证，在认证通过后会从 requestCache 取出原来的request信息 设置重定向地址
 		 * 		{@link AbstractAuthenticationProcessingFilter#doFilter(HttpServletRequest, HttpServletResponse, FilterChain)}
-		 * */
+		 */
 		HttpServletRequest wrappedSavedRequest = this.requestCache.getMatchingRequest((HttpServletRequest) request,
 				(HttpServletResponse) response);
 		// 放行

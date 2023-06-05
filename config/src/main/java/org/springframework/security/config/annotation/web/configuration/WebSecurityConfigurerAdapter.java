@@ -226,7 +226,7 @@ public abstract class WebSecurityConfigurerAdapter implements WebSecurityConfigu
 		AuthenticationEventPublisher eventPublisher = getAuthenticationEventPublisher();
 		/**
 		 * localConfigureAuthenticationBldr 是在这个方法设置的 {@link #setApplicationContext}
-		 * */
+		 */
 		this.localConfigureAuthenticationBldr.authenticationEventPublisher(eventPublisher);
 		// 是用来完成认证逻辑的
 		AuthenticationManager authenticationManager = authenticationManager();
@@ -235,13 +235,13 @@ public abstract class WebSecurityConfigurerAdapter implements WebSecurityConfigu
 		 *
 		 * authenticationBuilder 是在这个方法设置的 {@link #setApplicationContext}
 		 * 设置的是 DefaultPasswordEncoderAuthenticationManagerBuilder
-		 * */
+		 */
 		this.authenticationBuilder.parentAuthenticationManager(authenticationManager);
 		// 设置默认的共享对象
 		Map<Class<?>, Object> sharedObjects = createSharedObjects();
 		/**
 		 * 实例化 HttpSecurity
-		 * */
+		 */
 		this.http = new HttpSecurity(this.objectPostProcessor, this.authenticationBuilder, sharedObjects);
 		// 默认是false
 		if (!this.disableDefaults) {
@@ -269,7 +269,7 @@ public abstract class WebSecurityConfigurerAdapter implements WebSecurityConfigu
 		 *
 		 * 			 构造的是 UsernamePasswordAuthenticationToken，同上
 		 * 			.httpBasic();
-		 * */
+		 */
 		configure(this.http);
 		return this.http;
 	}
@@ -675,8 +675,10 @@ public abstract class WebSecurityConfigurerAdapter implements WebSecurityConfigu
 			if (this.passwordEncoder != null) {
 				return this.passwordEncoder;
 			}
+			// 从 BeanFactory 中获取 PasswordEncoder 类型的bean			
 			PasswordEncoder passwordEncoder = getBeanOrNull(PasswordEncoder.class);
 			if (passwordEncoder == null) {
+				// 使用默认的				
 				passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
 			}
 			this.passwordEncoder = passwordEncoder;

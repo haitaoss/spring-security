@@ -191,7 +191,7 @@ public final class ExceptionHandlingConfigurer<H extends HttpSecurityBuilder<H>>
 		/**
 		 * 默认是这个 DelegatingAuthenticationEntryPoint。
 		 * AuthenticationEntryPoint 是用来决定采用那种方式开始认证，使用的地方在 {@link ExceptionTranslationFilter#sendStartAuthentication(HttpServletRequest, HttpServletResponse, FilterChain, AuthenticationException)}
-		 * */
+		 */
 		AuthenticationEntryPoint entryPoint = getAuthenticationEntryPoint(http);
 
 		// 实例化
@@ -201,7 +201,7 @@ public final class ExceptionHandlingConfigurer<H extends HttpSecurityBuilder<H>>
 		/**
 		 * 默认是 RequestMatcherDelegatingAccessDeniedHandler
 		 * AccessDeniedHandler 是用来决定如果处理认证异常的，使用的地方在 {@link ExceptionTranslationFilter#handleAccessDeniedException(HttpServletRequest, HttpServletResponse, FilterChain, AccessDeniedException)}
-		 * */
+		 */
 		AccessDeniedHandler deniedHandler = getAccessDeniedHandler(http);
 		exceptionTranslationFilter.setAccessDeniedHandler(deniedHandler);
 		exceptionTranslationFilter.setSecurityContextHolderStrategy(getSecurityContextHolderStrategy());

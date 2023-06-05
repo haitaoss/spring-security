@@ -231,12 +231,17 @@ public class DelegatingPasswordEncoder implements PasswordEncoder {
 		if (rawPassword == null && prefixEncodedPassword == null) {
 			return true;
 		}
+		// 提取id
 		String id = extractId(prefixEncodedPassword);
+		// 根据 id 拿到 PasswordEncoder
 		PasswordEncoder delegate = this.idToPasswordEncoder.get(id);
 		if (delegate == null) {
+			// 使用默认的
 			return this.defaultPasswordEncoderForMatches.matches(rawPassword, prefixEncodedPassword);
 		}
+		// 拿到密码
 		String encodedPassword = extractEncodedPassword(prefixEncodedPassword);
+		// 比较密码
 		return delegate.matches(rawPassword, encodedPassword);
 	}
 

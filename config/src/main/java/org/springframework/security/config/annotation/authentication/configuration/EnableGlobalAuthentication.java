@@ -105,6 +105,10 @@ import org.springframework.security.config.annotation.web.servlet.configuration.
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Documented
+/**
+ * AuthenticationConfiguration:
+ *  - 会注册 AutowireBeanFactoryObjectPostProcessor、AuthenticationManagerBuilder、GlobalAuthenticationConfigurerAdapter
+ */
 @Import(AuthenticationConfiguration.class)
 @Configuration
 public @interface EnableGlobalAuthentication {

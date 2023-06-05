@@ -15,14 +15,18 @@ import org.apache.catalina.webresources.DirResourceSet;
 import org.apache.catalina.webresources.StandardRoot;
 import org.apache.coyote.http11.Http11NioProtocol;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ParseException;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.security.access.AccessDecisionManager;
+import org.springframework.security.access.expression.SecurityExpressionHandler;
 import org.springframework.security.access.expression.SecurityExpressionRoot;
 import org.springframework.security.access.vote.AffirmativeBased;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.authentication.configuration.EnableGlobalAuthentication;
@@ -31,8 +35,11 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractInterceptUrlConfigurer;
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.config.annotation.web.configurers.ExpressionUrlAuthorizationConfigurer;
+import org.springframework.security.config.annotation.web.configurers.SessionManagementConfigurer;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.client.authentication.OAuth2LoginAuthenticationProvider;
+import org.springframework.security.web.FilterInvocation;
 import org.springframework.security.web.access.ExceptionTranslationFilter;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.access.intercept.FilterSecurityInterceptor;
@@ -41,11 +48,16 @@ import org.springframework.security.web.authentication.AbstractAuthenticationPro
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.util.StopWatch;
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
 
 import javax.servlet.FilterChain;
+import javax.servlet.Servlet;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.annotation.WebFilter;
+import javax.servlet.annotation.WebListener;
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
@@ -57,7 +69,6 @@ import java.util.function.Supplier;
  * @author haitao.chen
  * email haitaoss@aliyun.com
  * date 2023-05-05 10:44
- *
  */
 @Slf4j
 public class Main extends AbstractAnnotationConfigDispatcherServletInitializer {
@@ -90,14 +101,9 @@ public class Main extends AbstractAnnotationConfigDispatcherServletInitializer {
     }
 
     /**
-     * AbstractSecurityWebApplicationInitializer 实现 WebApplicationInitializer 接口
-     *		注册 DelegatingFilterProxy 到 servletContext 中，注册的 filterName 是 springSecurityFilterChain。
-     *		DelegatingFilterProxy 是一个工具类，其 DelegatingFilterProxy.doFilter 是委托给 context.getName("springSecurityFilterChain",Filter.class) 执行
-     *
-     *		注：最终的目的是让name是 springSecurityFilterChain 的Filter生效。
-     *
      * {@link org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext#createWebServer()
-     * 		SpringBoot的嵌入式和非嵌入式的Web容器都会找到IOC容器中类型是 ServletRegistrationBean、FilterRegistrationBean、ServletListenerRegistrationBean、Servlet、Filter、EventListener 的bean
+     * 		SpringBoot的嵌入式和非嵌入式的Web容器都会找到IOC容器中类型是 ServletRegistrationBean、FilterRegistrationBean、ServletListenerRegistrationBean、
+    Servlet、Filter、EventListener 的bean
      * 		注册到 ServletContext 中。
      *
      * 		扩展：@ServletComponentScan 的作用是将标注了 @WebServlet、@WebFilter、@WebListener 的类映射成 ServletRegistrationBean、FilterRegistrationBean、ServletListenerRegistrationBean 类型的bean注册到容器中。
@@ -130,7 +136,7 @@ public class Main extends AbstractAnnotationConfigDispatcherServletInitializer {
      * {@link AccessDecisionManager#decide(Authentication, Object, Collection)}
      *
      * authenticationEntryPoint 是在认证失败时用来 决定作何种行为
-     * */
+     */
     /**
      * AuthenticationManager 是用来实现认证逻辑的。根据request的信息构造出 Authentication 然后认证 Authentication 是否正确
      * {@link org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)}
@@ -169,7 +175,7 @@ public class Main extends AbstractAnnotationConfigDispatcherServletInitializer {
      *
      * {@link AffirmativeBased#decide(Authentication, Object, Collection)}
      * SecurityExpressionRoot、WebSecurityExpressionRoot
-     * */
+     */
     /**
      * 请求被拦截，重定向到登录页面，登录后，会自动重定向到之前访问页面的原因
      *
@@ -178,19 +184,7 @@ public class Main extends AbstractAnnotationConfigDispatcherServletInitializer {
      * {@link org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler#onAuthenticationSuccess(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, org.springframework.security.core.Authentication)}
      * 		这个设置的重定向
      *        {@link org.springframework.security.config.annotation.web.configurers.AbstractAuthenticationFilterConfigurer#configure(org.springframework.security.config.annotation.web.HttpSecurityBuilder)}
-     * */
-
-
-    /**
-     * @EnableGlobalMethodSecurity 过时了，用 @EnableMethodSecurity
-     * 1. @Secured Spring Security 的 @PreAuthorize 、 @PostAuthorize 、 @PreFilter 和 @PostFilter 附带了丰富的基于表达式的支持。
-     * 2. 动态的更新 鉴权数据
-     *
-     *
-     * @EnableMethodSecurity 会 @Import(MethodSecuritySelector.class)
-     * */
-
-
+     */
     /**
      * 关键的类
      * DelegatingFilterProxy FilterChainProxy
@@ -206,8 +200,8 @@ public class Main extends AbstractAnnotationConfigDispatcherServletInitializer {
      * WebSecurityConfigurer
      * WebSecurityConfigurerAdapter
      * ExceptionTranslationFilter
-	 *  	AuthenticationEntryPoint
-	 *  	AccessDeniedHandler
+     *  	AuthenticationEntryPoint
+     *  	AccessDeniedHandler
      * 自定义认证Filter都应该实现 AbstractAuthenticationProcessingFilter，
      * 聚合了 AuthenticationSuccessHandler、AuthenticationFailureHandler。
      * 认证成功回调 AuthenticationSuccessHandler，认证失败回调 AuthenticationFailureHandler
@@ -223,20 +217,20 @@ public class Main extends AbstractAnnotationConfigDispatcherServletInitializer {
      *
      *      3. 构造出 OAuth2LoginAuthenticationToken。
      *
-     * */
+     */
+
     public static void main(String[] args) throws Exception {
         startTomcat();
-//		test_spel();
+//        test_spel();
     }
 
     private static void test_spel() {
+        System.out.println("旧版的鉴权");
         StandardEvaluationContext standardEvaluationContext = new StandardEvaluationContext();
 
-        SecurityExpressionRoot root = new SecurityExpressionRoot(
-                () -> new UsernamePasswordAuthenticationToken("", "")) {
-        };
-
-        standardEvaluationContext.setRootObject(root);
+        Supplier<Authentication> authenticationSupplier = () -> new UsernamePasswordAuthenticationToken("", "");
+        standardEvaluationContext.setRootObject(new SecurityExpressionRoot(authenticationSupplier) {
+        });
         SpelExpressionParser spelExpressionParser = new SpelExpressionParser();
 
         Consumer<String> consumer = exp -> {
@@ -253,6 +247,10 @@ public class Main extends AbstractAnnotationConfigDispatcherServletInitializer {
         //        consumer.accept("denyAll");
         //        consumer.accept("authenticated");
         //        consumer.accept("isAuthenticated");
+        //        consumer.accept("hasRole('ADMIN') and hasRole('DBA')");
+        consumer.accept("getAuthentication.isAuthenticated()");
+        System.out.println("新版本的鉴权");
+        System.out.println(authenticationSupplier.get().isAuthenticated());
     }
 
     public static void startTomcat() throws Exception {

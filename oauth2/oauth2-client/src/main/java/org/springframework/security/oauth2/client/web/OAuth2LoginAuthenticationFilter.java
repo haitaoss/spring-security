@@ -173,7 +173,7 @@ public class OAuth2LoginAuthenticationFilter extends AbstractAuthenticationProce
 		 *
 		 * 在跳转到第三方系统认证页面之前会设置 OAuth2AuthorizationRequest
 		 * 		{@link OAuth2AuthorizationRequestRedirectFilter#sendRedirectForAuthorization(HttpServletRequest, HttpServletResponse, OAuth2AuthorizationRequest)}
-		 * */
+		 */
 		OAuth2AuthorizationRequest authorizationRequest = this.authorizationRequestRepository
 				.removeAuthorizationRequest(request, response);
 
@@ -210,13 +210,13 @@ public class OAuth2LoginAuthenticationFilter extends AbstractAuthenticationProce
 		/**
 		 * 主要是通过 code(授权码) 访问第三方系统拿到访问令牌，再根据访问令牌请求第三方系统的个人信息接口获取个人信息，
 		 * 有了个人信息就算是 认证通过了
-		 * */
+		 */
 		OAuth2LoginAuthenticationToken authenticationResult = (OAuth2LoginAuthenticationToken) this
 				.getAuthenticationManager().authenticate(authenticationRequest);
 		/**
 		 * 转换成 OAuth2AuthenticationToken
 		 * {@link OAuth2LoginAuthenticationFilter#createAuthenticationResult(OAuth2LoginAuthenticationToken)}
-		 * */
+		 */
 		OAuth2AuthenticationToken oauth2Authentication = this.authenticationResultConverter
 				.convert(authenticationResult);
 		Assert.notNull(oauth2Authentication, "authentication result cannot be null");

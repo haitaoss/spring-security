@@ -232,7 +232,7 @@ public final class FormLoginConfigurer<H extends HttpSecurityBuilder<H>> extends
 		 * 1. 更新认证的默认信息，比如设置 登录路径、登录路径 这些
 		 * 2. 设置访问权限，默认是为 loginPage、loginProcessingUrl、failureUrl 设置不需要鉴权
 		 * 3. 获取 ExceptionHandlingConfigurer 为其注册 LoginUrlAuthenticationEntryPoint
-		 * */
+		 */
 		super.init(http);
 		// 初始化 DefaultLoginPageGeneratingFilter 的配置信息
 		initDefaultLoginFilter(http);

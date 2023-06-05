@@ -97,7 +97,7 @@ public class AuthorizationFilter extends GenericFilterBean {
 			 * 	{@link RequestMatcherDelegatingAuthorizationManager#check(Supplier, HttpServletRequest)}
 			 * 	1. 遍历配置的权限集合，找到匹配request的	AuthorizationManager
 			 * 	2. 回调 AuthorizationManager#check 得到鉴权结果
-			 * */
+			 */
 			AuthorizationDecision decision = this.authorizationManager.check(this::getAuthentication, request);
 			// 发布事件
 			this.eventPublisher.publishAuthorizationEvent(this::getAuthentication, request, decision);

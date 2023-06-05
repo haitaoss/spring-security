@@ -59,7 +59,7 @@ public class Document {
 	 - HttpServletRequest.html#isUserInRole(java.lang.String)
 	 - HttpServletRequest.html#login(java.lang.String, java.lang.String)
 	 - HttpServletRequest.html#logout()
-	 * */
+	 */
 	/**
 	 * DelegatingFilterProxy
 	 * 		Spring 提供了一个名为 DelegatingFilterProxy 的 Filter 实现，它允许在 Servlet 容器的生命周期和 Spring 的 ApplicationContext 之间架起桥梁。
@@ -131,7 +131,7 @@ public class Document {
 	 * 			- ExceptionTranslationFilter
 	 * 			- FilterSecurityInterceptor
 	 * 			- SwitchUserFilter
-	 * */
+	 */
 	/**
 	 * Handling Security Exceptions
 	 * 		ExceptionTranslationFilter 允许将 AccessDeniedException 和 AuthenticationException 转换为 HTTP 响应。
@@ -145,7 +145,7 @@ public class Document {
 	 * 				AuthenticationEntryPoint 用于从客户端请求凭据。例如，它可能会重定向到登录页面或发送 WWW-Authenticate 标头
 	 *			3. 否则，如果它是 AccessDeniedException ，则访问被拒绝。 AccessDeniedHandler 被调用来处理拒绝访问
 	 * 		https://docs.spring.io/spring-security/reference/5.8/_images/servlet/architecture/exceptiontranslationfilter.png
-	 * */
+	 */
 	/**
 	 * Saving Requests Between Authentication（在身份验证之间保存请求）
 	 * 		如处理安全异常中所述，当请求没有鉴权，并且是针对需要鉴权的资源时，需要保存请求，供鉴权成功后重新请求。在 Spring Security 中，
@@ -188,7 +188,7 @@ public class Document {
 	 *
 	 * RequestCacheAwareFilter
 	 * 		RequestCacheAwareFilter 使用 RequestCache 来保存 HttpServletRequest 。
-	 * */
+	 */
 	/**
 	 * Authentication（认证）
 	 * Authentication Mechanisms （认证机制）
@@ -202,7 +202,7 @@ public class Document {
 	 * 		- Pre-Authentication Scenarios(预身份验证场景) - authenticate with an external mechanism such as SiteMinder or Java EE security but still use Spring Security for authorization and protection against common exploits.
 	 * 		- X509 Authentication - X509 Authentication
 	 *
-	 * */
+	 */
 	/**
 	 * Servlet Authentication Architecture（ Servlet 认证架构 ）
 	 * 		此讨论扩展了 Servlet 安全性：大图来描述 Spring Security 在 Servlet 身份验证中使用的主要架构组件。
@@ -292,7 +292,7 @@ public class Document {
 	 * AbstractAuthenticationProcessingFilter
 	 *		AbstractAuthenticationProcessingFilter 用作验证用户凭据的基础 Filter 。在可以验证凭据之前，Spring Security 通常使用 AuthenticationEntryPoint 请求凭据。
 	 *		接下来， AbstractAuthenticationProcessingFilter 可以对提交给它的任何身份验证请求进行身份验证。
-	 * */
+	 */
 	/**
 	 * UserDetails
 	 * 		UserDetails 由 UserDetailsService 返回。 DaoAuthenticationProvider 验证 UserDetails ，然后返回一个 Authentication ，该 Authentication 的主体是配置的 UserDetailsService 返回的 UserDetails 。
@@ -300,7 +300,7 @@ public class Document {
 	 * 		Spring Security 的 servlet 支持通过与 PasswordEncoder 集成来安全地存储密码。自定义 Spring Security 使用的 PasswordEncoder 实现可以通过公开一个 PasswordEncoder Bean 来完成。
 	 * DaoAuthenticationProvider
 	 * 		让我们来看看 DaoAuthenticationProvider 在 Spring Security 中是如何工作的。该图详细说明了阅读用户名和密码中图中 AuthenticationManager 的工作原理。
-	 * */
+	 */
 	/**
 	 * Persisting Authentication	持久身份验证
 	 * 	SecurityContextRepository：在 Spring Security 中，用户与未来请求的关联是使用 SecurityContextRepository 进行的。
@@ -344,7 +344,7 @@ public class Document {
 	 * 				);
 	 * 			return http.build();
 	 *        }
-	 * */
+	 */
 	/**
 	 * Authentication Persistence and Session Management
 	 *		一旦您获得了对请求进行身份验证的应用程序，重要的是要考虑如何在未来的请求中保留和恢复生成的身份验证。
@@ -423,7 +423,7 @@ public class Document {
 	 * 							    authenticationEventPublisher.setAdditionalExceptionMappings(mapping);
 	 * 							    return authenticationEventPublisher;
 	 *                            }
-	 * */
+	 */
 	/**
 	 * Authorization
 	 * 		Spring Security 中的高级授权功能是其流行的最引人注目的原因之一。无论您选择如何进行身份验证 - 无论是使用 Spring Security 提供的机制和提供者，还是与容器或其他非 Spring Security 身份验证机构集成 - 您都会发现授权服务可以在您的应用程序中以一致且简单的方式使用方式。
@@ -467,7 +467,7 @@ public class Document {
 	 *			角色层次结构的使用允许您配置哪些角色（或权限）应包括其他角色。 Spring Security 的 RoleVoter 的扩展版本， RoleHierarchyVoter 配置了 RoleHierarchy ，它从中获取分配给用户的所有“可达权限”。典型的配置可能如下所示：
 	 *
 	 *
-	 * */
+	 */
 	/**
 	 * 可以看到权限的配置方式，没细看。 https://docs.spring.io/spring-security/reference/5.8/servlet/authorization/authorize-http-requests.html
 	 * Authorize HttpServletRequests with AuthorizationFilter
@@ -588,7 +588,7 @@ public class Document {
 	 *
 	 *
 	 *
-	 * */
+	 */
 	/**
 	 * Authorize HttpServletRequest with FilterSecurityInterceptor
 	 *
@@ -602,7 +602,7 @@ public class Document {
 	 * 						);
 	 * 					return http.build();
 	 *                }
-	 * */
+	 */
 	/**
 	 * Expression-Based Access Control 基于表达式的访问控制
 	 * 		Spring Security 使用 Spring EL 来支持表达式，根对象是 SecurityExpressionRoot，看根对象就知道 SpEL 表达式支持那些内置属性和方法了
@@ -622,7 +622,7 @@ public class Document {
 	 *
 	 *        @PreAuthorize 、 @PreFilter 、 @PostAuthorize 和 @PostFilter
 	 * 		主体的使用demo 看官方文档把：https://docs.spring.io/spring-security/reference/5.8/servlet/authorization/expression-based.html
-	 * */
+	 */
 	/**
 	 * Method Security
 	 * 	从 2.0 版开始，Spring Security 大大改进了对向服务层方法添加安全性的支持。它支持 JSR-250 注释安全性以及框架的原始 @Secured 注释。从 3.0 开始，您还可以使用新的基于表达式的注释。您可以将安全性应用于单个 bean，使用 intercept-methods 元素来装饰 bean 声明，或者您可以使用 AspectJ 样式切入点保护整个服务层中的多个 bean
@@ -645,7 +645,7 @@ public class Document {
 	 *         static GrantedAuthorityDefaults grantedAuthorityDefaults() {
 	 *		 	return new GrantedAuthorityDefaults("MYPREFIX_");
 	 *         }
-	 * */
+	 */
 	/**
 	 * Authorization Events 授权事件
 	 * 	对于每个被拒绝的授权，都会触发一个 AuthorizationDeniedEvent 。此外，可以为授予的授权触发和 AuthorizationGrantedEvent 。
@@ -665,14 +665,14 @@ public class Document {
 	 * 						// ...
 	 *                    }
 	 *                }
-	 * */
+	 */
 	/**
 	 * 没有细看的内容，用到再说吧，先了解整体框架的实现逻辑，后面的内容只是锦上添花而已
 	 *
 	 * Spring Security 提供全面的 OAuth 2 支持。本节讨论如何将 OAuth 2 集成到基于 servlet 的应用程序中。
 	 * Spring Security 提供全面的 SAML 2 支持。本节讨论如何将 SAML 2 集成到基于 servlet 的应用程序中。
 	 * 本节讨论 Spring Security 对 servlet 环境的跨站请求伪造 (CSRF) 支持。
-	 * */
+	 */
 	/**
 	 * Spring MVC Integration
 	 * 从 Spring Security 4.0 开始，不推荐使用 @EnableWebMvcSecurity 。替换为 @EnableWebSecurity ，它将根据类路径确定添加 Spring MVC 功能。
@@ -714,7 +714,7 @@ public class Document {
 	 * 				return token;
 	 *           }
 	 *        }
-	 * */
+	 */
 	public static interface TestSecurityAnnotation {
 		public interface BankService {
 

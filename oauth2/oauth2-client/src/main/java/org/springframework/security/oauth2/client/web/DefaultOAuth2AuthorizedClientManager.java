@@ -184,7 +184,7 @@ public final class DefaultOAuth2AuthorizedClientManager implements OAuth2Authori
 			 * 		{@link ClientCredentialsOAuth2AuthorizedClientProvider#authorize(OAuth2AuthorizationContext)}
 			 *		是 password 模式，然后访问令牌过期 就获取访问令牌
 			 * 		{@link PasswordOAuth2AuthorizedClientProvider#authorize(OAuth2AuthorizationContext)}
-			 * */
+			 */
 			authorizedClient = this.authorizedClientProvider.authorize(authorizationContext);
 		}
 		catch (OAuth2AuthorizationException ex) {

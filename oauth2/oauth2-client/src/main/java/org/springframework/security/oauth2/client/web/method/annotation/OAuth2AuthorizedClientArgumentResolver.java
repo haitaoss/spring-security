@@ -140,7 +140,7 @@ public final class OAuth2AuthorizedClientArgumentResolver implements HandlerMeth
 		/**
 		 * 进行认证
 		 * {@link DefaultOAuth2AuthorizedClientManager#authorize(OAuth2AuthorizeRequest)}
-		 * */
+		 */
 		return this.authorizedClientManager.authorize(authorizeRequest);
 	}
 

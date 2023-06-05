@@ -124,7 +124,7 @@ public abstract class AbstractUserDetailsAuthenticationProvider
 		/**
 		 * authentication 必须是 UsernamePasswordAuthenticationToken 类型的.
 		 * 比如: UsernamePasswordAuthenticationFilter 构造的 Authentication 就是 UsernamePasswordAuthenticationToken 类型的
-		 * */
+		 */
 		Assert.isInstanceOf(UsernamePasswordAuthenticationToken.class, authentication,
 				() -> this.messages.getMessage("AbstractUserDetailsAuthenticationProvider.onlySupports",
 						"Only UsernamePasswordAuthenticationToken is supported"));
@@ -141,7 +141,7 @@ public abstract class AbstractUserDetailsAuthenticationProvider
 				 * 根据 username 检索出 user，这是真正的用户信息
 				 * 		{@link DaoAuthenticationProvider#retrieveUser(String, UsernamePasswordAuthenticationToken)}
 				 * 		{@link UserDetailsService#loadUserByUsername(String)}
-				 * */
+				 */
 				user = retrieveUser(username, (UsernamePasswordAuthenticationToken) authentication);
 			}
 			catch (UsernameNotFoundException ex) {
@@ -159,7 +159,7 @@ public abstract class AbstractUserDetailsAuthenticationProvider
 			/**
 			 * 前置认证检查。默认是检验 凭证不是过期的
 			 * 	{@link DefaultPostAuthenticationChecks#check(org.springframework.security.core.userdetails.UserDetails)}
-			 * */
+			 */
 			this.preAuthenticationChecks.check(user);
 			/**
 			 * 进行附加检查。这是抽象方法看具体的子类是如何写的。
@@ -167,7 +167,7 @@ public abstract class AbstractUserDetailsAuthenticationProvider
 			 * 比如：{@link DaoAuthenticationProvider#additionalAuthenticationChecks(org.springframework.security.core.userdetails.UserDetails, org.springframework.security.authentication.UsernamePasswordAuthenticationToken)}
 			 * 			1.  authentication.getCredentials() 不能是空
 			 * 			2. 	使用 PasswordEncoder 校验 user.getPassword() 和 authentication.getCredentials() 是一致的
-			 * */
+			 */
 			additionalAuthenticationChecks(user, (UsernamePasswordAuthenticationToken) authentication);
 		}
 		catch (AuthenticationException ex) {

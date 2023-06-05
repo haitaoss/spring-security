@@ -32,6 +32,7 @@ import org.springframework.security.authentication.AuthenticationTrustResolver;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.HttpSecurityBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.context.DelegatingApplicationListener;
 import org.springframework.security.core.session.SessionRegistry;
@@ -561,6 +562,7 @@ public final class SessionManagementConfigurer<H extends HttpSecurityBuilder<H>>
 		}
 		if (this.sessionRegistry == null) {
 			SessionRegistryImpl sessionRegistry = new SessionRegistryImpl();
+			// 注册事件监听器
 			registerDelegateApplicationListener(http, sessionRegistry);
 			this.sessionRegistry = sessionRegistry;
 		}
@@ -568,11 +570,15 @@ public final class SessionManagementConfigurer<H extends HttpSecurityBuilder<H>>
 	}
 
 	private void registerDelegateApplicationListener(H http, ApplicationListener<?> delegate) {
+		/**
+		 * 这个配置类 {@link WebSecurityConfiguration#delegatingApplicationListener()} 会注册这个类型的bean
+		 */
 		DelegatingApplicationListener delegating = getBeanOrNull(DelegatingApplicationListener.class);
 		if (delegating == null) {
 			return;
 		}
 		SmartApplicationListener smartListener = new GenericApplicationListenerAdapter(delegate);
+		// 注册
 		delegating.addListener(smartListener);
 	}
 

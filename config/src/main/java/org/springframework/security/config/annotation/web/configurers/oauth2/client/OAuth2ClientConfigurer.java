@@ -158,7 +158,7 @@ public final class OAuth2ClientConfigurer<B extends HttpSecurityBuilder<B>>
 		/**
 		 * {@link AuthorizationCodeGrantConfigurer#init(HttpSecurityBuilder)}
 		 * 		会注册 OAuth2AuthorizationCodeAuthenticationProvider，认证逻辑就是 调第三方接口获取 访问令牌
-		 * */
+		 */
 		this.authorizationCodeGrantConfigurer.init(builder);
 	}
 
@@ -169,7 +169,7 @@ public final class OAuth2ClientConfigurer<B extends HttpSecurityBuilder<B>>
 		 * 	注册两个Filter：
 		 *		OAuth2AuthorizationRequestRedirectFilter 作用：重定向到第三方接口的授权页面
 		 *		OAuth2AuthorizationCodeGrantFilter 作用：拦截第三方授权后回调的接口，拿着授权码 完成本系统的认证(获取访问令牌->拿着访问令牌调第三方的个人信息接口)
-		 * */
+		 */
 		this.authorizationCodeGrantConfigurer.configure(builder);
 	}
 

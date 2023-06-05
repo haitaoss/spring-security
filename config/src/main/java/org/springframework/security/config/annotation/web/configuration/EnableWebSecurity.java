@@ -81,19 +81,23 @@ import java.lang.annotation.*;
 @Documented
 /**
  * WebSecurityConfiguration：
- * 		-
+ * 		- 会注册 FilterChainProxy , 这是 Security 接入 Servlet 容器的 Filter
+ *
  * SpringWebMvcImportSelector：
  * 		- 扩展 HandlerMethodArgumentResolver，支持 @AuthenticationPrincipal、@CurrentSecurityContext、CsrfToken
  * 		- 注册 CsrfRequestDataValueProcessor 到容器中
  *
- * OAuth2ImportSelector：用到在看
+ * OAuth2ImportSelector：
+ * 		- 注册 OAuth2AuthorizedClientArgumentResolver，支持 @RegisteredOAuth2AuthorizedClient
+ *
  * HttpSecurityConfiguration：
- * */
+ * 		- 注册 HttpSecurity , 是用来build得到 SecurityFilterChain 的工具
+ */
 @Import({WebSecurityConfiguration.class, SpringWebMvcImportSelector.class, OAuth2ImportSelector.class,
 		HttpSecurityConfiguration.class})
 /**
  * 会注册这两个类型的bean ObjectPostProcessor、AuthenticationConfiguration
- * */
+ */
 @EnableGlobalAuthentication
 @Configuration
 public @interface EnableWebSecurity {

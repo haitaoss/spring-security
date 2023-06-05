@@ -230,7 +230,7 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 		 * {@link org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter}
 		 * 		其实就是判断不是 第三方服务回调的地址，默认是 /login/oauth2/code/*。
 		 * 		若是第三方服务回调的地址，一般会返回授权码，有了授权码就算是成功认证了
-		 * */
+		 */
 		if (!requiresAuthentication(request, response)) {
 			// 放行
 			chain.doFilter(request, response);
@@ -245,7 +245,7 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 			 *
 			 * 	{@link org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter#attemptAuthentication(HttpServletRequest, HttpServletResponse)}
 			 *
-			 * */
+			 */
 			Authentication authenticationResult = attemptAuthentication(request, response);
 			if (authenticationResult == null) {
 				// return immediately as subclass has indicated that it hasn't completed
@@ -266,7 +266,7 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 			 * 4. 回调 SuccessHandler#onAuthenticationSuccess
 			 * 		默认是注册了 SavedRequestAwareAuthenticationSuccessHandler，这是用来设置 重定向到之前访问的路径
 			 * 		比如：未登录 -> 需要认证的页面 -> 重定向到登录页面 -> 认证通过 -> 重定向到之前的页面
-			 * */
+			 */
 			successfulAuthentication(request, response, chain, authenticationResult);
 		}
 		catch (InternalAuthenticationServiceException failed) {
@@ -275,7 +275,7 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 			 * 1. 清除 SecurityContext
 			 * 2. 回调 RememberMeService#loginFail
 			 * 3. 回调 AuthenticationFailureHandler#onAuthenticationFailure
-			 * */
+			 */
 			unsuccessfulAuthentication(request, response, failed);
 		}
 		catch (AuthenticationException ex) {
@@ -367,7 +367,7 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 		/**
 		 * 回调 rememberMeServices。
 		 * 大致逻辑：有 remember-me 参数，就将认证信息加密设置到 cookie 中
-		 * */
+		 */
 		this.rememberMeServices.loginSuccess(request, response, authResult);
 		if (this.eventPublisher != null) {
 			// 发布事件
