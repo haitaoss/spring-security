@@ -1,0 +1,111 @@
+@startuml
+
+!theme plain
+top to bottom direction
+skinparam linetype ortho
+
+class AbstractUserDetailsAuthenticationProvider {
+  # messages: MessageSourceAccessor
+  - preAuthenticationChecks: UserDetailsChecker
+  # hideUserNotFoundExceptions: boolean
+  - userCache: UserCache
+  # logger: Log
+  - forcePrincipalAsString: boolean
+  - authoritiesMapper: GrantedAuthoritiesMapper
+  - postAuthenticationChecks: UserDetailsChecker
+  + authenticate(Authentication): Authentication
+  # getPreAuthenticationChecks(): UserDetailsChecker
+  + isHideUserNotFoundExceptions(): boolean
+  # createSuccessAuthentication(Object, Authentication, UserDetails): Authentication
+  + afterPropertiesSet(): void
+  + setHideUserNotFoundExceptions(boolean): void
+  + setPreAuthenticationChecks(UserDetailsChecker): void
+  # doAfterPropertiesSet(): void
+  + isForcePrincipalAsString(): boolean
+  + setPostAuthenticationChecks(UserDetailsChecker): void
+  + setAuthoritiesMapper(GrantedAuthoritiesMapper): void
+  # additionalAuthenticationChecks(UserDetails, UsernamePasswordAuthenticationToken): void
+  # getPostAuthenticationChecks(): UserDetailsChecker
+  + getUserCache(): UserCache
+  + setUserCache(UserCache): void
+  + supports(Class<?>): boolean
+  - determineUsername(Authentication): String
+  # retrieveUser(String, UsernamePasswordAuthenticationToken): UserDetails
+  + setForcePrincipalAsString(boolean): void
+  + setMessageSource(MessageSource): void
+}
+class AnonymousAuthenticationProvider {
+  # messages: MessageSourceAccessor
+  - key: String
+  + authenticate(Authentication): Authentication
+  + setMessageSource(MessageSource): void
+  + supports(Class<?>): boolean
+  + getKey(): String
+}
+interface AuthenticationManager << interface >> {
+  + authenticate(Authentication): Authentication
+}
+interface AuthenticationProvider << interface >> {
+  + authenticate(Authentication): Authentication
+  + supports(Class<?>): boolean
+}
+class DaoAuthenticationProvider {
+  - USER_NOT_FOUND_PASSWORD: String
+  - userDetailsService: UserDetailsService
+  - passwordEncoder: PasswordEncoder
+  - userNotFoundEncodedPassword: String
+  - userDetailsPasswordService: UserDetailsPasswordService
+  + setUserDetailsService(UserDetailsService): void
+  # createSuccessAuthentication(Object, Authentication, UserDetails): Authentication
+  # retrieveUser(String, UsernamePasswordAuthenticationToken): UserDetails
+  - prepareTimingAttackProtection(): void
+  # getPasswordEncoder(): PasswordEncoder
+  # getUserDetailsService(): UserDetailsService
+  + setPasswordEncoder(PasswordEncoder): void
+  + setUserDetailsPasswordService(UserDetailsPasswordService): void
+  - mitigateAgainstTimingAttack(UsernamePasswordAuthenticationToken): void
+  # additionalAuthenticationChecks(UserDetails, UsernamePasswordAuthenticationToken): void
+  # doAfterPropertiesSet(): void
+}
+class OAuth2LoginAuthenticationProvider {
+  - userService: OAuth2UserService<OAuth2UserRequest, OAuth2User>
+  - authorizationCodeAuthenticationProvider: OAuth2AuthorizationCodeAuthenticationProvider
+  - authoritiesMapper: GrantedAuthoritiesMapper
+  + setAuthoritiesMapper(GrantedAuthoritiesMapper): void
+  + supports(Class<?>): boolean
+  + authenticate(Authentication): Authentication
+}
+interface OAuth2UserService<R, U> << interface >> {
+  + loadUser(R): U
+}
+class ProviderManager {
+  - parent: AuthenticationManager
+  # messages: MessageSourceAccessor
+  - logger: Log
+  - eventPublisher: AuthenticationEventPublisher
+  - eraseCredentialsAfterAuthentication: boolean
+  - providers: List<AuthenticationProvider>
+  + setEraseCredentialsAfterAuthentication(boolean): void
+  + authenticate(Authentication): Authentication
+  - copyDetails(Authentication, Authentication): void
+  + afterPropertiesSet(): void
+  + setAuthenticationEventPublisher(AuthenticationEventPublisher): void
+  - checkState(): void
+  + getProviders(): List<AuthenticationProvider>
+  + isEraseCredentialsAfterAuthentication(): boolean
+  + setMessageSource(MessageSource): void
+  - prepareException(AuthenticationException, Authentication): void
+}
+interface UserDetailsService << interface >> {
+  + loadUserByUsername(String): UserDetails
+}
+
+AbstractUserDetailsAuthenticationProvider  -[#008200,dashed]-^  AuthenticationProvider
+AnonymousAuthenticationProvider            -[#008200,dashed]-^  AuthenticationProvider
+DaoAuthenticationProvider                  -[#000082,plain]-^  AbstractUserDetailsAuthenticationProvider
+OAuth2LoginAuthenticationProvider          -[#008200,dashed]-^  AuthenticationProvider
+ProviderManager                            -[#008200,dashed]-^  AuthenticationManager
+ProviderManager *-- AuthenticationProvider
+DaoAuthenticationProvider *-- UserDetailsService
+OAuth2LoginAuthenticationProvider *-- OAuth2UserService
+@enduml

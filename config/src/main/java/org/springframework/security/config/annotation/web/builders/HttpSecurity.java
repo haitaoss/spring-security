@@ -3247,12 +3247,12 @@ public final class HttpSecurity extends AbstractConfiguredSecurityBuilder<Defaul
 		Assert.state((expressionConfigurer == null && httpConfigurer == null) || oneConfigurerPresent,
 				"authorizeHttpRequests cannot be used in conjunction with authorizeRequests. Please select just one.");
 		/**
-		 * 排序。这一点很关键
+		 * 排序。这一点很关键,决定Filter执行的先后顺序, 默认的有序Filter定义在这里 {@link FilterOrderRegistration#FilterOrderRegistration(}
 		 */
 		this.filters.sort(OrderComparator.INSTANCE);
 		List<Filter> sortedFilters = new ArrayList<>(this.filters.size());
 		for (Filter filter : this.filters) {
-			//	filters 记录的时候 OrderedFilter 类型，所以这里强转一下
+			//	filters 记录的时候是 OrderedFilter 类型，所以这里强转一下
 			sortedFilters.add(((OrderedFilter) filter).filter);
 		}
 		/**

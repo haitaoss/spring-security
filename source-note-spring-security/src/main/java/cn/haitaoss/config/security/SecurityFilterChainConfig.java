@@ -1,18 +1,26 @@
 package cn.haitaoss.config.security;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.authorization.AuthorityAuthorizationManager;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.authorization.AuthorizationManagers;
 import org.springframework.security.config.annotation.ObjectPostProcessor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -20,12 +28,16 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.authentication.www.DigestAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Optional;
+import java.util.*;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 import static org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher;
@@ -197,11 +209,38 @@ public class SecurityFilterChainConfig {
         return http.build();
     }
 
+    @Data
+    public static class Permission {
+        private AntPathRequestMatcher antPathMatcher;
+        private String method;
+        private List<String> roles;
+
+        public Permission path(String path) {
+            this.antPathMatcher = new AntPathRequestMatcher(path);
+            return this;
+        }
+
+        public Permission method(String method) {
+            this.method = method;
+            return this;
+        }
+
+        public Permission roles(String... roles) {
+            this.roles = Arrays.asList(roles);
+            return this;
+        }
+    }
+
     @Bean
-    @Order(7)
-    public SecurityFilterChain filterChain7(HttpSecurity http) throws Exception {
+    @Order(4)
+    public SecurityFilterChain filterChain4(HttpSecurity http) throws Exception {
+        // 模拟权限表数据
+        List<Permission> permissions = Arrays.asList(
+                new Permission().path("/user/**").method("get").roles("user", "admin"),
+                new Permission().path("/menu/**").method("get").roles("menu", "admin")
+        );
         http
-                .securityMatcher("/f7/**")
+                .securityMatcher("/**")
                 /**
                  * 配置鉴权规则。
                  * 会注册 AuthorizationFilter
@@ -209,19 +248,58 @@ public class SecurityFilterChainConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/**").access(new AuthorizationManager<RequestAuthorizationContext>() {
                             @Override
-                            public AuthorizationDecision check(Supplier authentication, RequestAuthorizationContext requestAuthorizationContext) {
+                            public AuthorizationDecision check(Supplier<Authentication> authentication, RequestAuthorizationContext requestAuthorizationContext) {
                                 log.info("自定义鉴权逻辑");
                                 /**
-                                 * 大致逻辑就根据请求的request路径、request method 查询权限表，得到权限对应的角色，然后判断当前认证的用户具备了角色 就算是有权限。
+                                 * 大致逻辑就根据请求的request路径、request method 查询权限表，得到权限对应的角色，
+                                 * 然后判断当前认证的用户具备了角色 就算是有权限。
                                  */
-                                return new AuthorizationDecision(true);
+                                // 当前登录用户具备的角色
+                                Set<String> hasRoles = authentication.get()
+                                        .getAuthorities()
+                                        .stream()
+                                        .map(GrantedAuthority::getAuthority)
+                                        .collect(Collectors.toSet());
+                                HttpServletRequest request = requestAuthorizationContext.getRequest();
+                                // 根据 request + method 匹配权限信息，登录用户具备权限对应的角色 就算是有权限
+                                boolean granted = permissions.stream()
+                                        .filter(item -> item.getAntPathMatcher().matcher(request).isMatch())
+                                        .filter(item -> item.getMethod().equalsIgnoreCase(request.getMethod()))
+                                        .flatMap(item -> item.getRoles().stream())
+                                        .anyMatch(hasRoles::contains);
+                                return new AuthorizationDecision(granted);
                             }
                         })
                 )
                 // 添加认证方式
                 .httpBasic(withDefaults())
                 // 添加认证方式
-                .formLogin(withDefaults());
+                .formLogin(withDefaults())
+                .authenticationProvider(getDaoAuthenticationProvider());
         return http.build();
+    }
+
+    private static DaoAuthenticationProvider getDaoAuthenticationProvider() {
+        List<User> userList = Arrays.asList(
+                new User("user", "user", AuthorityUtils.createAuthorityList("user")),
+                new User("menu", "menu", AuthorityUtils.createAuthorityList("menu")),
+                new User("admin", "admin", AuthorityUtils.createAuthorityList("admin"))
+        );
+        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider() {
+            @Override
+            protected void additionalAuthenticationChecks(UserDetails userDetails, UsernamePasswordAuthenticationToken authentication) throws AuthenticationException {
+                if (userDetails.getPassword().equals(authentication.getCredentials())) {
+                    return;
+                }
+                super.additionalAuthenticationChecks(userDetails, authentication);
+            }
+        };
+        authenticationProvider.setUserDetailsService(new UserDetailsService() {
+            @Override
+            public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+                return userList.stream().filter(user -> user.getUsername().equals(username)).findFirst().orElse(null);
+            }
+        });
+        return authenticationProvider;
     }
 }

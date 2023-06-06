@@ -223,9 +223,11 @@ public class AuthenticationManagerBuilder
 	protected ProviderManager performBuild() throws Exception {
 		// parentAuthenticationManager 和 authenticationProviders 都是空
 		if (!isConfigured()) {
+			// 返回null
 			this.logger.debug("No authenticationProviders and no parentAuthenticationManager defined. Returning null.");
 			return null;
 		}
+		// 依赖 authenticationProviders + parentAuthenticationManager 构造出 ProviderManager
 		ProviderManager providerManager = new ProviderManager(this.authenticationProviders,
 				this.parentAuthenticationManager);
 		if (this.eraseCredentials != null) {

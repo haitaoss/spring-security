@@ -221,8 +221,8 @@ public class FilterChainProxy extends GenericFilterBean {
 		FirewalledRequest firewallRequest = this.firewall.getFirewalledRequest((HttpServletRequest) request);
 		HttpServletResponse firewallResponse = this.firewall.getFirewalledResponse((HttpServletResponse) response);
 		/**
-		 * 遍历 SecurityFilterChain , 找到匹配 firewallRequest 的直接返回.
-		 * 所以说 List<SecurityFilterChain> 的先后顺序很重要。
+		 * 遍历 SecurityFilterChain , SecurityFilterChain.matches(firewallRequest) 匹配就返回 SecurityFilterChain.getFilters()
+		 * 所以说 List<SecurityFilterChain> 的先后顺序很重要，先匹配就会被使用。
 		 */
 		List<Filter> filters = getFilters(firewallRequest);
 		// 没有找到
@@ -238,9 +238,9 @@ public class FilterChainProxy extends GenericFilterBean {
 		if (logger.isDebugEnabled()) {
 			logger.debug(LogMessage.of(() -> "Securing " + requestLine(firewallRequest)));
 		}
-		// 装饰成 VirtualFilterChain
+		// chain + filters 装饰成 VirtualFilterChain
 		VirtualFilterChain virtualFilterChain = new VirtualFilterChain(firewallRequest, chain, filters);
-		// 执行
+		// 执行。先执行 filters 在执行 chain
 		virtualFilterChain.doFilter(firewallRequest, firewallResponse);
 	}
 

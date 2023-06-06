@@ -70,6 +70,7 @@ public class SecurityContextLogoutHandler implements LogoutHandler {
 		if (this.invalidateHttpSession) {
 			HttpSession session = request.getSession(false);
 			if (session != null) {
+				// 将 session 设置为无效的
 				session.invalidate();
 				if (this.logger.isDebugEnabled()) {
 					this.logger.debug(LogMessage.format("Invalidated session %s", session.getId()));
@@ -77,11 +78,13 @@ public class SecurityContextLogoutHandler implements LogoutHandler {
 			}
 		}
 		SecurityContext context = this.securityContextHolderStrategy.getContext();
+		// 从 securityContextHolderStrategy 中移除 SecurityContext
 		this.securityContextHolderStrategy.clearContext();
 		if (this.clearAuthentication) {
 			context.setAuthentication(null);
 		}
 		SecurityContext emptyContext = this.securityContextHolderStrategy.createEmptyContext();
+		// 保存空的，相当于清空持久化的认证信息
 		this.securityContextRepository.saveContext(emptyContext, request, response);
 	}
 

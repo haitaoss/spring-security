@@ -35,47 +35,47 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
  * @author Luke Taylor
  * @since 3.1
  */
-public final class DefaultSecurityFilterChain implements SecurityFilterChain {
+	public final class DefaultSecurityFilterChain implements SecurityFilterChain {
 
-	private static final Log logger = LogFactory.getLog(DefaultSecurityFilterChain.class);
+		private static final Log logger = LogFactory.getLog(DefaultSecurityFilterChain.class);
 
-	private final RequestMatcher requestMatcher;
+		private final RequestMatcher requestMatcher;
 
-	private final List<Filter> filters;
+		private final List<Filter> filters;
 
-	public DefaultSecurityFilterChain(RequestMatcher requestMatcher, Filter... filters) {
-		this(requestMatcher, Arrays.asList(filters));
-	}
-
-	public DefaultSecurityFilterChain(RequestMatcher requestMatcher, List<Filter> filters) {
-		if (filters.isEmpty()) {
-			logger.info(LogMessage.format("Will not secure %s", requestMatcher));
+		public DefaultSecurityFilterChain(RequestMatcher requestMatcher, Filter... filters) {
+			this(requestMatcher, Arrays.asList(filters));
 		}
-		else {
-			logger.info(LogMessage.format("Will secure %s with %s", requestMatcher, filters));
+
+		public DefaultSecurityFilterChain(RequestMatcher requestMatcher, List<Filter> filters) {
+			if (filters.isEmpty()) {
+				logger.info(LogMessage.format("Will not secure %s", requestMatcher));
+			}
+			else {
+				logger.info(LogMessage.format("Will secure %s with %s", requestMatcher, filters));
+			}
+			this.requestMatcher = requestMatcher;
+			this.filters = new ArrayList<>(filters);
 		}
-		this.requestMatcher = requestMatcher;
-		this.filters = new ArrayList<>(filters);
-	}
 
-	public RequestMatcher getRequestMatcher() {
-		return this.requestMatcher;
-	}
+		public RequestMatcher getRequestMatcher() {
+			return this.requestMatcher;
+		}
 
-	@Override
-	public List<Filter> getFilters() {
-		return this.filters;
-	}
+		@Override
+		public List<Filter> getFilters() {
+			return this.filters;
+		}
 
-	@Override
-	public boolean matches(HttpServletRequest request) {
-		return this.requestMatcher.matches(request);
-	}
+		@Override
+		public boolean matches(HttpServletRequest request) {
+			return this.requestMatcher.matches(request);
+		}
 
-	@Override
-	public String toString() {
-		return this.getClass().getSimpleName() + " [RequestMatcher=" + this.requestMatcher + ", Filters=" + this.filters
-				+ "]";
-	}
+		@Override
+		public String toString() {
+			return this.getClass().getSimpleName() + " [RequestMatcher=" + this.requestMatcher + ", Filters=" + this.filters
+					+ "]";
+		}
 
-}
+	}

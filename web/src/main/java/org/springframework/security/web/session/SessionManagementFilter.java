@@ -117,7 +117,7 @@ public class SessionManagementFilter extends GenericFilterBean {
 					this.failureHandler.onAuthenticationFailure(request, response, ex);
 					return;
 				}
-				// 持久化 认证信息
+				// 持久化 认证信息（存到session或者cookie中）
 				// Eagerly save the security context to make it available for any possible
 				// re-entrant requests which may occur before the current request
 				// completes. SEC-1396.

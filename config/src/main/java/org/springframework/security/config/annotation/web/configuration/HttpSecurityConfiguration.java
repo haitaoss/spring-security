@@ -156,7 +156,7 @@ class HttpSecurityConfiguration {
 			/**
 			 * webAsyncManagerIntegrationFilter 作为默认的 filter
 			 *
-			 * 注：filter 的类型是有限定的，必须是内置的类型，否则会报错。
+			 * 注：addFilter 的方式添加 filter 的类型是有限定的，必须是内置的类型，否则会报错。
 			 * 	内置的Filter类型看这里 {@link org.springframework.security.config.annotation.web.builders.FilterOrderRegistration#FilterOrderRegistration()}
 			 */
 			.addFilter(webAsyncManagerIntegrationFilter)

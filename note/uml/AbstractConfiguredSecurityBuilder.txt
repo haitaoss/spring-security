@@ -1,0 +1,108 @@
+@startuml
+
+!theme plain
+top to bottom direction
+skinparam linetype ortho
+
+class AbstractConfiguredSecurityBuilder<O, B> {
+  - init(): void
+  + apply(C): C
+  - configure(): void
+  + removeConfigurer(Class<C>): C
+  # doBuild(): O
+  - add(C): void
+  + apply(C): C
+  + getConfigurers(Class<C>): List<C>
+  + getSharedObject(Class<C>): C
+  # performBuild(): O
+  # beforeInit(): void
+  + getConfigurer(Class<C>): C
+  + removeConfigurers(Class<C>): List<C>
+  # beforeConfigure(): void
+  + objectPostProcessor(ObjectPostProcessor<Object>): B
+  + setSharedObject(Class<C>, C): void
+  # postProcess(P): P
+   sharedObjects: Map<Class<?>, Object>
+   configurers: Collection<SecurityConfigurer<O, B>>
+   unbuilt: boolean
+   orBuild: O
+}
+class AbstractSecurityBuilder<O> {
+  + build(): O
+  # doBuild(): O
+   object: O
+}
+interface ApplicationContextAware << interface >> {
+   applicationContext: ApplicationContext
+}
+interface AuthenticationManager << interface >> {
+  + authenticate(Authentication): Authentication
+}
+class AuthenticationManagerBuilder {
+  + userDetailsService(T): DaoAuthenticationConfigurer<AuthenticationManagerBuilder, T>
+  - apply(C): C
+  + eraseCredentials(boolean): AuthenticationManagerBuilder
+  + ldapAuthentication(): LdapAuthenticationProviderConfigurer<AuthenticationManagerBuilder>
+  + parentAuthenticationManager(AuthenticationManager): AuthenticationManagerBuilder
+  + authenticationProvider(AuthenticationProvider): AuthenticationManagerBuilder
+  + jdbcAuthentication(): JdbcUserDetailsManagerConfigurer<AuthenticationManagerBuilder>
+  + inMemoryAuthentication(): InMemoryUserDetailsManagerConfigurer<AuthenticationManagerBuilder>
+  + authenticationEventPublisher(AuthenticationEventPublisher): AuthenticationManagerBuilder
+  # performBuild(): ProviderManager
+   configured: boolean
+   defaultUserDetailsService: UserDetailsService
+}
+interface Aware << interface >>
+class FilterChainProxy {
+  - getFilters(HttpServletRequest): List<Filter>?
+  - doFilterInternal(ServletRequest, ServletResponse, FilterChain): void
+  + doFilter(ServletRequest, ServletResponse, FilterChain): void
+   securityContextHolderStrategy: SecurityContextHolderStrategy
+   filterChains: List<SecurityFilterChain>
+   requestRejectedHandler: RequestRejectedHandler
+   filterChainValidator: FilterChainValidator
+}
+class HttpSecurity {
+  # performBuild(): DefaultSecurityFilterChain
+   context: ApplicationContext
+   authenticationRegistry: AuthenticationManagerBuilder
+}
+interface SecurityBuilder<O> << interface >> {
+  + build(): O
+}
+interface SecurityFilterChain << interface >> {
+  + matches(HttpServletRequest): boolean
+   filters: List<Filter>
+}
+interface ServletContextAware << interface >> {
+   servletContext: ServletContext
+}
+class WebSecurity {
+  + addSecurityFilterChainBuilder(SecurityBuilder<SecurityFilterChain>): WebSecurity
+  # performBuild(): Filter
+  + debug(boolean): WebSecurity
+   applicationContext: ApplicationContext
+   servletContext: ServletContext
+   privilegeEvaluator: WebInvocationPrivilegeEvaluator?
+   expressionHandler: SecurityExpressionHandler<FilterInvocation>
+}
+
+AbstractConfiguredSecurityBuilder  -[#000082,plain]-^  AbstractSecurityBuilder           
+AbstractConfiguredSecurityBuilder  -[#595959,dashed]->  SecurityBuilder                   
+AbstractSecurityBuilder            -[#008200,dashed]-^  SecurityBuilder                   
+ApplicationContextAware            -[#008200,plain]-^  Aware                             
+AuthenticationManagerBuilder       -[#000082,plain]-^  AbstractConfiguredSecurityBuilder 
+AuthenticationManagerBuilder       -[#008200,dashed]-^  SecurityBuilder                   
+FilterChainProxy                   -[#008200,dashed]-^  Aware                             
+FilterChainProxy                   -[#008200,dashed]-^  ServletContextAware               
+HttpSecurity                       -[#000082,plain]-^  AbstractConfiguredSecurityBuilder 
+HttpSecurity                       -[#008200,dashed]-^  SecurityBuilder                   
+ServletContextAware                -[#008200,plain]-^  Aware                             
+WebSecurity                        -[#000082,plain]-^  AbstractConfiguredSecurityBuilder 
+WebSecurity                        -[#008200,dashed]-^  ApplicationContextAware           
+WebSecurity                        -[#008200,dashed]-^  SecurityBuilder                   
+WebSecurity                        -[#008200,dashed]-^  ServletContextAware
+AuthenticationManagerBuilder ..|> AuthenticationManager : 生成
+HttpSecurity ..|> SecurityFilterChain : 生成
+WebSecurity ..|> FilterChainProxy : 生成
+@enduml

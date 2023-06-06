@@ -76,6 +76,7 @@ public class SimpleUrlAuthenticationFailureHandler implements AuthenticationFail
 	@Override
 	public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
 			AuthenticationException exception) throws IOException, ServletException {
+		// 没设置
 		if (this.defaultFailureUrl == null) {
 			if (this.logger.isTraceEnabled()) {
 				this.logger.trace("Sending 401 Unauthorized error since no failure URL is set");
@@ -83,6 +84,7 @@ public class SimpleUrlAuthenticationFailureHandler implements AuthenticationFail
 			else {
 				this.logger.debug("Sending 401 Unauthorized error");
 			}
+			// 往response设置错误信息
 			response.sendError(HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED.getReasonPhrase());
 			return;
 		}

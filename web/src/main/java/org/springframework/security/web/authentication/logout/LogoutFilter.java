@@ -100,7 +100,10 @@ public class LogoutFilter extends GenericFilterBean {
 			if (this.logger.isDebugEnabled()) {
 				this.logger.debug(LogMessage.format("Logging out [%s]", auth));
 			}
-			// 回调 LogoutHandler
+			/**
+			 * 回调 LogoutHandler
+			 * 		{@link SecurityContextLogoutHandler#logout(HttpServletRequest, HttpServletResponse, Authentication)}
+			 * */
 			this.handler.logout(request, response, auth);
 			/**
 			 * 回调 LogoutSuccessHandler。默认就是重定向到登录页地址

@@ -31,6 +31,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.authentication.configuration.EnableGlobalAuthentication;
 import org.springframework.security.config.annotation.web.HttpSecurityBuilder;
+import org.springframework.security.config.annotation.web.builders.FilterOrderRegistration;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractInterceptUrlConfigurer;
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
@@ -150,7 +151,8 @@ public class Main extends AbstractAnnotationConfigDispatcherServletInitializer {
      * 		4. 没有符合的 AuthenticationProvider 委托给 parent 进行认证
      **/
     /**
-     * AuthenticationEntryPoint 用户未认证但是访问了需要认证的页面，此时会通过 AuthenticationEntryPoint 让用户进入认证流程。比如 LoginUrlAuthenticationEntryPoint 是通过重定向或者转发的方式到登录页面让用户进行认证
+     * AuthenticationEntryPoint 用户未认证但是访问了需要认证的页面，此时会通过 AuthenticationEntryPoint 让用户进入认证流程。
+     * 比如 LoginUrlAuthenticationEntryPoint 是通过重定向或者转发的方式到登录页面让用户进行认证
      *
      * {@link ExceptionTranslationFilter#doFilter(HttpServletRequest, HttpServletResponse, FilterChain)}
      * {@link org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter#doFilterInternal(HttpServletRequest, HttpServletResponse, FilterChain)}
@@ -187,21 +189,7 @@ public class Main extends AbstractAnnotationConfigDispatcherServletInitializer {
      */
     /**
      * 关键的类
-     * DelegatingFilterProxy FilterChainProxy
-     * WebSecurity
-     * HttpSecurity SecurityFilterChain
-     * AuthenticationManagerBuilder
-     * AuthenticationManager
-     * 		ProviderManager
-     * 		AuthenticationProvider
-     * 		DaoAuthenticationProvider
-     * FilterSecurityInterceptor 即将被替换成 AuthorizationFilter
-     * AuthenticationEntryPoint
-     * WebSecurityConfigurer
-     * WebSecurityConfigurerAdapter
-     * ExceptionTranslationFilter
-     *  	AuthenticationEntryPoint
-     *  	AccessDeniedHandler
+     *
      * 自定义认证Filter都应该实现 AbstractAuthenticationProcessingFilter，
      * 聚合了 AuthenticationSuccessHandler、AuthenticationFailureHandler。
      * 认证成功回调 AuthenticationSuccessHandler，认证失败回调 AuthenticationFailureHandler
@@ -216,6 +204,10 @@ public class Main extends AbstractAnnotationConfigDispatcherServletInitializer {
      *          可以自定义 OAuth2UserService 决定应该访问那些 OAuth2 接口得到更多用户信息（默认是根据访问令牌请求第三方的个人信息接口获取用户信息）
      *
      *      3. 构造出 OAuth2LoginAuthenticationToken。
+     *
+     */
+    /**
+     * {@link FilterOrderRegistration#FilterOrderRegistration()}
      *
      */
 

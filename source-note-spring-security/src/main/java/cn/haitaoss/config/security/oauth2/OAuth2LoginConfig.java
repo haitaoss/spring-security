@@ -82,8 +82,8 @@ public class OAuth2LoginConfig {
     }
 
     @Bean
-    @Order(4)
-    public SecurityFilterChain filterChain4(HttpSecurity http, ObjectPostProcessor objectPostProcessor) throws Exception {
+    @Order(10)
+    public SecurityFilterChain filterChain10(HttpSecurity http, ObjectPostProcessor objectPostProcessor) throws Exception {
         /**
          *
          * 访问 http://localhost:8080/security/f4/img/img.png
@@ -142,8 +142,8 @@ public class OAuth2LoginConfig {
     }
 
     @Bean
-    @Order(5)
-    public SecurityFilterChain filterChain5(HttpSecurity http) throws Exception {
+    @Order(11)
+    public SecurityFilterChain filterChain11(HttpSecurity http) throws Exception {
         http
 
                 // 该Filter拦截的路径
