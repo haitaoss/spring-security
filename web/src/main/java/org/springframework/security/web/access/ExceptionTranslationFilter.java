@@ -132,7 +132,7 @@ public class ExceptionTranslationFilter extends GenericFilterBean implements Mes
 		}
 		catch (Exception ex) {
 			/**
-			 * 构造出 causeChain。其实就是遍历异常调用找，收集期望的异常对象
+			 * 构造出 causeChain。其实就是遍历异常调用栈，收集期望的异常对象
 			 */
 			// Try to extract a SpringSecurityException from the stacktrace
 			Throwable[] causeChain = this.throwableAnalyzer.determineCauseChain(ex);
@@ -155,10 +155,14 @@ public class ExceptionTranslationFilter extends GenericFilterBean implements Mes
 			}
 			/**
 			 * 处理 SpringSecurityException
-			 * 1. 是 AuthenticationException 异常，那就 往响应体设置异常信息 或者 重定向到登录页面 或者 转发到登录页面
+			 * 1. 是 AuthenticationException 异常
+			 * 		1.1 往 SecurityContextHolderStrategy 记录一个空的 SecurityContext
+			 * 		1.2 使用 RequestCache 缓存当前request信息，用于后面认证通过后可以恢复现场
+			 * 		1.3 调用 AuthenticationEntryPoint 开始认证（往响应体设置异常信息 或者 重定向到登录页面 或者 转发到登录页面）
+			 *
 			 * 2. 是 AccessDeniedException 异常：
 			 * 		2.1 是匿名用户 或者 是rememberMe 就开始认证(执行步骤1的逻辑)
-			 * 		2.2 往响应体设置异常信息 或者 重定向到错误页面
+			 * 		2.2 调用 AccessDeniedHandler 处理访问拒绝异常（往响应体设置异常信息 或者 重定向到错误页面）
 			 */
 			handleSpringSecurityException(request, response, chain, securityException);
 		}

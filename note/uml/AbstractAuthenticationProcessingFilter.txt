@@ -1,0 +1,110 @@
+@startuml
+
+!theme plain
+top to bottom direction
+skinparam linetype ortho
+
+class AbstractAuthenticationProcessingFilter {
+  # messages: MessageSourceAccessor
+  - securityContextHolderStrategy: SecurityContextHolderStrategy
+  # authenticationDetailsSource: AuthenticationDetailsSource<HttpServletRequest, ?>
+  - continueChainBeforeSuccessfulAuthentication: boolean
+  - allowSessionCreation: boolean
+  - rememberMeServices: RememberMeServices
+  - authenticationManager: AuthenticationManager
+  - failureHandler: AuthenticationFailureHandler
+  # eventPublisher: ApplicationEventPublisher
+  - successHandler: AuthenticationSuccessHandler
+  - requiresAuthenticationRequestMatcher: RequestMatcher
+  - sessionStrategy: SessionAuthenticationStrategy
+  - securityContextRepository: SecurityContextRepository
+  + setSessionAuthenticationStrategy(SessionAuthenticationStrategy): void
+  # getAllowSessionCreation(): boolean
+  + doFilter(ServletRequest, ServletResponse, FilterChain): void
+  + setFilterProcessesUrl(String): void
+  # getAuthenticationManager(): AuthenticationManager
+  + setAuthenticationManager(AuthenticationManager): void
+  + getRememberMeServices(): RememberMeServices
+  - doFilter(HttpServletRequest, HttpServletResponse, FilterChain): void
+  # unsuccessfulAuthentication(HttpServletRequest, HttpServletResponse, AuthenticationException): void
+  # getFailureHandler(): AuthenticationFailureHandler
+  + setRememberMeServices(RememberMeServices): void
+  + setContinueChainBeforeSuccessfulAuthentication(boolean): void
+  + setMessageSource(MessageSource): void
+  + setAuthenticationSuccessHandler(AuthenticationSuccessHandler): void
+  + afterPropertiesSet(): void
+  # getSuccessHandler(): AuthenticationSuccessHandler
+  + setSecurityContextRepository(SecurityContextRepository): void
+  # requiresAuthentication(HttpServletRequest, HttpServletResponse): boolean
+  # successfulAuthentication(HttpServletRequest, HttpServletResponse, FilterChain, Authentication): void
+  + attemptAuthentication(HttpServletRequest, HttpServletResponse): Authentication
+  + setRequiresAuthenticationRequestMatcher(RequestMatcher): void
+  + setAuthenticationFailureHandler(AuthenticationFailureHandler): void
+  + setSecurityContextHolderStrategy(SecurityContextHolderStrategy): void
+  + setAuthenticationDetailsSource(AuthenticationDetailsSource<HttpServletRequest, ?>): void
+  + setApplicationEventPublisher(ApplicationEventPublisher): void
+  + setAllowSessionCreation(boolean): void
+}
+interface Filter << interface >> {
+  + init(FilterConfig): void
+  + doFilter(ServletRequest, ServletResponse, FilterChain): void
+  + destroy(): void
+}
+class GenericFilterBean {
+  - environment: Environment?
+  - requiredProperties: Set<String>
+  # logger: Log
+  - filterConfig: FilterConfig?
+  - servletContext: ServletContext?
+  - beanName: String?
+  + init(FilterConfig): void
+  # addRequiredProperty(String): void
+  # initFilterBean(): void
+  + setServletContext(ServletContext): void
+  + setBeanName(String): void
+  + afterPropertiesSet(): void
+  # initBeanWrapper(BeanWrapper): void
+  # getServletContext(): ServletContext
+  + setEnvironment(Environment): void
+  # getFilterName(): String?
+  # createEnvironment(): Environment
+  + getFilterConfig(): FilterConfig?
+  + destroy(): void
+  + getEnvironment(): Environment
+}
+class OAuth2LoginAuthenticationFilter {
+  - authorizedClientRepository: OAuth2AuthorizedClientRepository
+  - CLIENT_REGISTRATION_NOT_FOUND_ERROR_CODE: String
+  - clientRegistrationRepository: ClientRegistrationRepository
+  - authenticationResultConverter: Converter<OAuth2LoginAuthenticationToken, OAuth2AuthenticationToken>
+  + DEFAULT_FILTER_PROCESSES_URI: String
+  - AUTHORIZATION_REQUEST_NOT_FOUND_ERROR_CODE: String
+  - authorizationRequestRepository: AuthorizationRequestRepository<OAuth2AuthorizationRequest>
+  + attemptAuthentication(HttpServletRequest, HttpServletResponse): Authentication
+  + setAuthenticationResultConverter(Converter<OAuth2LoginAuthenticationToken, OAuth2AuthenticationToken>): void
+  - createAuthenticationResult(OAuth2LoginAuthenticationToken): OAuth2AuthenticationToken
+  + setAuthorizationRequestRepository(AuthorizationRequestRepository<OAuth2AuthorizationRequest>): void
+}
+class UsernamePasswordAuthenticationFilter {
+  - DEFAULT_ANT_PATH_REQUEST_MATCHER: AntPathRequestMatcher
+  - usernameParameter: String
+  + SPRING_SECURITY_FORM_PASSWORD_KEY: String
+  - passwordParameter: String
+  - postOnly: boolean
+  + SPRING_SECURITY_FORM_USERNAME_KEY: String
+  + setPostOnly(boolean): void
+  + getPasswordParameter(): String
+  # obtainPassword(HttpServletRequest): String?
+  + attemptAuthentication(HttpServletRequest, HttpServletResponse): Authentication
+  + setUsernameParameter(String): void
+  + getUsernameParameter(): String
+  # obtainUsername(HttpServletRequest): String?
+  + setPasswordParameter(String): void
+  # setDetails(HttpServletRequest, UsernamePasswordAuthenticationToken): void
+}
+
+AbstractAuthenticationProcessingFilter  -[#000082,plain]-^  GenericFilterBean
+GenericFilterBean                       -[#008200,dashed]-^  Filter
+OAuth2LoginAuthenticationFilter         -[#000082,plain]-^  AbstractAuthenticationProcessingFilter
+UsernamePasswordAuthenticationFilter    -[#000082,plain]-^  AbstractAuthenticationProcessingFilter
+@enduml

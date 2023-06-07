@@ -244,7 +244,8 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 			 *		2. 使用 AuthenticationManager 认证 UsernamePasswordAuthenticationToken
 			 *
 			 * 	{@link org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter#attemptAuthentication(HttpServletRequest, HttpServletResponse)}
-			 *
+			 *		1. 从 authorizationRequest 获取配置的第三方服务OAuth2配置信息(配置了访问令牌url、个人信息url)
+			 *		2. 使用 AuthenticationManager 进行认证 (其实就是拿着 code(授权码) 访问第三方服务拿到访问令牌，再根据访问令牌请求第三方系统的个人信息接口获取个人信息)
 			 */
 			Authentication authenticationResult = attemptAuthentication(request, response);
 			if (authenticationResult == null) {

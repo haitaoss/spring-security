@@ -1150,6 +1150,8 @@ public interface AuthenticationEntryPoint {
 
 [ExceptionTranslationFilter](#ExceptionTranslationFilter) 捕获到 AccessDeniedException 且 认证的用户 不是匿名用户、不是rememberMe用户 会执行 `AccessDeniedHandler#handle` 来处理异常，比如往响应体设置异常信息 或者 重定向到错误页面。
 
+[CsrfFilter](#CsrfFilter) 也依赖 `AccessDeniedHandler#handle` 来处理伪造请求
+
 ```java
 public class AccessDeniedException extends RuntimeException {
 
@@ -1284,9 +1286,88 @@ public interface LogoutSuccessHandler {
 - SessionManagementFilter
 - ExceptionTranslationFilter
 - FilterSecurityInterceptor
+- AuthorizationFilter
 - SwitchUserFilter
 
+## CsrfFilter
+
+CsrfFilter 优先级，很高会在 [认证Filter](#AbstractAuthenticationProcessingFilter)、[异常处理Filter](#ExceptionTranslationFilter)、[鉴权Filter](#AuthorizationFilter) 之前执行。主要目的是生成 csrfToken 存到Request域中保证后续的Filter能用到，比如 DefaultLoginPageGeneratingFilter 会将 csrfToken  写到生成登录页中。因为 CsrfFilter  拦截到不是 `{"GET", "HEAD", "TRACE", "OPTIONS"} ` 的请求，会检验request中是否携带正确的 csrfToken，正确才执行后续的Filter，不正确就使用 [AccessDeniedHandler](#AccessDeniedHandler) 处理异常。
+
+**总之 CsrfFilter  的目的是设置一个会话的标识(csrfToken )，请求带上正确的标识才允许访问。**
+
+标识是通过 CsrfTokenRepository  存储、查询的。默认是用的 HttpSessionCsrfTokenRepository ，它会生成一个随机字符串存到 session 中，并将 sessionID 设置到 cookie 中交由浏览器存储。之后浏览器执行请求时就会把 cookie 传到服务器，HttpSessionCsrfTokenRepository  就会根据cookie记录的sessionID拿到session再从session中拿到 csrfToken 这个作为**真实值**，再从 request 的**请求头**或者**请求参数**中获取 csrfToken 这个作为**输入值**，输入值与真实值一致才允许访问。
+
+```java
+public final class CsrfFilter extends OncePerRequestFilter {
+
+    private final CsrfTokenRepository tokenRepository;
+    private RequestMatcher requireCsrfProtectionMatcher = DEFAULT_CSRF_MATCHER;
+    private AccessDeniedHandler accessDeniedHandler = new AccessDeniedHandlerImpl();
+    private CsrfTokenRequestHandler requestHandler = new CsrfTokenRequestAttributeHandler();
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        return Boolean.TRUE.equals(request.getAttribute(SHOULD_NOT_FILTER));
+    }
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
+        // 生成 或者 从cookie、session... 中拿到 csrfToken
+        DeferredCsrfToken deferredCsrfToken = this.tokenRepository.loadDeferredToken(request, response);
+        /**
+         * 设置到 request 中。
+         * 比如 {@link DefaultLoginPageGeneratingFilter#generateLoginPageHtml(HttpServletRequest, boolean, boolean)} 会使用这个属性，拼接出 登录页面，
+         * 从而保证能通过 {@link this#doFilterInternal} 的验证
+         */
+        request.setAttribute(DeferredCsrfToken.class.getName(), deferredCsrfToken);
+        /**
+         *  执行 requestHandler。一般就是设置属性而已，看具体的实现
+         * {@link CsrfTokenRequestAttributeHandler#handle(HttpServletRequest, HttpServletResponse, Supplier)}
+         */
+        this.requestHandler.handle(request, response, deferredCsrfToken::get);
+        /**
+         * request 不满足规则，默认就是校验 requestMethod 是 {"GET", "HEAD", "TRACE", "OPTIONS"} 就放行
+         * {@link DefaultRequiresCsrfMatcher#matches(HttpServletRequest)}
+         */
+        if (!this.requireCsrfProtectionMatcher.matches(request)) {
+            if (this.logger.isTraceEnabled()) {
+                this.logger.trace("Did not protect against CSRF since request did not match "
+                        + this.requireCsrfProtectionMatcher);
+            }
+            // 放行
+            filterChain.doFilter(request, response);
+            return;
+        }
+        CsrfToken csrfToken = deferredCsrfToken.get();
+        /**
+         * 拿到 token 。根据那么从请求头或者请求参数中
+         * {@link CsrfTokenRequestHandler#resolveCsrfTokenValue(HttpServletRequest, CsrfToken)}
+         */
+        String actualToken = this.requestHandler.resolveCsrfTokenValue(request, csrfToken);
+        // token 不一致
+        if (!equalsConstantTime(csrfToken.getToken(), actualToken)) {
+            boolean missingToken = deferredCsrfToken.isGenerated();
+            this.logger.debug(
+                    LogMessage.of(() -> "Invalid CSRF token found for " + UrlUtils.buildFullRequestUrl(request)));
+            AccessDeniedException exception = (!missingToken) ? new InvalidCsrfTokenException(csrfToken, actualToken)
+                    : new MissingCsrfTokenException(actualToken);
+            // 执行 accessDeniedHandler
+            this.accessDeniedHandler.handle(request, response, exception);
+            return;
+        }
+        // 放行
+        filterChain.doFilter(request, response);
+    }
+
+}
+```
+
+
+
 ## SessionManagementFilter
+
+目的：通过 SecurityContextRepository 将 SecurityContext 进行持久化。比如存到Cookie、Session
 
 ```java
 public class SessionManagementFilter extends GenericFilterBean {
@@ -1358,15 +1439,449 @@ public class SessionManagementFilter extends GenericFilterBean {
 
 ## LogoutFilter
 
+目的：拦截登出请求，就清除缓存的 SecurityContext 信息 并 重定向到登出页面
+
+```java
+public class LogoutFilter extends GenericFilterBean {
+
+    private SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder.getContextHolderStrategy();
+
+    private RequestMatcher logoutRequestMatcher;
+
+    private final LogoutHandler handler;
+
+    private final LogoutSuccessHandler logoutSuccessHandler;
+
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        doFilter((HttpServletRequest) request, (HttpServletResponse) response, chain);
+    }
+
+    private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        // request 匹配配置的 logout 路径
+        if (this.logoutRequestMatcher.matches(request)) {
+            // 从上下文中获取 认证信息
+            Authentication auth = this.securityContextHolderStrategy.getContext().getAuthentication();
+            /**
+             * 回调 LogoutHandler
+             *
+             * 比如 {@link SecurityContextLogoutHandler#logout(HttpServletRequest, HttpServletResponse, Authentication)}
+             *      1. 将 session 设置为无效的
+             *      2. 从 SecurityContextHolderStrategy 中移除 SecurityContext
+             *      3. SecurityContextRepository 保存空的认证信息，相当于清空持久化的认证信息
+             * */
+            this.handler.logout(request, response, auth);
+            /**
+             * 回调 LogoutSuccessHandler。
+             * 
+             * 比如 {@link SimpleUrlLogoutSuccessHandler#onLogoutSuccess(HttpServletRequest, HttpServletResponse, Authentication)}
+             * 会重定向到登录页地址
+             */
+            this.logoutSuccessHandler.onLogoutSuccess(request, response, auth);
+            return;
+        }
+        // 放行
+        chain.doFilter(request, response);
+    }
+}
+```
+
+## OAuth2AuthorizationRequestRedirectFilter
+
+目的：
+
+1. 默认是处理 `/oauth2/authorization/{registrationId}` 请求，根据 registrationId 拿到配置的第三方OAuth2的配置信息，根据信息拼接出授权url，然后设置重定向信息，告诉浏览器重定向到第三方服务的授权页面，让用户进行授权。
+2. 捕获到 ClientAuthorizationRequiredException 异常，处理逻辑同上，都是重定向第三方授权页面。
+
+```java
+public class OAuth2AuthorizationRequestRedirectFilter extends OncePerRequestFilter {
+
+    public static final String DEFAULT_AUTHORIZATION_REQUEST_BASE_URI = "/oauth2/authorization";
+
+    private RedirectStrategy authorizationRedirectStrategy = new DefaultRedirectStrategy();
+
+    private OAuth2AuthorizationRequestResolver authorizationRequestResolver;
+
+    private AuthorizationRequestRepository<OAuth2AuthorizationRequest> authorizationRequestRepository = new HttpSessionOAuth2AuthorizationRequestRepository();
+
+    private RequestCache requestCache = new HttpSessionRequestCache();
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
+        try {
+            /**
+             * 能解析出 OAuth2AuthorizationRequest。
+             * 1. request 匹配了 authorizationRequestMatcher
+             * 2. 从 request 中提取出 registrationId
+             * 3. clientRegistrationRepository.findByRegistrationId(registrationId) 得到 ClientRegistration
+             * 4. 根据 ClientRegistration 构造出 OAuth2AuthorizationRequest。其实就是重定向地址、clientId、clientSecret等信息
+             *
+             * {@link DefaultOAuth2AuthorizationRequestResolver#resolve(HttpServletRequest)}
+             */
+            OAuth2AuthorizationRequest authorizationRequest = this.authorizationRequestResolver.resolve(request);
+            // 不为空
+            if (authorizationRequest != null) {
+                /**
+                 * 设置重定向信息。
+                 *
+                 * 1. 使用 authorizationRequestRepository 保存 authorizationRequest
+                 * 2. 重定向到第三方应用的授权页面
+                 */
+                this.sendRedirectForAuthorization(request, response, authorizationRequest);
+                // 结束方法
+                return;
+            }
+        } catch (Exception ex) {
+            // 往响应体写入异常信息
+            this.unsuccessfulRedirectForAuthorization(request, response, ex);
+            return;
+        }
+        try {
+            // 放行
+            filterChain.doFilter(request, response);
+        } catch (Exception ex) {
+            Throwable[] causeChain = this.throwableAnalyzer.determineCauseChain(ex);
+            // 有 ClientAuthorizationRequiredException
+            ClientAuthorizationRequiredException authzEx = (ClientAuthorizationRequiredException) this.throwableAnalyzer
+                    .getFirstThrowableOfType(ClientAuthorizationRequiredException.class, causeChain);
+            if (authzEx != null) {
+                try {
+                    // 解析出 authorizationRequest
+                    OAuth2AuthorizationRequest authorizationRequest = this.authorizationRequestResolver.resolve(request,
+                            authzEx.getClientRegistrationId());
+                    if (authorizationRequest == null) {
+                        throw authzEx;
+                    }
+                    // 缓存request
+                    this.requestCache.saveRequest(request, response);
+                    // 设置重定向信息
+                    this.sendRedirectForAuthorization(request, response, authorizationRequest);
+                } catch (Exception failed) {
+                    // 往响应体写入异常信息
+                    this.unsuccessfulRedirectForAuthorization(request, response, failed);
+                }
+                return;
+            }
+            throw new RuntimeException(ex);
+        }
+    }
+
+}
+```
+
 ## AbstractAuthenticationProcessingFilter
+
+通过模板方法定义认证的流程：尝试认证(子类实现该逻辑) -> 执行 SessionAuthenticationStrategy -> 认证结束执行：SecurityContextHolderStrategy、SecurityContextRepository、RememberMeServices、（AuthenticationSuccessHandler | AuthenticationFailureHandler）
+
+![AbstractAuthenticationProcessingFilter](.spring-security-source-note_imgs/AbstractAuthenticationProcessingFilter.png)
+
+```java
+public abstract class AbstractAuthenticationProcessingFilter extends GenericFilterBean
+        implements ApplicationEventPublisherAware, MessageSourceAware {
+
+    private SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder
+            .getContextHolderStrategy();
+    
+    private AuthenticationManager authenticationManager;
+
+    private RememberMeServices rememberMeServices = new NullRememberMeServices();
+
+    private RequestMatcher requiresAuthenticationRequestMatcher;
+
+    private SessionAuthenticationStrategy sessionStrategy = new NullAuthenticatedSessionStrategy();
+
+    private AuthenticationSuccessHandler successHandler = new SavedRequestAwareAuthenticationSuccessHandler();
+
+    private AuthenticationFailureHandler failureHandler = new SimpleUrlAuthenticationFailureHandler();
+
+    private SecurityContextRepository securityContextRepository = new NullSecurityContextRepository();
+
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        doFilter((HttpServletRequest) request, (HttpServletResponse) response, chain);
+    }
+
+    private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        /**
+         * 不是需要认证的
+         *
+         * {@link UsernamePasswordAuthenticationFilter}
+         * 		其实就是判断不是 /login
+         * {@link org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter}
+         * 		其实就是判断不是 第三方服务回调的地址，默认是 /login/oauth2/code/*。
+         * 		若是第三方服务回调的地址，一般会返回授权码，有了授权码就算是成功认证了
+         */
+        if (!this.requiresAuthenticationRequestMatcher.matches(request)) {
+            // 放行
+            chain.doFilter(request, response);
+            return;
+        }
+        try {
+            /**
+             * 尝试认证，这是一个抽象方法，由子类实现认证逻辑，返回认证结果信息
+             * 	{@link UsernamePasswordAuthenticationFilter#attemptAuthentication}
+             *		1. 从request参数中提取 username 和 password 构造出 UsernamePasswordAuthenticationToken
+             *		2. 使用 AuthenticationManager 认证 UsernamePasswordAuthenticationToken
+             *
+             * 	{@link OAuth2LoginAuthenticationFilter#attemptAuthentication}
+             *      1. 从 authorizationRequest 获取配置的第三方服务OAuth2配置信息(配置了访问令牌url、个人信息url)
+             *      2. 使用 AuthenticationManager 进行认证 (其实就是拿着 code(授权码) 访问第三方服务拿到访问令牌，再根据访问令牌请求第三方系统的个人信息接口获取个人信息)
+             */
+            Authentication authenticationResult = attemptAuthentication(request, response);
+            if (authenticationResult == null) {
+                return;
+            }
+            // 回调 sessionStrategy
+            this.sessionStrategy.onAuthentication(authenticationResult, request, response);
+            /**
+             * 1. 保存 SecurityContext
+             * 2. 回调 RememberMeService#loginSuccess
+             * 3. 发布事件 InteractiveAuthenticationSuccessEvent
+             * 4. 回调 SuccessHandler#onAuthenticationSuccess
+             * 		默认是注册了 SavedRequestAwareAuthenticationSuccessHandler，这是用来设置 重定向到之前访问的路径
+             * 		比如：未登录 -> 需要认证的页面 -> 重定向到登录页面 -> 认证通过 -> 重定向到之前的页面
+             */
+            successfulAuthentication(request, response, chain, authenticationResult);
+        }
+        catch (InternalAuthenticationServiceException failed) {
+            /**
+             * 1. 清除 SecurityContext
+             * 2. 回调 RememberMeService#loginFail
+             * 3. 回调 AuthenticationFailureHandler#onAuthenticationFailure
+             */
+            unsuccessfulAuthentication(request, response, failed);
+        }
+    }
+}
+```
+
+## OAuth2LoginAuthenticationFilter
+
+目的：拦截OAuth2第三方服务回调本系统的请求，从请求中拿到授权码去调用第三方服务获取访问令牌，再拿着访问令牌调第三方服务的个人信息接口，拿到个人信息封装成 Authentication 就算是认证通过了。
+
+认证的实现看 [OAuth2LoginAuthenticationProvider](#OAuth2LoginAuthenticationProvider)
+
+```java
+public class OAuth2LoginAuthenticationFilter extends AbstractAuthenticationProcessingFilter {
+
+    public static final String DEFAULT_FILTER_PROCESSES_URI = "/login/oauth2/code/*";
+
+    private ClientRegistrationRepository clientRegistrationRepository;
+
+    private OAuth2AuthorizedClientRepository authorizedClientRepository;
+
+    private AuthorizationRequestRepository<OAuth2AuthorizationRequest> authorizationRequestRepository = new HttpSessionOAuth2AuthorizationRequestRepository();
+
+    @Override
+    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
+            throws AuthenticationException {
+        MultiValueMap<String, String> params = OAuth2AuthorizationResponseUtils.toMultiMap(request.getParameterMap());
+
+        // 不是 OAuth2 服务方回调的请求（因为OAuth2回调时会传递一些参数，根据是否有这些参数来判断的）
+        if (!OAuth2AuthorizationResponseUtils.isAuthorizationResponse(params)) {
+            OAuth2Error oauth2Error = new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST);
+            // 抛出异常
+            throw new OAuth2AuthenticationException(oauth2Error, oauth2Error.toString());
+        }
+        /**
+         * 获取 authorizationRequest
+         *
+         * 在跳转到第三方系统认证页面之前会设置 OAuth2AuthorizationRequest
+         * 		{@link OAuth2AuthorizationRequestRedirectFilter#sendRedirectForAuthorization(HttpServletRequest, HttpServletResponse, OAuth2AuthorizationRequest)}
+         */
+        OAuth2AuthorizationRequest authorizationRequest = this.authorizationRequestRepository
+                .removeAuthorizationRequest(request, response);
+
+        // 不存在说明并发起过第三方认证请求
+        if (authorizationRequest == null) {
+            OAuth2Error oauth2Error = new OAuth2Error(AUTHORIZATION_REQUEST_NOT_FOUND_ERROR_CODE);
+            // 抛出异常
+            throw new OAuth2AuthenticationException(oauth2Error, oauth2Error.toString());
+        }
+        // 拿到
+        String registrationId = authorizationRequest.getAttribute(OAuth2ParameterNames.REGISTRATION_ID);
+        // 根据 registrationId 获取 ClientRegistration
+        ClientRegistration clientRegistration = this.clientRegistrationRepository.findByRegistrationId(registrationId);
+        // 为空，说明没配置过
+        if (clientRegistration == null) {
+            OAuth2Error oauth2Error = new OAuth2Error(CLIENT_REGISTRATION_NOT_FOUND_ERROR_CODE,
+                    "Client Registration not found with Id: " + registrationId, null);
+            // 抛出异常
+            throw new OAuth2AuthenticationException(oauth2Error, oauth2Error.toString());
+        }
+        // @formatter:off
+        String redirectUri = UriComponentsBuilder.fromHttpUrl(UrlUtils.buildFullRequestUrl(request))
+                .replaceQuery(null)
+                .build()
+                .toUriString();
+        // @formatter:on
+        OAuth2AuthorizationResponse authorizationResponse = OAuth2AuthorizationResponseUtils.convert(params,
+                redirectUri);
+        Object authenticationDetails = this.authenticationDetailsSource.buildDetails(request);
+
+        // 构造出 OAuth2LoginAuthenticationToken
+        OAuth2LoginAuthenticationToken authenticationRequest = new OAuth2LoginAuthenticationToken(clientRegistration,
+                new OAuth2AuthorizationExchange(authorizationRequest, authorizationResponse));
+        authenticationRequest.setDetails(authenticationDetails);
+        /**
+         * 使用 AuthenticationManager 进行认证。
+         * 主要是通过 code(授权码) 访问第三方系统拿到访问令牌，再根据访问令牌请求第三方系统的个人信息接口获取个人信息，
+         * 有了个人信息就算是 认证通过了
+         * 
+         * 认证的代码 {@link OAuth2LoginAuthenticationProvider#authenticate}
+         */
+        OAuth2LoginAuthenticationToken authenticationResult = (OAuth2LoginAuthenticationToken) this
+                .getAuthenticationManager().authenticate(authenticationRequest);
+        /**
+         * 转换成 OAuth2AuthenticationToken
+         * {@link OAuth2LoginAuthenticationFilter#createAuthenticationResult(OAuth2LoginAuthenticationToken)}
+         */
+        OAuth2AuthenticationToken oauth2Authentication = this.authenticationResultConverter
+                .convert(authenticationResult);
+        Assert.notNull(oauth2Authentication, "authentication result cannot be null");
+        oauth2Authentication.setDetails(authenticationDetails);
+
+        // 构造出 OAuth2AuthorizedClient
+        OAuth2AuthorizedClient authorizedClient = new OAuth2AuthorizedClient(
+                authenticationResult.getClientRegistration(), oauth2Authentication.getName(),
+                authenticationResult.getAccessToken(), authenticationResult.getRefreshToken());
+
+        // 将 OAuth2AuthorizedClient 存起来
+        this.authorizedClientRepository.saveAuthorizedClient(authorizedClient, oauth2Authentication, request, response);
+        return oauth2Authentication;
+    }
+}
+```
+
+## UsernamePasswordAuthenticationFilter
+
+目的：拦截登录请求，从请求中输入的用户名密码构造出UsernamePasswordAuthenticationToken，然后委托给 AuthenticationManager 进行认证。
+
+认证的实现看 [DaoAuthenticationProvider](#DaoAuthenticationProvider)
+
+```java
+public class UsernamePasswordAuthenticationFilter extends AbstractAuthenticationProcessingFilter {
+
+    public static final String SPRING_SECURITY_FORM_USERNAME_KEY = "username";
+
+    public static final String SPRING_SECURITY_FORM_PASSWORD_KEY = "password";
+
+    private static final AntPathRequestMatcher DEFAULT_ANT_PATH_REQUEST_MATCHER = new AntPathRequestMatcher("/login",
+            "POST");
+
+    @Override
+    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
+            throws AuthenticationException {
+        // 设置了postOnly 但不是POST 请求
+        if (this.postOnly && !request.getMethod().equals("POST")) {
+            // 抛出异常
+            throw new AuthenticationServiceException("Authentication method not supported: " + request.getMethod());
+        }
+        // 从request的参数中拿到 username
+        String username = obtainUsername(request);
+        // 去除空格
+        username = (username != null) ? username.trim() : "";
+        // 从request的参数中拿到 password
+        String password = obtainPassword(request);
+        password = (password != null) ? password : "";
+        // 构造出 UsernamePasswordAuthenticationToken
+        UsernamePasswordAuthenticationToken authRequest = UsernamePasswordAuthenticationToken.unauthenticated(username,
+                password);
+        // 模板方法。默认是将 request 暴露给 UsernamePasswordAuthenticationToken
+        setDetails(request, authRequest);
+        /**
+         * 使用 AuthenticationManager 进行认证。具体如何认证看 AuthenticationProvider
+         * {@link org.springframework.security.authentication.ProviderManager#authenticate(org.springframework.security.core.Authentication)}
+         */
+        return this.getAuthenticationManager().authenticate(authRequest);
+    }
+}
+```
 
 ## ExceptionTranslationFilter
 
+[FilterSecurityInterceptor](#FilterSecurityInterceptor)、[AuthorizationFilter](#AuthorizationFilter ) 是 Spring Security 完成鉴权逻辑的过滤器，就叫做**鉴权Filter**吧，FilterSecurityInterceptor 已经过时了，建议使用 AuthorizationFilter。
+
+ExceptionTranslationFilter 优先于 FilterSecurityInterceptor、AuthorizationFilter 之前执行，所以能捕获到他俩里面抛出的异常。它只处理 AuthenticationException 、 AccessDeniedException 这两种异常，因为鉴权Filter会根据情况抛出这两种异常。顾名思义，鉴权Filter 判断用户未认证过就抛出 AuthenticationException，判断用户不具备 Request配置的权限就抛出 AccessDeniedException。
+
+ExceptionTranslationFilter  捕获到 AuthenticationException 就使用 [RequestCache](#RequestCache) 缓存当前request信息，用于后面认证，然后调用 [AuthenticationEntryPoint](#AuthenticationEntryPoint ) 开始认证（比如往响应体设置异常信息 或者 重定向到登录页面 或者 转发到登录页面）
+
+ExceptionTranslationFilter  捕获到 AccessDeniedException 就委托给 AccessDeniedHandler 处理。比如往响应体设置错误信息。
+
+```java
+public class ExceptionTranslationFilter extends GenericFilterBean implements MessageSourceAware {
+    
+    private AuthenticationEntryPoint authenticationEntryPoint;
+    private AccessDeniedHandler accessDeniedHandler = new AccessDeniedHandlerImpl();
+    private RequestCache requestCache = new HttpSessionRequestCache();
+
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        doFilter((HttpServletRequest) request, (HttpServletResponse) response, chain);
+    }
+
+    private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        try {
+            // 放行
+            chain.doFilter(request, response);
+        }
+        catch (IOException ex) {
+            throw ex;
+        }
+        catch (Exception ex) {
+            /**
+             * 构造出 causeChain。其实就是遍历异常调用栈，收集期望的异常对象
+             */
+            // Try to extract a SpringSecurityException from the stacktrace
+            Throwable[] causeChain = this.throwableAnalyzer.determineCauseChain(ex);
+            // 遍历 causeChain 拿到 AuthenticationException 类型的异常对象
+            RuntimeException securityException = (AuthenticationException) this.throwableAnalyzer
+                    .getFirstThrowableOfType(AuthenticationException.class, causeChain);
+            if (securityException == null) {
+                // 补偿策略，获取 AccessDeniedException
+                securityException = (AccessDeniedException) this.throwableAnalyzer
+                        .getFirstThrowableOfType(AccessDeniedException.class, causeChain);
+            }
+            // 为空，说明抛出的异常不是我们关注的异常
+            if (securityException == null) {
+                // 直接抛出异常
+                rethrow(ex);
+            }
+            /**
+             * 处理 SpringSecurityException
+             * 1. 是 AuthenticationException 异常
+             * 		1.1 往 SecurityContextHolderStrategy 记录一个空的 SecurityContext
+             * 		1.2 使用 RequestCache 缓存当前request信息，用于后面认证通过后可以恢复现场
+             * 		1.3 调用 AuthenticationEntryPoint 开始认证（往响应体设置异常信息 或者 重定向到登录页面 或者 转发到登录页面）
+             *
+             * 2. 是 AccessDeniedException 异常：
+             * 		2.1 是匿名用户 或者 是rememberMe 就开始认证(执行步骤1的逻辑)
+             * 		2.2 调用 AccessDeniedHandler 处理访问拒绝异常（往响应体设置异常信息 或者 重定向到错误页面）
+             */
+            handleSpringSecurityException(request, response, chain, securityException);
+        }
+    }
+}
+```
+
 ## FilterSecurityInterceptor
+
+
 
 ## AuthorizationFilter
 
 # 场景说明
+
+## 认证流程
+
+## 鉴权流程
 
 ## 认证成功会重定向到先前的访问页面
 

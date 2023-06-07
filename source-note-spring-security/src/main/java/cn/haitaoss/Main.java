@@ -31,7 +31,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.authentication.configuration.EnableGlobalAuthentication;
 import org.springframework.security.config.annotation.web.HttpSecurityBuilder;
-import org.springframework.security.config.annotation.web.builders.FilterOrderRegistration;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractInterceptUrlConfigurer;
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
@@ -109,11 +108,6 @@ public class Main extends AbstractAnnotationConfigDispatcherServletInitializer {
      *
      * 		扩展：@ServletComponentScan 的作用是将标注了 @WebServlet、@WebFilter、@WebListener 的类映射成 ServletRegistrationBean、FilterRegistrationBean、ServletListenerRegistrationBean 类型的bean注册到容器中。
      *
-     * {@link EnableWebSecurity}
-     * 		会注册名为 springSecurityFilterChain 到容器中
-     *
-     * {@link EnableGlobalAuthentication}
-     * {@link AuthenticationConfiguration}
      *
      * 深入研究：
      * 	1. 进行认证的Filter： FilterSecurityInterceptor、AuthorizationFilter
@@ -190,10 +184,6 @@ public class Main extends AbstractAnnotationConfigDispatcherServletInitializer {
     /**
      * 关键的类
      *
-     * 自定义认证Filter都应该实现 AbstractAuthenticationProcessingFilter，
-     * 聚合了 AuthenticationSuccessHandler、AuthenticationFailureHandler。
-     * 认证成功回调 AuthenticationSuccessHandler，认证失败回调 AuthenticationFailureHandler
-     *
      * OAuth2LoginAuthenticationProvider
      *      {@link OAuth2LoginAuthenticationProvider#authenticate(Authentication)}
      *      1. 委托给 OAuth2AuthorizationCodeAuthenticationProvider 得到 OAuth2AuthorizationCodeAuthenticationToken
@@ -207,8 +197,9 @@ public class Main extends AbstractAnnotationConfigDispatcherServletInitializer {
      *
      */
     /**
-     * {@link FilterOrderRegistration#FilterOrderRegistration()}
      *
+     *
+     * @RegisteredOAuth2AuthorizedClient、@AuthenticationPrincipal、@CurrentSecurityContext
      */
 
     public static void main(String[] args) throws Exception {

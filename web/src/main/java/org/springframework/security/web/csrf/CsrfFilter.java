@@ -135,13 +135,14 @@ public final class CsrfFilter extends OncePerRequestFilter {
 			filterChain.doFilter(request, response);
 			return;
 		}
+		// csrfToken 这个是真实值
 		CsrfToken csrfToken = deferredCsrfToken.get();
 		/**
 		 * 拿到 token 。根据那么从请求头或者请求参数中
 		 * {@link CsrfTokenRequestHandler#resolveCsrfTokenValue(HttpServletRequest, CsrfToken)}
 		 */
 		String actualToken = this.requestHandler.resolveCsrfTokenValue(request, csrfToken);
-		// token 不一致
+		// request携带的token 与 csrfToken 不一致
 		if (!equalsConstantTime(csrfToken.getToken(), actualToken)) {
 			boolean missingToken = deferredCsrfToken.isGenerated();
 			this.logger.debug(

@@ -241,6 +241,7 @@ public class SecurityFilterChainConfig {
         );
         http
                 .securityMatcher("/**")
+                .csrf(csrf->csrf.disable())
                 /**
                  * 配置鉴权规则。
                  * 会注册 AuthorizationFilter

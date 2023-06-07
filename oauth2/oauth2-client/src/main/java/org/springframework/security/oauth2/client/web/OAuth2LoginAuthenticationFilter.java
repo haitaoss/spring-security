@@ -162,6 +162,7 @@ public class OAuth2LoginAuthenticationFilter extends AbstractAuthenticationProce
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws AuthenticationException {
 		MultiValueMap<String, String> params = OAuth2AuthorizationResponseUtils.toMultiMap(request.getParameterMap());
+
 		// 不是 OAuth2 服务方回调的请求（因为OAuth2回调时会传递一些参数，根据是否有这些参数来判断的）
 		if (!OAuth2AuthorizationResponseUtils.isAuthorizationResponse(params)) {
 			OAuth2Error oauth2Error = new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST);
@@ -203,13 +204,17 @@ public class OAuth2LoginAuthenticationFilter extends AbstractAuthenticationProce
 		OAuth2AuthorizationResponse authorizationResponse = OAuth2AuthorizationResponseUtils.convert(params,
 				redirectUri);
 		Object authenticationDetails = this.authenticationDetailsSource.buildDetails(request);
+
 		// 构造出 OAuth2LoginAuthenticationToken
 		OAuth2LoginAuthenticationToken authenticationRequest = new OAuth2LoginAuthenticationToken(clientRegistration,
 				new OAuth2AuthorizationExchange(authorizationRequest, authorizationResponse));
 		authenticationRequest.setDetails(authenticationDetails);
 		/**
+		 * 使用 AuthenticationManager 进行认证。
 		 * 主要是通过 code(授权码) 访问第三方系统拿到访问令牌，再根据访问令牌请求第三方系统的个人信息接口获取个人信息，
 		 * 有了个人信息就算是 认证通过了
+		 *
+		 * 认证的代码 {@link OAuth2LoginAuthenticationProvider#authenticate}
 		 */
 		OAuth2LoginAuthenticationToken authenticationResult = (OAuth2LoginAuthenticationToken) this
 				.getAuthenticationManager().authenticate(authenticationRequest);
