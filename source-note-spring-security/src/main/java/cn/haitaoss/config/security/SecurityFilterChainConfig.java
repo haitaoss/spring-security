@@ -139,7 +139,8 @@ public class SecurityFilterChainConfig {
                         .requestMatchers("/f2/x").permitAll() // 放行
                         .requestMatchers("/f2/x").denyAll() // 任何尚未匹配的 URL 都将被拒绝访问。如果您不想意外忘记更新您的授权规则，这是一个很好的策略。
                         .requestMatchers("/f2/x").fullyAuthenticated()
-                        .requestMatchers("/f2/db/**").access(AuthorizationManagers.allOf(
+                        .requestMatchers("/f2/db/**").access(
+                                AuthorizationManagers.allOf(
                                 AuthorityAuthorizationManager.hasRole("ADMIN"),
                                 AuthorityAuthorizationManager.hasRole("DBA")
                         ))
@@ -241,7 +242,6 @@ public class SecurityFilterChainConfig {
         );
         http
                 .securityMatcher("/**")
-                .csrf(csrf->csrf.disable())
                 /**
                  * 配置鉴权规则。
                  * 会注册 AuthorizationFilter

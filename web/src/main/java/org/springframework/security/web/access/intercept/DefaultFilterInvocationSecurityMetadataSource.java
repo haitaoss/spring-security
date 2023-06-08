@@ -83,10 +83,10 @@ public class DefaultFilterInvocationSecurityMetadataSource implements FilterInvo
 		// 遍历
 		for (Map.Entry<RequestMatcher, Collection<ConfigAttribute>> entry : this.requestMap.entrySet()) {
 			/**
-			 * 匹配
+			 * request 匹配
 			 */
 			if (entry.getKey().matches(request)) {
-				// 返回
+				// 返回配置的属性(就是这个 request 对应的权限信息)
 				return entry.getValue();
 			}
 			else {
@@ -96,6 +96,7 @@ public class DefaultFilterInvocationSecurityMetadataSource implements FilterInvo
 				}
 			}
 		}
+		// 说明没有对request配置权限，可以理解成无需权限就
 		return null;
 	}
 

@@ -62,10 +62,13 @@ public class WebExpressionVoter implements AccessDecisionVoter<FilterInvocation>
 			// 弃权
 			return ACCESS_ABSTAIN;
 		}
-		// 构造 EvaluationContext。
+		/**
+		 * 构造 EvaluationContext。其 RootObject 是 SecurityExpressionRoot 类型的，
+		 * 所以 SpEL 表达式才可以写 "hasRole('ADMIN') and hasRole('DBA')"
+		 * */
 		EvaluationContext ctx = webExpressionConfigAttribute.postProcess(
 				this.expressionHandler.createEvaluationContext(authentication, filterInvocation), filterInvocation);
-		// 计算表达式
+		// 计算 SpEL 表达式 得到结果
 		boolean granted = ExpressionUtils.evaluateAsBoolean(webExpressionConfigAttribute.getAuthorizeExpression(), ctx);
 		if (granted) {
 			// 授权

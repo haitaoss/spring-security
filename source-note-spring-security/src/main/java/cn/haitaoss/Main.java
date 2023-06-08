@@ -28,9 +28,12 @@ import org.springframework.security.access.vote.AffirmativeBased;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authorization.AuthorityAuthorizationManager;
+import org.springframework.security.authorization.AuthorizationManagers;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.authentication.configuration.EnableGlobalAuthentication;
 import org.springframework.security.config.annotation.web.HttpSecurityBuilder;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractInterceptUrlConfigurer;
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
@@ -40,6 +43,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.client.authentication.OAuth2LoginAuthenticationProvider;
 import org.springframework.security.web.FilterInvocation;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.ExceptionTranslationFilter;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.access.intercept.FilterSecurityInterceptor;
@@ -109,97 +113,6 @@ public class Main extends AbstractAnnotationConfigDispatcherServletInitializer {
      * 		扩展：@ServletComponentScan 的作用是将标注了 @WebServlet、@WebFilter、@WebListener 的类映射成 ServletRegistrationBean、FilterRegistrationBean、ServletListenerRegistrationBean 类型的bean注册到容器中。
      *
      *
-     * 深入研究：
-     * 	1. 进行认证的Filter： FilterSecurityInterceptor、AuthorizationFilter
-     * 	2. AuthenticationManager 是什么时候注册的？？？？
-     *            {@link org.springframework.security.config.annotation.web.configuration.HttpSecurityConfiguration#httpSecurity()}
-     *
-     * {@link org.springframework.security.config.annotation.web.configurers.PermitAllSupport#permitAll(HttpSecurityBuilder, RequestMatcher...)}
-     * {@link ExpressionUrlAuthorizationConfigurer#ExpressionUrlAuthorizationConfigurer(ApplicationContext)}
-     *
-     * 认证
-     * XxxAuthenticationFilter
-     * {@link BasicAuthenticationFilter#doFilterInternal(HttpServletRequest, HttpServletResponse, FilterChain)}
-     * {@link UsernamePasswordAuthenticationFilter#doFilter(ServletRequest, ServletResponse, FilterChain)}
-     * {@link AbstractAuthenticationProcessingFilter#doFilter(ServletRequest, ServletResponse, FilterChain)}
-     *
-     * {@link AuthenticationManager#authenticate(Authentication)}
-     *
-     * 鉴权
-     * {@link FilterSecurityInterceptor#doFilter(ServletRequest, ServletResponse, FilterChain)}
-     * {@link AuthorizationFilter#doFilter(ServletRequest, ServletResponse, FilterChain)}
-     * {@link AccessDecisionManager#decide(Authentication, Object, Collection)}
-     *
-     * authenticationEntryPoint 是在认证失败时用来 决定作何种行为
-     */
-    /**
-     * AuthenticationManager 是用来实现认证逻辑的。根据request的信息构造出 Authentication 然后认证 Authentication 是否正确
-     * {@link org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)}
-     * {@link org.springframework.security.authentication.ProviderManager#authenticate(org.springframework.security.core.Authentication)}
-     * {@link org.springframework.security.authentication.dao.AbstractUserDetailsAuthenticationProvider#authenticate(org.springframework.security.core.Authentication)}
-     *
-     * 大致逻辑：
-     * 		1. 由 XxAuthenticationFilter 构造出 AuthenticationToken
-     * 		2. 调用 AuthenticationManager#authenticate 进行认证。默认是 ProviderManager 实例
-     * 		3. 遍历 AuthenticationProvider 使用适配 AuthenticationToken 的，进行认证 AuthenticationProvider#authenticate
-     * 		4. 没有符合的 AuthenticationProvider 委托给 parent 进行认证
-     **/
-    /**
-     * AuthenticationEntryPoint 用户未认证但是访问了需要认证的页面，此时会通过 AuthenticationEntryPoint 让用户进入认证流程。
-     * 比如 LoginUrlAuthenticationEntryPoint 是通过重定向或者转发的方式到登录页面让用户进行认证
-     *
-     * {@link ExceptionTranslationFilter#doFilter(HttpServletRequest, HttpServletResponse, FilterChain)}
-     * {@link org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter#doFilterInternal(HttpServletRequest, HttpServletResponse, FilterChain)}
-     * {@link BasicAuthenticationFilter#doFilterInternal(HttpServletRequest, HttpServletResponse, FilterChain)}
-     **/
-    /**
-     * 鉴权逻辑
-     * AuthorizeHttpRequestsConfigurer (推荐)
-     * {@link AuthorizeHttpRequestsConfigurer#configure(HttpSecurityBuilder)}
-     * {@link AuthorizationFilter#doFilter(ServletRequest, ServletResponse, FilterChain)}
-     * {@link RequestMatcherDelegatingAuthorizationManager#check(Supplier, HttpServletRequest)}
-     *
-     * 校验逻辑
-     * AuthorityAuthorizationManager
-     * AuthenticatedAuthorizationManager
-     * DaoAuthenticationProviderd
-     *
-     * ExpressionUrlAuthorizationConfigurer（过时）
-     * {@link AbstractInterceptUrlConfigurer#configure(HttpSecurityBuilder)}
-     * FilterSecurityInterceptor、ExpressionBasedFilterInvocationSecurityMetadataSource
-     * {@link FilterSecurityInterceptor#doFilter(ServletRequest, ServletResponse, FilterChain)}
-     *
-     * {@link AffirmativeBased#decide(Authentication, Object, Collection)}
-     * SecurityExpressionRoot、WebSecurityExpressionRoot
-     */
-    /**
-     * 请求被拦截，重定向到登录页面，登录后，会自动重定向到之前访问页面的原因
-     *
-     * requestCache 用以缓存原始request，比如认证通过后，就从 requestCache 中拿到原始请求，重定向到原来的页面
-     * {@link org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)}
-     * {@link org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler#onAuthenticationSuccess(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, org.springframework.security.core.Authentication)}
-     * 		这个设置的重定向
-     *        {@link org.springframework.security.config.annotation.web.configurers.AbstractAuthenticationFilterConfigurer#configure(org.springframework.security.config.annotation.web.HttpSecurityBuilder)}
-     */
-    /**
-     * 关键的类
-     *
-     * OAuth2LoginAuthenticationProvider
-     *      {@link OAuth2LoginAuthenticationProvider#authenticate(Authentication)}
-     *      1. 委托给 OAuth2AuthorizationCodeAuthenticationProvider 得到 OAuth2AuthorizationCodeAuthenticationToken
-     *          1.1 校验第三方系统回调本系统传递的参数是正确的（主要是有授权码）
-     *          1.2 根据授权码请求第三方系统提供的接口，获取 访问令牌
-     *
-     *      2. 调用 OAuth2UserService 得到用户信息
-     *          可以自定义 OAuth2UserService 决定应该访问那些 OAuth2 接口得到更多用户信息（默认是根据访问令牌请求第三方的个人信息接口获取用户信息）
-     *
-     *      3. 构造出 OAuth2LoginAuthenticationToken。
-     *
-     */
-    /**
-     *
-     *
-     * @RegisteredOAuth2AuthorizedClient、@AuthenticationPrincipal、@CurrentSecurityContext
      */
 
     public static void main(String[] args) throws Exception {
@@ -281,4 +194,6 @@ public class Main extends AbstractAnnotationConfigDispatcherServletInitializer {
         thread.setDaemon(false);
         thread.start();
     }
+
+
 }

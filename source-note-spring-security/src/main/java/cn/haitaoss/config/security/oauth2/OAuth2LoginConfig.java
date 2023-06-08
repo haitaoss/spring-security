@@ -303,4 +303,6 @@ public class OAuth2LoginConfig {
         // OAuth2AuthorizedClientRepository 依赖 OAuth2AuthorizedClientService 完成具体的存储、查询逻辑
         return new AuthenticatedPrincipalOAuth2AuthorizedClientRepository(authorizedClientService);
     }
+
+    
 }

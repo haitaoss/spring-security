@@ -516,7 +516,17 @@ final class MethodSecuritySelector implements ImportSelector {
 }
 ```
 
+## @AuthenticationPrincipal
 
+[SpringWebMvcImportSelector](#SpringWebMvcImportSelector)
+
+## @CurrentSecurityContext
+
+[SpringWebMvcImportSelector](#SpringWebMvcImportSelector)
+
+## @RegisteredOAuth2AuthorizedClient
+
+[OAuth2ImportSelector](#OAuth2ImportSelector)
 
 # 重要的类
 
@@ -1247,6 +1257,316 @@ public interface LogoutSuccessHandler {
 }
 ```
 
+## SecurityMetadataSource
+
+[FilterSecurityInterceptor](#FilterSecurityInterceptor) 依赖 SecurityMetadataSource 获取 Request 配置的权限信息，默认用的是 DefaultFilterInvocationSecurityMetadataSource
+
+```java
+public class DefaultFilterInvocationSecurityMetadataSource implements FilterInvocationSecurityMetadataSource {
+
+	private final Map<RequestMatcher, Collection<ConfigAttribute>> requestMap;
+
+	@Override
+	public Collection<ConfigAttribute> getAttributes(Object object) {
+		final HttpServletRequest request = ((FilterInvocation) object).getRequest();
+		// 遍历
+		for (Map.Entry<RequestMatcher, Collection<ConfigAttribute>> entry : this.requestMap.entrySet()) {
+			/**
+			 * request 匹配
+			 */
+			if (entry.getKey().matches(request)) {
+				// 返回配置的属性(就是这个 request 对应的权限信息)
+				return entry.getValue();
+			}
+		}
+        // 说明没有对request配置权限，可以理解成无需权限就
+		return null;
+	}
+
+	@Override
+	public boolean supports(Class<?> clazz) {
+		return FilterInvocation.class.isAssignableFrom(clazz);
+	}
+
+}
+```
+
+## AccessDecisionManager
+
+[FilterSecurityInterceptor](#FilterSecurityInterceptor) 依赖 AccessDecisionManager ，用来校验 认证的用户是否具备为 request 配置的权限。
+
+AccessDecisionManager  有一个抽象子类 AbstractAccessDecisionManager ，它聚合 `List<AccessDecisionVoter>` ，鉴权是委托给 [AccessDecisionVoter](#AccessDecisionVoter ) 完成，AbstractAccessDecisionManager  是汇总全部 AccessDecisionVoter 的鉴权结果。比如它的三个实现类：
+
+- [AffirmativeBased](#AffirmativeBased)（这是默认值）：拒绝数 大于 零 就抛出 AccessDeniedException，表示鉴权不通过
+- [ConsensusBased](#ConsensusBased)：拒绝数 大于 同意数 就抛出 AccessDeniedException，表示鉴权不通过
+- [UnanimousBased](#UnanimousBased)：满足配置的所有权限才表示鉴权通过
+
+**这个API已经被标记为过时的**
+
+![AccessDecisionManager](.spring-security-source-note_imgs/AccessDecisionManager-1686210329388.png)
+
+### AffirmativeBased
+
+```java
+@Deprecated
+public class AffirmativeBased extends AbstractAccessDecisionManager {
+
+	public AffirmativeBased(List<AccessDecisionVoter<?>> decisionVoters) {
+		super(decisionVoters);
+	}
+
+	@Override
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public void decide(Authentication authentication, Object object, Collection<ConfigAttribute> configAttributes)
+			throws AccessDeniedException {
+		// 拒绝
+		int deny = 0;
+		// 遍历 决策选民
+		for (AccessDecisionVoter voter : getDecisionVoters()) {
+			/**
+			 * 投票结果
+			 * {@link org.springframework.security.web.access.expression.WebExpressionVoter#vote}
+			 */
+			int result = voter.vote(authentication, object, configAttributes);
+			switch (result) {
+			case AccessDecisionVoter.ACCESS_GRANTED:
+				return;
+			case AccessDecisionVoter.ACCESS_DENIED:
+				// 加一
+				deny++;
+				break;
+			default:
+				break;
+			}
+		}
+		// 拒绝计数大于0
+		if (deny > 0) {
+			// 抛出异常
+			throw new AccessDeniedException("error");
+		}
+		// 模板方法
+		checkAllowIfAllAbstainDecisions();
+	}
+}
+```
+
+### ConsensusBased
+
+```java
+@Deprecated
+public class ConsensusBased extends AbstractAccessDecisionManager {
+
+	private boolean allowIfEqualGrantedDeniedDecisions = true;
+
+	public ConsensusBased(List<AccessDecisionVoter<?>> decisionVoters) {
+		super(decisionVoters);
+	}
+    
+	@Override
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public void decide(Authentication authentication, Object object, Collection<ConfigAttribute> configAttributes)
+			throws AccessDeniedException {
+		int grant = 0;
+		int deny = 0;
+		for (AccessDecisionVoter voter : getDecisionVoters()) {
+			/**
+			 * 投票结果
+			 * 		{@link WebExpressionVoter#vote(Authentication, FilterInvocation, Collection)}
+			 */
+			int result = voter.vote(authentication, object, configAttributes);
+			switch (result) {
+			case AccessDecisionVoter.ACCESS_GRANTED:
+				// 同意数加一
+				grant++;
+				break;
+			case AccessDecisionVoter.ACCESS_DENIED:
+				// 拒绝数加一
+				deny++;
+				break;
+			default:
+				break;
+			}
+		}
+		// 同意数 大于 拒绝数
+		if (grant > deny) {
+			return;
+		}
+		// 拒绝数 大于 同意数
+		if (deny > grant) {
+			// 抛出异常
+			throw new AccessDeniedException("");
+		}
+		// 持平
+		if ((grant == deny) && (grant != 0)) {
+			// 默认是 true
+			if (this.allowIfEqualGrantedDeniedDecisions) {
+				return;
+			}
+			throw new AccessDeniedException("");
+		}
+
+		checkAllowIfAllAbstainDecisions();
+	}
+}
+
+```
+
+### UnanimousBased
+
+```java
+@Deprecated
+public class UnanimousBased extends AbstractAccessDecisionManager {
+
+	public UnanimousBased(List<AccessDecisionVoter<?>> decisionVoters) {
+		super(decisionVoters);
+	} 
+    
+	@Override
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public void decide(Authentication authentication, Object object, Collection<ConfigAttribute> attributes)
+			throws AccessDeniedException {
+		int grant = 0;
+		List<ConfigAttribute> singleAttributeList = new ArrayList<>(1);
+		singleAttributeList.add(null);
+		/**
+		 * 遍历 ConfigAttribute，投票结果都不能是拒绝。
+		 *
+		 * 因为大部分的 vote 逻辑，都是只要 authentication具备的权限 包含了 attributes 中的一个就算同意，并不是匹配具备所有 attribute 才算同意
+		 * 比如：
+		 * 		{@link RoleVoter#vote(Authentication, Object, Collection)}
+		 *		{@link org.springframework.security.web.access.expression.WebExpressionVoter#vote}
+		 */
+		for (ConfigAttribute attribute : attributes) {
+			singleAttributeList.set(0, attribute);
+			for (AccessDecisionVoter voter : getDecisionVoters()) {
+				/**
+				 * 投票结果
+				 * {@link WebExpressionVoter#vote}
+				 */
+				int result = voter.vote(authentication, object, singleAttributeList);
+				switch (result) {
+				case AccessDecisionVoter.ACCESS_GRANTED:
+					grant++;
+					break;
+				case AccessDecisionVoter.ACCESS_DENIED:
+					// 有否定的直接抛出异常，说明 必须全部 voter 的投票结果不能是拒绝
+					throw new AccessDeniedException("");
+				default:
+					break;
+				}
+			}
+		}
+
+		if (grant > 0) {
+			return;
+		}
+
+		checkAllowIfAllAbstainDecisions();
+	}
+
+}
+```
+
+## AccessDecisionVoter 
+
+[AbstractAccessDecisionManager](#AccessDecisionManager ) 会依赖 AccessDecisionVoter  得到鉴权结果。[FilterSecurityInterceptor](#FilterSecurityInterceptor) 中配置的 [AccessDecisionManager](#AccessDecisionManager) 默认是只使用 WebExpressionVoter 进行鉴权
+
+```java
+@Deprecated
+public class WebExpressionVoter implements AccessDecisionVoter<FilterInvocation> {
+
+	private SecurityExpressionHandler<FilterInvocation> expressionHandler = new DefaultWebSecurityExpressionHandler();
+
+	@Override
+	public int vote(Authentication authentication, FilterInvocation filterInvocation,
+			Collection<ConfigAttribute> attributes) {
+		/**
+		 * 获取配置的属性。
+		 * 迭代 attributes 找到是 WebExpressionConfigAttribute 类型的就返回，也就是只会检验一个 ConfigAttribute
+		 */
+		WebExpressionConfigAttribute webExpressionConfigAttribute = findConfigAttribute(attributes);
+		// 为空，说明没设置权限信息
+		if (webExpressionConfigAttribute == null) {
+			// 弃权
+			return ACCESS_ABSTAIN;
+		}
+		/** 
+		 * 构造 EvaluationContext。其 RootObject 是 SecurityExpressionRoot 类型的，
+		 * 所以 SpEL 表达式才可以写 "hasRole('ADMIN') and hasRole('DBA')"
+		 * */
+		EvaluationContext ctx = webExpressionConfigAttribute.postProcess(
+				this.expressionHandler.createEvaluationContext(authentication, filterInvocation), filterInvocation);
+		// 计算 SpEL 表达式 得到结果
+		boolean granted = ExpressionUtils.evaluateAsBoolean(webExpressionConfigAttribute.getAuthorizeExpression(), ctx);
+		if (granted) {
+			// 授权
+			return ACCESS_GRANTED;
+		}
+		// 拒绝
+		return ACCESS_DENIED;
+	}
+
+	private WebExpressionConfigAttribute findConfigAttribute(Collection<ConfigAttribute> attributes) {
+		for (ConfigAttribute attribute : attributes) {
+			// 适配类型直接 return，说明只会校验一个而已
+			if (attribute instanceof WebExpressionConfigAttribute) {
+				return (WebExpressionConfigAttribute) attribute;
+			}
+		}
+		return null;
+	}
+}
+```
+
+## AuthorizationManager
+
+[AuthorizationFilter](#AuthorizationFilter) 会依赖  AuthorizationManager 完成鉴权逻辑，默认使用的是  RequestMatcherDelegatingAuthorizationManager
+
+```java
+public final class RequestMatcherDelegatingAuthorizationManager implements AuthorizationManager<HttpServletRequest> {
+
+	private final Log logger = LogFactory.getLog(getClass());
+
+	private final List<RequestMatcherEntry<AuthorizationManager<RequestAuthorizationContext>>> mappings;
+
+	private RequestMatcherDelegatingAuthorizationManager(
+			List<RequestMatcherEntry<AuthorizationManager<RequestAuthorizationContext>>> mappings) {
+		Assert.notEmpty(mappings, "mappings cannot be empty");
+		this.mappings = mappings;
+	}
+ 	
+    @Override
+	public AuthorizationDecision check(Supplier<Authentication> authentication, HttpServletRequest request) {
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace(LogMessage.format("Authorizing %s", request));
+		}
+		// 遍历注册的权限数据
+		for (RequestMatcherEntry<AuthorizationManager<RequestAuthorizationContext>> mapping : this.mappings) {
+			RequestMatcher matcher = mapping.getRequestMatcher();
+			MatchResult matchResult = matcher.matcher(request);
+			// request 满足 matcher，说明 request 配置了权限规则
+			if (matchResult.isMatch()) {
+				// 获取配置的 AuthorizationManager
+				AuthorizationManager<RequestAuthorizationContext> manager = mapping.getEntry();
+				if (this.logger.isTraceEnabled()) {
+					this.logger.trace(LogMessage.format("Checking authorization on %s using %s", request, manager));
+				}
+				/**
+				 * {@link AuthenticatedAuthorizationManager#check(Supplier, Object)}
+				 * 		鉴权：校验是否认证过(细分成 匿名认证、RememberMe认证、其他认证)
+				 *
+				 * {@link AuthorityAuthorizationManager#check(Supplier, Object)}
+				 * 		鉴权：认证过 且 认证信息包含权限
+				 */
+				return manager.check(authentication,
+						new RequestAuthorizationContext(request, matchResult.getVariables()));
+			}
+		}
+		return null;
+	}
+}
+```
+
 
 
 # Security Filter
@@ -1296,6 +1616,8 @@ CsrfFilter 优先级，很高会在 [认证Filter](#AbstractAuthenticationProces
 **总之 CsrfFilter  的目的是设置一个会话的标识(csrfToken )，请求带上正确的标识才允许访问。**
 
 标识是通过 CsrfTokenRepository  存储、查询的。默认是用的 HttpSessionCsrfTokenRepository ，它会生成一个随机字符串存到 session 中，并将 sessionID 设置到 cookie 中交由浏览器存储。之后浏览器执行请求时就会把 cookie 传到服务器，HttpSessionCsrfTokenRepository  就会根据cookie记录的sessionID拿到session再从session中拿到 csrfToken 这个作为**真实值**，再从 request 的**请求头**或者**请求参数**中获取 csrfToken 这个作为**输入值**，输入值与真实值一致才允许访问。
+
+CsrfFilter 是 HttpSecurity 会设置的默认值，看 [HttpSecurityConfiguration](#) 就明白了
 
 ```java
 public final class CsrfFilter extends OncePerRequestFilter {
@@ -1363,11 +1685,11 @@ public final class CsrfFilter extends OncePerRequestFilter {
 }
 ```
 
-
-
 ## SessionManagementFilter
 
 目的：通过 SecurityContextRepository 将 SecurityContext 进行持久化。比如存到Cookie、Session
+
+SessionManagementFilter 是 HttpSecurity 会设置的默认值，看 [HttpSecurityConfiguration](#) 就明白了
 
 ```java
 public class SessionManagementFilter extends GenericFilterBean {
@@ -1495,6 +1817,20 @@ public class LogoutFilter extends GenericFilterBean {
 1. 默认是处理 `/oauth2/authorization/{registrationId}` 请求，根据 registrationId 拿到配置的第三方OAuth2的配置信息，根据信息拼接出授权url，然后设置重定向信息，告诉浏览器重定向到第三方服务的授权页面，让用户进行授权。
 2. 捕获到 ClientAuthorizationRequiredException 异常，处理逻辑同上，都是重定向第三方授权页面。
 
+可以通过这种方式注册 OAuth2AuthorizationRequestRedirectFilter
+
+```java
+@Bean
+public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    http
+            /**
+             * 会注册两个Filter：OAuth2AuthorizationRequestRedirectFilter、OAuth2LoginAuthenticationFilter
+             * 会注册一个AuthenticationProvider： OAuth2LoginAuthenticationProvider
+             */
+            .oauth2Login();
+    return http.build();
+}
+```
 ```java
 public class OAuth2AuthorizationRequestRedirectFilter extends OncePerRequestFilter {
 
@@ -1666,6 +2002,21 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 
 认证的实现看 [OAuth2LoginAuthenticationProvider](#OAuth2LoginAuthenticationProvider)
 
+可以通过这种方式注册 OAuth2LoginAuthenticationFilter
+
+```java
+@Bean
+public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    http
+            /**
+             * 会注册两个Filter：OAuth2AuthorizationRequestRedirectFilter、OAuth2LoginAuthenticationFilter
+             * 会注册一个AuthenticationProvider： OAuth2LoginAuthenticationProvider
+             */
+            .oauth2Login();
+    return http.build();
+}
+```
+
 ```java
 public class OAuth2LoginAuthenticationFilter extends AbstractAuthenticationProcessingFilter {
 
@@ -1764,6 +2115,20 @@ public class OAuth2LoginAuthenticationFilter extends AbstractAuthenticationProce
 
 认证的实现看 [DaoAuthenticationProvider](#DaoAuthenticationProvider)
 
+可以通过这种方式注册 UsernamePasswordAuthenticationFilter
+
+```java
+@Bean
+public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    http
+            /**
+             * UsernamePasswordAuthenticationFilter
+             */
+            ..formLogin(withDefaults());
+    return http.build();
+}
+```
+
 ```java
 public class UsernamePasswordAuthenticationFilter extends AbstractAuthenticationProcessingFilter {
 
@@ -1812,6 +2177,8 @@ ExceptionTranslationFilter 优先于 FilterSecurityInterceptor、AuthorizationFi
 ExceptionTranslationFilter  捕获到 AuthenticationException 就使用 [RequestCache](#RequestCache) 缓存当前request信息，用于后面认证，然后调用 [AuthenticationEntryPoint](#AuthenticationEntryPoint ) 开始认证（比如往响应体设置异常信息 或者 重定向到登录页面 或者 转发到登录页面）
 
 ExceptionTranslationFilter  捕获到 AccessDeniedException 就委托给 AccessDeniedHandler 处理。比如往响应体设置错误信息。
+
+ExceptionTranslationFilter 是 HttpSecurity 会设置的默认值，看 [HttpSecurityConfiguration](#) 就明白了
 
 ```java
 public class ExceptionTranslationFilter extends GenericFilterBean implements MessageSourceAware {
@@ -1873,43 +2240,165 @@ public class ExceptionTranslationFilter extends GenericFilterBean implements Mes
 
 ## FilterSecurityInterceptor
 
+FilterSecurityInterceptor 已经过时了建议使用 [AuthorizationFilter](#AuthorizationFilter)。
 
+FilterSecurityInterceptor 的优先级很低是在末尾执行的Filter的，它根据 request 作为参数调用 [SecurityMetadataSource](#SecurityMetadataSource) 获取配置的权限数据，在调用 [AccessDecisionManager](#AccessDecisionManager) 鉴定认证的用户是否具备配置的权限。
+
+可以通过这种方式注册 FilterSecurityInterceptor。
+
+```java
+@Bean
+public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    http
+            /**
+             * 设置鉴权逻辑。会注册 FilterSecurityInterceptor
+             *
+             * 写的规则会拼接成 SpEL 表达式，然后使用的 RootObject 是 SecurityExpressionRoot 类型的，所以才可以写 "hasRole('ADMIN') and hasRole('DBA')"
+             * 鉴权是否通过，是执行 SpEL 表达式得到 boolean 值，为true就是通过
+             */
+            .authorizeRequests(authorize -> authorize
+                    .requestMatchers("/f3/xx").authenticated()
+                    .requestMatchers("/f3/**").hasRole("xx")
+                    .requestMatchers("/f3/xx2").access("hasRole('ADMIN') and hasRole('DBA')")
+                    .anyRequest().authenticated()
+            );
+    return http.build();
+}
+```
+
+```java
+@Deprecated
+public class FilterSecurityInterceptor extends AbstractSecurityInterceptor implements Filter {
+    
+    private FilterInvocationSecurityMetadataSource securityMetadataSource;
+
+    public void invoke(FilterInvocation filterInvocation) throws IOException, ServletException {
+        // 是适配的（其实就是有标记）
+        if (isApplied(filterInvocation)) {
+            // 放行
+            filterInvocation.getChain().doFilter(filterInvocation.getRequest(), filterInvocation.getResponse());
+            return;
+        }
+        if (filterInvocation.getRequest() != null) {
+            // 设置标记
+            filterInvocation.getRequest().setAttribute(FILTER_APPLIED, Boolean.TRUE);
+        }
+        /**
+         * 执行前（会进行认证和鉴权）
+         * 1. 根据 request 获取为 request 配置的权限信息
+         * 2. 未认证过就进行认证。	AuthenticationManager#authenticate
+         * 2. 校验认证信息是否具备配置的权限	AccessDecisionManager#decide
+         */
+        InterceptorStatusToken token = super.beforeInvocation(filterInvocation);
+        try {
+            // 放行
+            filterInvocation.getChain().doFilter(filterInvocation.getRequest(), filterInvocation.getResponse());
+        }
+        finally {
+            /**
+             * 执行完(完成调用)。
+             * 根据 token.isContextHolderRefreshRequired() 决定是否更新 securityContextHolderStrategy 记录的 SecurityContext。
+             *
+             * 比如 {@link AbstractSecurityInterceptor#beforeInvocation(Object)} 会构造新的SecurityContext, 并将原来的SecurityContext
+             * 记录到 token 中，finallyInvocation 就是判断是否构造了新的SecurityContext，若是新的执行完之后 应当在这一步恢复SecurityContext
+             */
+            super.finallyInvocation(token);
+        }
+        /**
+         * 执行后。
+         *
+         * 回调 afterInvocationManager#decide 对返回值进行鉴权，但是 FilterSecurityInterceptor 没设置这个属性所以没有这个步骤。
+         */
+        super.afterInvocation(token, null);
+    }
+}
+```
 
 ## AuthorizationFilter
 
-# 场景说明
+AuthorizationFilter 的优先级很低是在末尾执行的Filter的，它依赖 [AuthorizationManager](#AuthorizationManager) 得到鉴权结果。
 
-## 认证流程
+可以通过这种方式注册 AuthorizationFilter 。
 
-## 鉴权流程
+```java
+ @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+                /**
+                 * 配置鉴权规则。
+                 * 会注册 AuthorizationFilter
+                 */
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/f2/user/**").hasRole("USER")
+                        .requestMatchers("/f2/x").authenticated()
+                        .requestMatchers("/f2/x").permitAll()
+                        .requestMatchers("/f2/x").denyAll()
+                        .requestMatchers("/f2/db/**").access(
+                                AuthorizationManagers.allOf(
+                                        AuthorityAuthorizationManager.hasRole("ADMIN"),
+                                        AuthorityAuthorizationManager.hasRole("DBA")
+                                ))
+                );
+        return http.build();
+    }
+```
 
-## 认证成功会重定向到先前的访问页面
+```java
+public class AuthorizationFilter extends GenericFilterBean {
 
-## OAuth2登录流程
+	private SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder
+			.getContextHolderStrategy();
 
-# tail
+	private final AuthorizationManager<HttpServletRequest> authorizationManager;
 
-Principal：主角、当事人、委托人
+	@Override
+	public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain chain)
+			throws ServletException, IOException {
 
-GrantedAuthority：授权机构
+		HttpServletRequest request = (HttpServletRequest) servletRequest;
+		HttpServletResponse response = (HttpServletResponse) servletResponse;
 
-credentials：资格证书
+		// 存在标记
+		if (this.observeOncePerRequest && isApplied(request)) {
+			// 放行
+			chain.doFilter(request, response);
+			return;
+		}
 
-Explicit：明确的、清楚的
+		// 是跳过的转发类型
+		if (skipDispatch(request)) {
+			// 放行
+			chain.doFilter(request, response);
+			return;
+		}
 
-restrict：限制、限定
+		String alreadyFilteredAttributeName = getAlreadyFilteredAttributeName();
+		// 设置标记
+		request.setAttribute(alreadyFilteredAttributeName, Boolean.TRUE);
+		try {
+			/**
+			 * 使用 authorizationManager 检查权限
+			 * 	{@link RequestMatcherDelegatingAuthorizationManager#check(Supplier, HttpServletRequest)}
+			 * 	1. 遍历配置的权限集合，找到匹配request的	AuthorizationManager
+			 * 	2. 回调 AuthorizationManager#check 得到鉴权结果
+			 */
+			AuthorizationDecision decision = this.authorizationManager.check(this::getAuthentication, request);
+			// 发布事件
+			this.eventPublisher.publishAuthorizationEvent(this::getAuthentication, request, decision);
+			// 没有权限
+			if (decision != null && !decision.isGranted()) {
+				// 抛出异常
+				throw new AccessDeniedException("Access Denied");
+			}
+			// 放行
+			chain.doFilter(request, response);
+		}
+		finally {
+			// 移除标记
+			request.removeAttribute(alreadyFilteredAttributeName);
+		}
+	}
 
-commence：开始
-
-entryPoint：入口点
-
-permit：允许
-
-attempt：尝试
-
-decide：决定
-
-erase：清除
-
-AccessDecisionManager：访问决策管理器
+}
+```
 

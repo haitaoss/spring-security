@@ -291,7 +291,7 @@ public abstract class AbstractSecurityInterceptor
 			Authentication authenticated) {
 		try {
 			/**
-			 * 鉴权。
+			 * 鉴权。判断 authenticated 是否具备 attributes
 			 *
 			 * 默认是
 			 * 	{@link AffirmativeBased#decide(Authentication, Object, Collection)}

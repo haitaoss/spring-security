@@ -61,7 +61,7 @@ public class AffirmativeBased extends AbstractAccessDecisionManager {
 			throws AccessDeniedException {
 		// 拒绝
 		int deny = 0;
-		// 遍历 决策选民
+		// 遍历 决策选民。每个选民都进行投票，汇总最终的结果
 		for (AccessDecisionVoter voter : getDecisionVoters()) {
 			/**
 			 * 投票结果
