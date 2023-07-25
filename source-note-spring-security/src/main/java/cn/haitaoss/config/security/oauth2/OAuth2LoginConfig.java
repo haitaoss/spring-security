@@ -181,6 +181,7 @@ public class OAuth2LoginConfig {
                  * {@link JwtBearerTokenAuthenticationConverter#convert(Jwt)}
                  *
                  * 默认的行为好像只是负责将 token 解析成 Authentication 并不负责调第三方接口完成认证授权逻辑
+				 * Tips: 使用场景，比如认证中心和当前应用不在一块，此时我们的应用就可以配置 oauth2ResourceServer，因为当前应用不需要执行登录，登录的处理放到认证中心了。
                  */
 //                .oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt)
                 .oauth2ResourceServer(config -> config
@@ -304,5 +305,5 @@ public class OAuth2LoginConfig {
         return new AuthenticatedPrincipalOAuth2AuthorizedClientRepository(authorizedClientService);
     }
 
-    
+
 }
